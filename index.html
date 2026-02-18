@@ -7,6 +7,7 @@
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#006400">
+<button class="btn btn-blue" style="margin-top:10px;" onclick="openAdmin()">Admin</button>
 
 <style>
 body {
@@ -207,6 +208,30 @@ input {
   <div id="actionBtn"></div>
   <button class="btn btn-reset" onclick="goHome()">Home</button>
 </div>
+<!-- STORE ADMIN PANEL -->
+<div id="storeAdminPanel" class="hidden">
+  <h3>Store Admin Settings</h3>
+
+  <input id="editStore" placeholder="Store Number">
+  <input id="editManager" placeholder="Manager Phone">
+  <input id="editHelpdesk" placeholder="Help Desk Phone">
+
+  <button class="btn btn-yes" onclick="saveStoreAdmin()">Save Store Changes</button>
+  <button class="btn btn-reset" onclick="goHome()">Cancel</button>
+</div>
+
+<!-- DISTRICT ADMIN PANEL -->
+<div id="districtAdminPanel" class="hidden">
+  <h3>District Admin Control</h3>
+
+  <input id="districtEditStore" placeholder="Store Number">
+  <input id="districtEditManager" placeholder="Manager Phone">
+  <input id="districtEditHelpdesk" placeholder="Help Desk Phone">
+
+  <button class="btn btn-yes" onclick="saveDistrictAdmin()">Save Changes</button>
+  <button class="btn btn-no" onclick="forceReset()">Force Store Reset</button>
+  <button class="btn btn-reset" onclick="goHome()">Cancel</button>
+</div>
 
 </div>
 
@@ -270,12 +295,46 @@ function goHome(){
 
 function openAdmin(){
   let pin = prompt("Enter Store PIN or District PIN");
-  if(pin === settings.storePin || pin === DISTRICT_PIN){
-    if(confirm("Reset Store?")){
-      localStorage.clear();
-      location.reload();
-    }
-  } else { alert("Incorrect PIN"); }
+
+  if(pin === settings.storePin){
+      nextQ("storeAdminPanel");
+      editStore.value = settings.store;
+      editManager.value = settings.manager;
+      editHelpdesk.value = settings.helpdesk;
+  }
+
+  else if(pin === DISTRICT_PIN){
+      nextQ("districtAdminPanel");
+      districtEditStore.value = settings.store;
+      districtEditManager.value = settings.manager;
+      districtEditHelpdesk.value = settings.helpdesk;
+  }
+
+  else{
+      alert("Incorrect PIN");
+  }
+}
+function saveStoreAdmin(){
+  localStorage.setItem("store", editStore.value);
+  localStorage.setItem("manager", editManager.value);
+  localStorage.setItem("helpdesk", editHelpdesk.value);
+  alert("Store Settings Updated");
+  location.reload();
+}
+
+function saveDistrictAdmin(){
+  localStorage.setItem("store", districtEditStore.value);
+  localStorage.setItem("manager", districtEditManager.value);
+  localStorage.setItem("helpdesk", districtEditHelpdesk.value);
+  alert("District Changes Saved");
+  location.reload();
+}
+
+function forceReset(){
+  if(confirm("District Override: Reset Store Completely?")){
+    localStorage.clear();
+    location.reload();
+  }
 }
 
 if('serviceWorker' in navigator){
