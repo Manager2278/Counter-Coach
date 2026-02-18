@@ -118,7 +118,7 @@ input {
 </div>
 
 <div id="q-driver-cover" class="hidden">
-  <p>Can counter cover run?</p>
+  <p>Can counter person cover run?</p>
   <button class="btn btn-yes"
   onclick="showResult('Switch roles. Text Manager.',
   'sms:'+settings.manager+'?&body=Driver issue handled. Counter covering run.')">YES</button>
@@ -136,9 +136,9 @@ input {
 </div>
 
 <div id="q-cash-verify" class="hidden">
-  <p>Checked all bags/deposits?</p>
+  <p>Checked all bags/deposits? Did you find it?</p>
   <button class="btn btn-yes"
-  onclick="showResult('Fix error. DO NOT CALL.')">YES</button>
+  onclick="showResult('Log in Book. DO NOT CALL.')">YES</button>
   <button class="btn btn-no" onclick="nextQ('q-cash-log')">NO</button>
 </div>
 
@@ -148,7 +148,7 @@ input {
   onclick="showResult('Variance logged. TEXT MANAGER.',
   'sms:'+settings.manager+'?&body=Variance over $20 logged.')">YES</button>
   <button class="btn btn-no"
-  onclick="showResult('Logged. DO NOT CALL.')">NO</button>
+  onclick="showResult('Log in Book.  DO NOT CALL.')">NO</button>
 </div>
 
 <!-- CUSTOMER -->
@@ -167,7 +167,7 @@ input {
 </div>
 
 <div id="q-cust-3" class="hidden">
-  <p>Can resolve per policy?</p>
+  <p>Can it be resolved per policy? Make it right! </p>
   <button class="btn btn-yes"
   onclick="showResult('Log in notes. DO NOT CALL.')">YES</button>
   <button class="btn btn-no"
@@ -176,16 +176,16 @@ input {
 
 <!-- STAFF -->
 <div id="q-staff" class="hidden">
-  <p>Can shift be covered?</p>
+  <p>Can shift be covered? Staying Over, Call Someone in?</p>
   <button class="btn btn-yes"
   onclick="showResult('Adjust schedule. DO NOT CALL.')">YES</button>
   <button class="btn btn-no" onclick="nextQ('q-staff-2')">NO</button>
 </div>
 
 <div id="q-staff-2" class="hidden">
-  <p>Store inoperable?</p>
+  <p>Store inoperable?(only 1 Person)</p>
   <button class="btn btn-yes"
-  onclick="showResult('CALL MANAGER NOW.','tel:'+settings.manager)">YES</button>
+  onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">YES</button>
   <button class="btn btn-no"
   onclick="showResult('Send text update.',
   'sms:'+settings.manager+'?&body=Staff issue but store covered.')">NO</button>
@@ -193,7 +193,7 @@ input {
 
 <!-- OPS -->
 <div id="q-ops" class="hidden">
-  <p>Stops sales or locking up?</p>
+  <p>Stops sales or  locking up?</p>
   <button class="btn btn-yes"
   onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">YES</button>
   <button class="btn btn-no"
@@ -211,7 +211,7 @@ input {
 </div>
 
 <div class="footer">
-Version 3.1 | District Controlled
+Version 3.1 | District 329
 </div>
 
 <script>
