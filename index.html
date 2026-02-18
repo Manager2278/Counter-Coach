@@ -259,14 +259,35 @@ function generateQR(){
 }
 
 function init(){
-  autoFillFromURL();
+  function autoFillFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  const store = params.get("store");
+  const manager = params.get("manager");
+  const helpdesk = params.get("helpdesk");
+  const pin = params.get("pin");
 
-  if(settings.locked === "true"){
-    document.getElementById("setupScreen").classList.add("hidden");
-    document.getElementById("q1").classList.remove("hidden");
-    document.getElementById("storeDisplay").innerHTML = "Store #" + settings.store;
+  if(store && manager && helpdesk && pin){
+    // Fill inputs
+    storeNum.value = store;
+    managerNum.value = manager;
+    helpdeskNum.value = helpdesk;
+    storePin.value = pin;
 
-    generateQR(); // show store QR
+    // Save automatically to localStorage if not already locked
+    if(settings.locked !== "true"){
+      localStorage.setItem("store", store);
+      localStorage.setItem("manager", manager);
+      localStorage.setItem("helpdesk", helpdesk);
+      localStorage.setItem("storePin", pin);
+      localStorage.setItem("locked", "true");
+
+      // Update settings object
+      settings.store = store;
+      settings.manager = manager;
+      settings.helpdesk = helpdesk;
+      settings.storePin = pin;
+      settings.locked = "true";
+    }
   }
 }
 
