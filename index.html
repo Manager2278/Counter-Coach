@@ -65,11 +65,9 @@ input { width:90%; padding:8px; margin:6px 0; }
 <div class="header">
   <h2>O'Reilly Manager Decision Tool</h2>
   <div id="storeDisplay" class="store-tag"></div>
-  <div id="storeQR" class="store-tag"></div>
 </div>
-<div class="header">
-  <h2>O'Reilly
- 
+
+<div class="container">
 
 <!-- STORE SETUP -->
 <div id="setupScreen">
@@ -119,8 +117,7 @@ input { width:90%; padding:8px; margin:6px 0; }
 <div id="q-cash-1" class="hidden">
   <p>Register over or short?</p>
   <button class="btn btn-yes" onclick="nextQ('q-cash-verify')">YES</button>
-  <button class="btn btn-no"
-  onclick="showResult('Ensure deposit signed. DO NOT CALL.')">NO</button>
+  <button class="btn btn-no" onclick="showResult('Ensure deposit signed. DO NOT CALL.')">NO</button>
 </div>
 
 <div id="q-cash-verify" class="hidden">
@@ -135,16 +132,14 @@ input { width:90%; padding:8px; margin:6px 0; }
   <button class="btn btn-yes"
   onclick="showResult('Variance logged. TEXT MANAGER.',
   'sms:'+settings.manager+'?&body=Variance over $20 logged.')">YES</button>
-  <button class="btn btn-no"
-  onclick="showResult('Log in Book.  DO NOT CALL.')">NO</button>
+  <button class="btn btn-no" onclick="showResult('Log in Book.  DO NOT CALL.')">NO</button>
 </div>
 
 <!-- CUSTOMER -->
 <div id="q-cust" class="hidden">
   <p>Customer demanding manager now?</p>
   <button class="btn btn-yes" onclick="nextQ('q-cust-2')">YES</button>
-  <button class="btn btn-no"
-  onclick="showResult('Handle per policy. DO NOT CALL.')">NO</button>
+  <button class="btn btn-no" onclick="showResult('Handle per policy. DO NOT CALL.')">NO</button>
 </div>
 
 <div id="q-cust-2" class="hidden">
@@ -155,36 +150,29 @@ input { width:90%; padding:8px; margin:6px 0; }
 
 <div id="q-cust-3" class="hidden">
   <p>Can it be resolved per policy? Make it right! </p>
-  <button class="btn btn-yes"
-  onclick="showResult('Log in notes. DO NOT CALL.')">YES</button>
-  <button class="btn btn-no"
-  onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">NO</button>
+  <button class="btn btn-yes" onclick="showResult('Log in notes. DO NOT CALL.')">YES</button>
+  <button class="btn btn-no" onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">NO</button>
 </div>
 
 <!-- STAFF -->
 <div id="q-staff" class="hidden">
   <p>Can shift be covered? Staying Over, Call Someone in?</p>
-  <button class="btn btn-yes"
-  onclick="showResult('Adjust schedule. DO NOT CALL.')">YES</button>
+  <button class="btn btn-yes" onclick="showResult('Adjust schedule. DO NOT CALL.')">YES</button>
   <button class="btn btn-no" onclick="nextQ('q-staff-2')">NO</button>
 </div>
 
 <div id="q-staff-2" class="hidden">
   <p>Store inoperable?(only 1 Person)</p>
-  <button class="btn btn-yes"
-  onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">YES</button>
-  <button class="btn btn-no"
-  onclick="showResult('Send text update.',
+  <button class="btn btn-yes" onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">YES</button>
+  <button class="btn btn-no" onclick="showResult('Send text update.',
   'sms:'+settings.manager+'?&body=Staff issue but store covered.')">NO</button>
 </div>
 
 <!-- OPS -->
 <div id="q-ops" class="hidden">
   <p>Stops sales or  locking up?</p>
-  <button class="btn btn-yes"
-  onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">YES</button>
-  <button class="btn btn-no"
-  onclick="showResult('Call Help Desk.',
+  <button class="btn btn-yes" onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">YES</button>
+  <button class="btn btn-no" onclick="showResult('Call Help Desk.',
   'tel:'+settings.helpdesk)">NO</button>
 </div>
 
@@ -218,17 +206,15 @@ input { width:90%; padding:8px; margin:6px 0; }
 
 </div>
 
-<div class="footer">
-
-<!-- Admin Button at bottom -->
+<!-- Bottom QR Code and Admin Button -->
 <div style="max-width:480px; margin:auto; margin-top:15px;">
+  <div id="storeQR" class="store-tag" style="margin-bottom:10px;"></div>
   <button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
 </div>
 
 <div class="footer">
-Version 3.2 | District 329
+Version 3.3 | District 329
 </div>
-
 
 <script>
 const DISTRICT_PIN = "Manager2278";
