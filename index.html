@@ -1,0 +1,376 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O'Reilly Manager Decision Tool</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#006400">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  padding: 20px;
+  text-align: center;
+}
+.header {
+  background: #006400;
+  color: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+.store-tag { font-size:14px; margin-top:5px; }
+.container {
+  background: white;
+  max-width: 480px;
+  margin: auto;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+p { font-size:18px; font-weight:bold; }
+.btn {
+  display:block;
+  width:100%;
+  padding:14px;
+  margin:10px 0;
+  font-weight:bold;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+.btn-yes { background:#2e7d32; color:white; }
+.btn-no { background:#c62828; color:white; }
+.btn-blue { background:#1b5e20; color:white; }
+.btn-reset { background:#777; color:white; }
+.hidden { display:none; }
+input { width:90%; padding:8px; margin:6px 0; }
+.result {
+  padding:20px;
+  font-weight:bold;
+  border-radius:8px;
+}
+.call { background:#ffebee; color:#c62828; border:2px solid #c62828; }
+.nocall { background:#e8f5e9; color:#2e7d32; border:2px solid #2e7d32; }
+.footer { margin-top:15px; font-size:12px; color:#666; }
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>O'Reilly Manager Decision Tool</h2>
+  <div id="storeDisplay" class="store-tag"></div>
+</div>
+
+<div class="container">
+
+<!-- STORE SETUP -->
+<div id="setupScreen">
+  <h3>Store Setup</h3>
+  <input id="storeNum" placeholder="Store Number">
+  <input id="managerNum" placeholder="Manager Phone">
+  <input id="helpdeskNum" placeholder="Help Desk Phone">
+  <input id="storePin" placeholder="Create Store Admin PIN">
+  <button class="btn btn-yes" onclick="saveSetup()">Save & Lock Store</button>
+</div>
+
+<!-- DECISION TREE START -->
+<div id="q1" class="hidden">
+  <p>Immediate threat to life, safety, or building?</p>
+  <button class="btn btn-yes" onclick="showResult('CALL 911','tel:911')">YES</button>
+  <button class="btn btn-no" onclick="nextQ('q-category')">NO</button>
+</div>
+
+<div id="q-category" class="hidden">
+  <p>What type of issue?</p>
+  <button class="btn btn-blue" onclick="nextQ('q-cust')">Customer Complaint</button>
+  <button class="btn btn-blue" onclick="nextQ('q-staff')">Staffing / Sick Call</button>
+  <button class="btn btn-blue" onclick="nextQ('q-drivers')">Drivers / Delivery</button>
+  <button class="btn btn-blue" onclick="nextQ('q-cash-1')">Cash / Variance</button>
+  <button class="btn btn-blue" onclick="nextQ('q-ops')">Building / System</button>
+  <button class="btn btn-reset" onclick="goHome()">Home</button>
+</div>
+
+<!-- DRIVERS -->
+<div id="q-drivers" class="hidden">
+  <p>Driver call off or vehicle breakdown?</p>
+  <button class="btn btn-yes" onclick="nextQ('q-driver-cover')">YES</button>
+  <button class="btn btn-no" onclick="nextQ('q-category')">Back</button>
+</div>
+
+<div id="q-driver-cover" class="hidden">
+  <p>Can counter person cover run?</p>
+  <button class="btn btn-yes"
+  onclick="showResult('Switch roles. Text Manager.',
+  'sms:'+settings.manager+'?&body=Driver issue handled. Counter covering run.')">YES</button>
+  <button class="btn btn-no"
+  onclick="showResult('Commercial stopped. CALL MANAGER.',
+  'tel:'+settings.manager)">NO</button>
+</div>
+
+<!-- CASH -->
+<div id="q-cash-1" class="hidden">
+  <p>Register over or short?</p>
+  <button class="btn btn-yes" onclick="nextQ('q-cash-verify')">YES</button>
+  <button class="btn btn-no" onclick="showResult('Ensure deposit signed. DO NOT CALL.')">NO</button>
+</div>
+
+<div id="q-cash-verify" class="hidden">
+  <p>Checked all bags/deposits? Did you find it?</p>
+  <button class="btn btn-yes"
+  onclick="showResult('Log in Book. DO NOT CALL.')">YES</button>
+  <button class="btn btn-no" onclick="nextQ('q-cash-log')">NO</button>
+</div>
+
+<div id="q-cash-log" class="hidden">
+  <p>Over $20?</p>
+  <button class="btn btn-yes"
+  onclick="showResult('Variance logged. TEXT MANAGER.',
+  'sms:'+settings.manager+'?&body=Variance over $20 logged.')">YES</button>
+  <button class="btn btn-no" onclick="showResult('Log in Book.  DO NOT CALL.')">NO</button>
+</div>
+
+<!-- CUSTOMER -->
+<div id="q-cust" class="hidden">
+  <p>Customer demanding manager now?</p>
+  <button class="btn btn-yes" onclick="nextQ('q-cust-2')">YES</button>
+  <button class="btn btn-no" onclick="showResult('Handle per policy. DO NOT CALL.')">NO</button>
+</div>
+
+<div id="q-cust-2" class="hidden">
+  <p>Key Holder present?</p>
+  <button class="btn btn-yes" onclick="nextQ('q-cust-3')">YES</button>
+  <button class="btn btn-no" onclick="showResult('Hand to Key Holder.')">NO</button>
+</div>
+
+<div id="q-cust-3" class="hidden">
+  <p>Can it be resolved per policy? Make it right! </p>
+  <button class="btn btn-yes" onclick="showResult('Log in notes. DO NOT CALL.')">YES</button>
+  <button class="btn btn-no" onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">NO</button>
+</div>
+
+<!-- STAFF -->
+<div id="q-staff" class="hidden">
+  <p>Can shift be covered? Staying Over, Call Someone in?</p>
+  <button class="btn btn-yes" onclick="showResult('Adjust schedule. DO NOT CALL.')">YES</button>
+  <button class="btn btn-no" onclick="nextQ('q-staff-2')">NO</button>
+</div>
+
+<div id="q-staff-2" class="hidden">
+  <p>Store inoperable?(only 1 Person)</p>
+  <button class="btn btn-yes" onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">YES</button>
+  <button class="btn btn-no" onclick="showResult('Send text update.',
+  'sms:'+settings.manager+'?&body=Staff issue but store covered.')">NO</button>
+</div>
+
+<!-- OPS -->
+<div id="q-ops" class="hidden">
+  <p>Stops sales or  locking up?</p>
+  <button class="btn btn-yes" onclick="showResult('CALL MANAGER.','tel:'+settings.manager)">YES</button>
+  <button class="btn btn-no" onclick="showResult('Call Help Desk.',
+  'tel:'+settings.helpdesk)">NO</button>
+</div>
+
+<!-- RESULT -->
+<div id="resultScreen" class="hidden">
+  <div id="resultMsg" class="result"></div>
+  <div id="actionBtn"></div>
+  <button class="btn btn-reset" onclick="goHome()">Home</button>
+</div>
+
+<!-- STORE ADMIN PANEL -->
+<div id="storeAdminPanel" class="hidden">
+  <h3>Store Admin Settings</h3>
+  <input id="editStore" placeholder="Store Number">
+  <input id="editManager" placeholder="Manager Phone">
+  <input id="editHelpdesk" placeholder="Help Desk Phone">
+  <button class="btn btn-yes" onclick="saveStoreAdmin()">Save Store Changes</button>
+  <button class="btn btn-reset" onclick="goHome()">Cancel</button>
+</div>
+
+<!-- DISTRICT ADMIN PANEL -->
+<div id="districtAdminPanel" class="hidden">
+  <h3>District Admin Control</h3>
+  <input id="districtEditStore" placeholder="Store Number">
+  <input id="districtEditManager" placeholder="Manager Phone">
+  <input id="districtEditHelpdesk" placeholder="Help Desk Phone">
+  <button class="btn btn-yes" onclick="saveDistrictAdmin()">Save Changes</button>
+  <button class="btn btn-no" onclick="forceReset()">Force Store Reset</button>
+  <button class="btn btn-reset" onclick="goHome()">Cancel</button>
+</div>
+
+</div>
+
+<!-- Bottom QR Code and Admin Button -->
+<div style="max-width:480px; margin:auto; margin-top:15px;">
+  <div id="storeQR" class="store-tag" style="margin-bottom:10px;"></div>
+  <button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
+</div>
+
+<div class="footer">
+Version 3.4 | District 329
+</div>
+
+<script>
+const DISTRICT_PIN = "Manager2278";
+
+let settings = {
+  store: localStorage.getItem("store"),
+  manager: localStorage.getItem("manager"),
+  helpdesk: localStorage.getItem("helpdesk"),
+  storePin: localStorage.getItem("storePin"),
+  locked: localStorage.getItem("locked")
+};
+
+// Auto-fill store info from QR and lock automatically
+function autoFillFromURL(){
+  const params = new URLSearchParams(window.location.search);
+  const store = params.get("store");
+  const manager = params.get("manager");
+  const helpdesk = params.get("helpdesk");
+  const pin = params.get("pin");
+
+  if(store && manager && helpdesk && pin){
+    storeNum.value = store;
+    managerNum.value = manager;
+    helpdeskNum.value = helpdesk;
+    storePin.value = pin;
+
+    if(settings.locked !== "true"){
+      localStorage.setItem("store", store);
+      localStorage.setItem("manager", manager);
+      localStorage.setItem("helpdesk", helpdesk);
+      localStorage.setItem("storePin", pin);
+      localStorage.setItem("locked", "true");
+
+      settings.store = store;
+      settings.manager = manager;
+      settings.helpdesk = helpdesk;
+      settings.storePin = pin;
+      settings.locked = "true";
+    }
+  }
+}
+
+// Generate store QR code linking to this page with query params
+function generateQR(){
+  const qrContainer = document.getElementById("storeQR");
+  qrContainer.innerHTML = "";
+  const baseURL = "https://manager2278.github.io/Counter-Coach/";
+  const qrURL = `${baseURL}?store=${settings.store}&manager=${settings.manager}&helpdesk=${settings.helpdesk}&pin=${settings.storePin}`;
+
+  new QRCode(qrContainer, {
+    text: qrURL,
+    width: 150,
+    height: 150
+  });
+}
+
+function init(){
+  autoFillFromURL();
+
+  if(settings.locked === "true"){
+    document.getElementById("setupScreen").classList.add("hidden");
+    document.getElementById("q1").classList.remove("hidden");
+    document.getElementById("storeDisplay").innerHTML = "Store #" + settings.store;
+
+    generateQR();
+  }
+}
+
+function saveSetup(){
+  localStorage.setItem("store", storeNum.value);
+  localStorage.setItem("manager", managerNum.value);
+  localStorage.setItem("helpdesk", helpdeskNum.value);
+  localStorage.setItem("storePin", storePin.value);
+  localStorage.setItem("locked", "true");
+
+  settings.store = storeNum.value;
+  settings.manager = managerNum.value;
+  settings.helpdesk = helpdeskNum.value;
+  settings.storePin = storePin.value;
+  settings.locked = "true";
+
+  generateQR();
+  location.reload();
+}
+
+function nextQ(id){
+  document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
+  document.getElementById(id).classList.remove("hidden");
+}
+
+function showResult(msg, action){
+  nextQ("resultScreen");
+  let box = document.getElementById("resultMsg");
+  box.innerHTML = msg;
+  box.className = msg.includes("CALL") ? "result call" : "result nocall";
+
+  let actionBtn = document.getElementById("actionBtn");
+  actionBtn.innerHTML = "";
+  if(action){
+    let a = document.createElement("a");
+    a.href = action;
+    a.className="btn btn-blue";
+    a.innerText=action.startsWith("sms")?"Text":"Call";
+    actionBtn.appendChild(a);
+  }
+}
+
+function goHome(){ nextQ("q1"); }
+
+function openAdmin(){
+  let pin = prompt("Enter Store PIN or District PIN");
+
+  if(pin === settings.storePin){
+      nextQ("storeAdminPanel");
+      editStore.value = settings.store;
+      editManager.value = settings.manager;
+      editHelpdesk.value = settings.helpdesk;
+  } else if(pin === DISTRICT_PIN){
+      nextQ("districtAdminPanel");
+      districtEditStore.value = settings.store;
+      districtEditManager.value = settings.manager;
+      districtEditHelpdesk.value = settings.helpdesk;
+  } else{
+      alert("Incorrect PIN");
+  }
+}
+
+function saveStoreAdmin(){
+  localStorage.setItem("store", editStore.value);
+  localStorage.setItem("manager", editManager.value);
+  localStorage.setItem("helpdesk", editHelpdesk.value);
+  alert("Store Settings Updated");
+  location.reload();
+}
+
+function saveDistrictAdmin(){
+  localStorage.setItem("store", districtEditStore.value);
+  localStorage.setItem("manager", districtEditManager.value);
+  localStorage.setItem("helpdesk", districtEditHelpdesk.value);
+  alert("District Changes Saved");
+  location.reload();
+}
+
+function forceReset(){
+  if(confirm("District Override: Reset Store Completely?")){
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('service-worker.js');
+}
+
+init();
+</script>
+
+</body>
+</html>
