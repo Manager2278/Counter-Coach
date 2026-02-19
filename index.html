@@ -9,6 +9,17 @@
 <meta name="theme-color" content="#006400">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b5ed7">
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js");
+  });
+}
+</script>
+  
 <style>
 body {
   font-family: Arial, sans-serif;
