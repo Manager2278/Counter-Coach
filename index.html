@@ -292,9 +292,11 @@ storeDisplay.innerHTML="Store #"+settings.store;
 
 new QRCode(document.getElementById("storeQR"),{
 text:`https://manager2278.github.io/Counter-Coach/?store=${settings.store}&manager=${settings.manager}&helpdesk=${settings.helpdesk}&pin=${settings.storePin}`,
-width:150,height:150
+width:150,
+height:150
+});
 
-  runDistrictSync();
+runDistrictSync();
   
 });
 
