@@ -74,38 +74,118 @@ input{width:90%;padding:8px;margin:6px 0;}
 </div>
 
 <!-- QUESTIONS -->
+
+<!-- CUSTOMER -->
 <div id="q-cust" class="hidden">
-<p>Is the customer escalating or threatening?</p>
+<p>Is the customer upset or dissatisfied?</p>
+<button class="btn btn-yes" onclick="nextQ('q-cust-2')">YES</button>
+<button class="btn btn-no" onclick="showResult('Continue normal customer service','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-cust-2" class="hidden">
+<p>Have you attempted to resolve using standard policy (refund, exchange, lookup)?</p>
+<button class="btn btn-yes" onclick="nextQ('q-cust-3')">YES</button>
+<button class="btn btn-no" onclick="showResult('Attempt resolution before escalating','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-cust-3" class="hidden">
+<p>Is the customer still escalating, threatening, or refusing resolution?</p>
 <button class="btn btn-yes" onclick="showResult('Call Manager Immediately','manager')">YES</button>
-<button class="btn btn-no" onclick="showResult('Handle using customer service policy','')">NO</button>
+<button class="btn btn-no" onclick="showResult('Complete resolution and move on','')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
+
+<!-- STAFFING -->
 <div id="q-staff" class="hidden">
-<p>Is coverage available?</p>
-<button class="btn btn-yes" onclick="showResult('Adjust schedule and continue','')">YES</button>
-<button class="btn btn-no" onclick="showResult('Call Manager','manager')">NO</button>
+<p>Is an employee calling off or leaving early?</p>
+<button class="btn btn-yes" onclick="nextQ('q-staff-2')">YES</button>
+<button class="btn btn-no" onclick="showResult('No action needed','')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-<div id="q-drivers" class="hidden">
-<p>Is delivery delayed over 30 minutes?</p>
-<button class="btn btn-yes" onclick="showResult('Notify customer and call manager','manager')">YES</button>
-<button class="btn btn-no" onclick="showResult('Continue normal operations','')">NO</button>
+<div id="q-staff-2" class="hidden">
+<p>Have you checked coverage (other employees, shift adjustments)?</p>
+<button class="btn btn-yes" onclick="nextQ('q-staff-3')">YES</button>
+<button class="btn btn-no" onclick="showResult('Check available coverage first','')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-<div id="q-cash-1" class="hidden">
-<p>Is variance over $20?</p>
+<div id="q-staff-3" class="hidden">
+<p>Will the store be short-staffed or unable to operate normally?</p>
 <button class="btn btn-yes" onclick="showResult('Call Manager','manager')">YES</button>
-<button class="btn btn-no" onclick="showResult('Document and continue','')">NO</button>
+<button class="btn btn-no" onclick="showResult('Adjust schedule and continue','')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
+
+<!-- DRIVERS -->
+<div id="q-drivers" class="hidden">
+<p>Is a delivery late, missing, or incorrect?</p>
+<button class="btn btn-yes" onclick="nextQ('q-driver-2')">YES</button>
+<button class="btn btn-no" onclick="showResult('No action needed','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-driver-2" class="hidden">
+<p>Have you checked dispatch, route status, or contacted the driver?</p>
+<button class="btn btn-yes" onclick="nextQ('q-driver-3')">YES</button>
+<button class="btn btn-no" onclick="showResult('Check driver/dispatch first','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-driver-3" class="hidden">
+<p>Is the delay over 30 minutes or impacting a customer?</p>
+<button class="btn btn-yes" onclick="showResult('Notify customer and call manager','manager')">YES</button>
+<button class="btn btn-no" onclick="showResult('Update customer and continue','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+
+<!-- CASH -->
+<div id="q-cash-1" class="hidden">
+<p>Is there a register or cash drawer issue?</p>
+<button class="btn btn-yes" onclick="nextQ('q-cash-2')">YES</button>
+<button class="btn btn-no" onclick="showResult('No action needed','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-cash-2" class="hidden">
+<p>Have you recounted and verified the transaction history?</p>
+<button class="btn btn-yes" onclick="nextQ('q-cash-3')">YES</button>
+<button class="btn btn-no" onclick="showResult('Recount drawer and review transactions','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-cash-3" class="hidden">
+<p>Is the variance still over $20?</p>
+<button class="btn btn-yes" onclick="showResult('Call Manager Immediately','manager')">YES</button>
+<button class="btn btn-no" onclick="showResult('Document variance and continue','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+
+<!-- OPERATIONS -->
 <div id="q-ops" class="hidden">
-<p>Is the system down?</p>
+<p>Is there a system, register, or network issue?</p>
+<button class="btn btn-yes" onclick="nextQ('q-ops-2')">YES</button>
+<button class="btn btn-no" onclick="showResult('No action needed','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-ops-2" class="hidden">
+<p>Have you attempted basic troubleshooting (restart, reconnect, check cables)?</p>
+<button class="btn btn-yes" onclick="nextQ('q-ops-3')">YES</button>
+<button class="btn btn-no" onclick="showResult('Attempt basic troubleshooting first','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-ops-3" class="hidden">
+<p>Is the system still down or preventing business?</p>
 <button class="btn btn-yes" onclick="showResult('Call Help Desk','helpdesk')">YES</button>
-<button class="btn btn-no" onclick="showResult('Troubleshoot locally','')">NO</button>
+<button class="btn btn-no" onclick="showResult('Resume normal operations','')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
