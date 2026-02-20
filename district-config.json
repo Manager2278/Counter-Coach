@@ -1,20 +1,7 @@
 {
-  "stores": {
-    "123": {
-      "manager": "5551112222",
-      "helpdesk": "18005550199",
-      "message": "Truck delivery arrives at 2PM."
-    }
-  },
-  "resetStores": [],
-  "message": "Your Built For This!",
-  "timestamp": "2/19/2026, 10:02:19 PM"
-}
-{
-  "message": "",
-  "alert": "",
   "stores": {},
   "resetStores": [],
   "heartbeat": {},
-  "timestamp": ""
+  "message": "",
+  "timestamp": "2/20/2026, 12:10:49 AM"
 }
