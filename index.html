@@ -324,8 +324,7 @@ settings.helpdesk = helpdeskNum.value;
 settings.storePin = storePin.value;
 settings.locked = "true";
 
-document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
-document.getElementById("q1").classList.remove("hidden");
+showScreen("q1");
 document.getElementById("setupScreen").classList.add("hidden");
 
 storeDisplay.innerHTML = "Store #" + settings.store;
