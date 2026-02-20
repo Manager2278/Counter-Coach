@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>District Dashboard</title>
+<style>
+body { font-family: Arial; padding:20px; max-width:500px; margin:auto; }
+input, textarea { width:100%; margin:5px 0; padding:8px; }
+button { padding:10px; margin-top:10px; width:100%; }
+</style>
+</head>
+<body>
+
+<h2>District Control Panel</h2>
+
+<h3>Global Message</h3>
+<textarea id="message" placeholder="Enter district-wide message"></textarea>
+
+<h3>Store Specific</h3>
+<input id="store" placeholder="Store Number">
+<input id="storeMessage" placeholder="Store Message">
+
+<button onclick="addStore()">Add / Update Store Message</button>
+
+<hr>
+
+<h3>Generated Config</h3>
+<textarea id="output" rows="12"></textarea>
+
+<button onclick="copyJSON()">Copy JSON</button>
+
+<script>
+let config = {
+  stores: {},
+  resetStores: [],
+  message: "",
+  timestamp: ""
+};
+
+function addStore(){
+  let s = store.value;
+  if(!s) return;
+
+  config.stores[s] = {
+    message: storeMessage.value
+  };
+
+  render();
+}
+
+function render(){
+  config.message = message.value;
+  config.timestamp = new Date().toLocaleString();
+
+  output.value = JSON.stringify(config, null, 2);
+}
+
+function copyJSON(){
+  render();
+  navigator.clipboard.writeText(output.value);
+  alert("Copied! Now paste into district-config.json");
+}
+</script>
+
+</body>
+</html>
