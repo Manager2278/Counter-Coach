@@ -228,7 +228,54 @@ function showScreen(id){
 document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
 document.getElementById(id).classList.remove("hidden");
 }
+function runDistrictSync(){
+if(navigator.onLine && settings.store){
+fetch("https://manager2278.github.io/Counter-Coach/district-config.json?ts="+Date.now())
+.then(r=>r.json())
+.then(data=>{
 
+let bannerMsg = "";
+
+// global message
+if(data.message) bannerMsg = data.message;
+
+// store-specific override
+if(data.stores && data.stores[settings.store]){
+let u = data.stores[settings.store];
+if(u.manager) localStorage.setItem("manager",u.manager);
+if(u.helpdesk) localStorage.setItem("helpdesk",u.helpdesk);
+if(u.message) bannerMsg = u.message;
+}
+
+// 🚨 PRIORITY ALERT (new system)
+if(data.alert){
+bannerMsg = data.alert;
+}
+
+// show banner
+if(bannerMsg){
+banner.innerText = bannerMsg;
+banner.style.display = "block";
+}
+
+// sync time
+if(data.timestamp){
+localStorage.setItem("lastSync",data.timestamp);
+}
+
+let last = localStorage.getItem("lastSync");
+if(last){
+lastSync.innerText = "Last Sync: " + last;
+}
+
+})
+.catch(()=>{
+banner.innerText = "Offline Mode";
+banner.style.display = "block";
+});
+}
+}
+  
 window.onload=function(){
 
 settings.store=localStorage.getItem("store");
