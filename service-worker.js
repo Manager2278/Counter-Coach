@@ -1,4 +1,4 @@
-const CACHE_NAME = "counter-coach-v1.02";
+const CACHE_NAME = "counter-coach-v1.03";
 
 self.addEventListener("install", event => {
   self.skipWaiting();
