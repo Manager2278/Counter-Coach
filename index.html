@@ -341,7 +341,7 @@ sendHeartbeat();
 }
 
 function nextQ(id){
-let current=document.querySelector('.container > div:not(.hidden)');
+let current = document.querySelector('.container > div:not(.hidden):not(#banner):not(#lastSync)');
 if(current) historyStack.push(current.id);
 showScreen(id);
 }
