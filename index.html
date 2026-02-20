@@ -166,7 +166,7 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
 </div>
 
-<div class="footer">Version 5.3 District 329</div>
+<div class="footer">Version 5.4 FINAL</div>
 
 <script>
 const DISTRICT_PIN="Manager2278";
@@ -202,10 +202,6 @@ if(last){
 lastSync.innerText="Last Sync: "+last;
 }
 }).catch(()=>{
-let last=localStorage.getItem("lastSync");
-if(last){
-lastSync.innerText="Offline (Last Sync: "+last);
-}
 banner.innerText="Offline Mode";
 banner.style.display="block";
 });
@@ -213,7 +209,6 @@ banner.style.display="block";
 }
 
 window.onload=function(){
-
 settings.store=localStorage.getItem("store");
 settings.manager=localStorage.getItem("manager");
 settings.helpdesk=localStorage.getItem("helpdesk");
@@ -224,7 +219,6 @@ if(settings.locked==="true"){
 setupScreen.classList.add("hidden");
 showScreen("q1");
 storeDisplay.innerHTML="Store #"+settings.store;
-
 runDistrictSync();
 
 new QRCode(document.getElementById("storeQR"),{
@@ -251,16 +245,24 @@ settings.helpdesk = helpdeskNum.value;
 settings.storePin = storePin.value;
 settings.locked = "true";
 
+document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
+document.getElementById("q1").classList.remove("hidden");
 document.getElementById("setupScreen").classList.add("hidden");
-showScreen("q1");
+
 storeDisplay.innerHTML = "Store #" + settings.store;
 
-runDistrictSync();
+try { runDistrictSync(); } catch(e){}
 
-new QRCode(document.getElementById("storeQR"),{
+try {
+const qrEl=document.getElementById("storeQR");
+if(qrEl){
+qrEl.innerHTML="";
+new QRCode(qrEl,{
 text:`https://manager2278.github.io/Counter-Coach/?store=${settings.store}&manager=${settings.manager}&helpdesk=${settings.helpdesk}&pin=${settings.storePin}`,
 width:150,height:150
 });
+}
+} catch(e){}
 }
 
 function nextQ(id){
