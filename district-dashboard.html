@@ -2,43 +2,48 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>District Dashboard</title>
+<title>District Command Center</title>
 <style>
-body { font-family: Arial; padding:20px; max-width:500px; margin:auto; }
+body { font-family: Arial; padding:20px; max-width:600px; margin:auto; }
 input, textarea, select { width:100%; margin:5px 0; padding:8px; }
 button { padding:10px; margin-top:10px; width:100%; }
 .status { font-size:12px; color:#666; margin-bottom:10px; }
+.panel { background:#f4f4f4; padding:10px; margin-top:10px; border-radius:8px; }
+.store { padding:5px; border-bottom:1px solid #ddd; font-size:14px; }
+.alertBox { background:#ffcccc; padding:10px; border-radius:8px; margin-bottom:10px; }
 </style>
 </head>
 <body>
 
-<h2>District Control Panel</h2>
-
+<h2>🔥 District Command Center</h2>
 <div id="status" class="status">Loading...</div>
 
-<h3>🔐 GitHub Token</h3>
-<input id="token" placeholder="Paste GitHub Token">
+<h3>🔐 Token</h3>
+<input id="token">
 
-<h3>Global Message</h3>
+<h3>📢 GLOBAL MESSAGE</h3>
 <textarea id="message"></textarea>
 
-<h3>Store Message</h3>
+<h3>🚨 LIVE ALERT (OVERRIDES STORES)</h3>
+<textarea id="alertMsg"></textarea>
+<button onclick="sendAlert()">Push Alert</button>
 
-<select id="storeSelect"></select>
-<input id="storeManual" placeholder="Or Enter Store">
-<input id="storeMessage" placeholder="Store Message">
-
-<button onclick="addStore()">Add / Update Store</button>
+<div class="alertBox" id="activeAlert"></div>
 
 <hr>
 
-<h3>Reset Store</h3>
+<h3>🏪 STORE STATUS</h3>
+<div id="storeStatus" class="panel"></div>
+
+<hr>
+
+<h3>🔁 FORCE RESET</h3>
 <select id="resetSelect"></select>
-<button onclick="addReset()">Add Reset</button>
+<button onclick="addReset()">Reset Store</button>
 
 <hr>
 
-<button onclick="saveToGitHub()">💾 Save to GitHub</button>
+<button onclick="save()">💾 SAVE ALL</button>
 
 <script>
 let config = {};
@@ -47,68 +52,79 @@ let sha = "";
 const REPO = "manager2278/Counter-Coach";
 const FILE = "district-config.json";
 
-// 🔄 LOAD CONFIG
+// LOAD
 window.onload = function(){
+
+token.value = localStorage.getItem("gh_token") || "";
+
 fetch(`https://api.github.com/repos/${REPO}/contents/${FILE}`)
-.then(res => res.json())
-.then(data => {
-  sha = data.sha;
-  config = JSON.parse(atob(data.content));
+.then(res=>res.json())
+.then(data=>{
 
-  message.value = config.message || "";
+sha = data.sha;
+config = JSON.parse(atob(data.content.replace(/\n/g,"")));
 
-  populateDropdowns();
-  status.innerText = "Loaded config";
+message.value = config.message || "";
+alertMsg.value = config.alert || "";
 
-})
-.catch(() => {
-  config = {stores:{},resetStores:[],message:""};
-  status.innerText = "New config started";
+renderStores();
+
+status.innerText = "Loaded";
+
+}).catch(()=>{
+config = {stores:{},resetStores:[],heartbeat:{}};
+status.innerText = "New config";
 });
 };
 
-function populateDropdowns(){
-storeSelect.innerHTML = `<option value="">-- Select Store --</option>`;
-resetSelect.innerHTML = `<option value="">-- Select Store --</option>`;
+// STORE STATUS
+function renderStores(){
+let html="";
 
-Object.keys(config.stores || {}).forEach(s=>{
-  storeSelect.innerHTML += `<option value="${s}">Store ${s}</option>`;
-  resetSelect.innerHTML += `<option value="${s}">Store ${s}</option>`;
+let now = Date.now();
+
+Object.keys(config.heartbeat || {}).forEach(s=>{
+let last = config.heartbeat[s];
+let diff = Math.floor((now - last)/60000);
+
+let statusTxt = diff < 5 ? "🟢 Active" : "🔴 Offline";
+
+html += `<div class="store">
+Store ${s} — ${statusTxt} (${diff} min ago)
+</div>`;
 });
+
+storeStatus.innerHTML = html || "No stores reporting";
+
+resetSelect.innerHTML = "";
+Object.keys(config.heartbeat || {}).forEach(s=>{
+resetSelect.innerHTML += `<option value="${s}">Store ${s}</option>`;
+});
+
+activeAlert.innerText = config.alert ? "ACTIVE ALERT: " + config.alert : "";
 }
 
-function getStore(){
-return storeSelect.value || storeManual.value;
+// ALERT
+function sendAlert(){
+config.alert = alertMsg.value;
+save();
 }
 
-function addStore(){
-let s = getStore();
-if(!s) return alert("Enter store");
-
-if(!config.stores) config.stores = {};
-
-config.stores[s] = {
-  ...config.stores[s],
-  message: storeMessage.value
-};
-
-populateDropdowns();
-}
-
+// RESET
 function addReset(){
 let s = resetSelect.value;
-if(!s) return alert("Select store");
-
-if(!config.resetStores) config.resetStores = [];
-
-if(!config.resetStores.includes(s)){
+if(!config.resetStores) config.resetStores=[];
 config.resetStores.push(s);
-}
+save();
 }
 
-function saveToGitHub(){
-let tokenVal = token.value;
-if(!tokenVal) return alert("Enter token");
+// SAVE
+function save(){
+
+let t = token.value;
+if(!t) return alert("Token required");
+
+localStorage.setItem("gh_token", t);
 
 config.message = message.value;
 config.timestamp = new Date().toLocaleString();
@@ -116,21 +132,24 @@ config.timestamp = new Date().toLocaleString();
 fetch(`https://api.github.com/repos/${REPO}/contents/${FILE}`,{
 method:"PUT",
 headers:{
-"Authorization":"token " + tokenVal,
+"Authorization":"Bearer "+t,
 "Content-Type":"application/json"
 },
 body: JSON.stringify({
-message: "Update district config",
-content: btoa(JSON.stringify(config,null,2)),
-sha: sha
+message:"District update",
+content:btoa(JSON.stringify(config,null,2)),
+...(sha && { sha })
 })
 })
-.then(res=>res.json())
+.then(r=>{
+if(!r.ok) throw new Error("Save failed");
+return r.json();
+})
 .then(()=>{
-status.innerText = "✅ Saved successfully";
+status.innerText="✅ Saved";
 })
 .catch(()=>{
-alert("Save failed");
+status.innerText="❌ Error";
 });
 }
 </script>
