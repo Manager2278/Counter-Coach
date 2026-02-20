@@ -79,6 +79,27 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-reset" onclick="goHome()">Home</button>
 </div>
 
+<!-- STORE ADMIN PANEL -->
+<div id="storeAdminPanel" class="hidden">
+<h3>Store Admin Settings</h3>
+<input id="editStore">
+<input id="editManager">
+<input id="editHelpdesk">
+<button class="btn btn-yes" onclick="saveStoreAdmin()">Save</button>
+<button class="btn btn-reset" onclick="goHome()">Cancel</button>
+</div>
+
+<!-- DISTRICT ADMIN PANEL -->
+<div id="districtAdminPanel" class="hidden">
+<h3>District Admin Control</h3>
+<input id="districtEditStore">
+<input id="districtEditManager">
+<input id="districtEditHelpdesk">
+<button class="btn btn-yes" onclick="saveDistrictAdmin()">Save</button>
+<button class="btn btn-no" onclick="forceReset()">Force Reset</button>
+<button class="btn btn-reset" onclick="goHome()">Cancel</button>
+</div>
+
 </div>
 
 <div style="max-width:480px;margin:auto;margin-top:15px;">
@@ -86,27 +107,16 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
 </div>
 
-<div class="footer">Version 4.1</div>
+<div class="footer">Version 4.2 FINAL</div>
 
 <script>
 const DISTRICT_PIN="Manager2278";
 let settings={},historyStack=[];
 
-const labels={
-q1:"Home",
-"q-category":"Category",
-"q-cust":"Customer",
-"q-staff":"Staffing",
-"q-drivers":"Drivers",
-"q-cash-1":"Cash",
-"q-ops":"Operations",
-"resultScreen":"Result"
-};
-
 function updateBreadcrumb(current){
 let path=[...historyStack,current];
 breadcrumb.innerHTML=path.map((id,i)=>
-`<span onclick="jumpTo(${i})">${labels[id]||id}</span>`).join(" > ");
+`<span onclick="jumpTo(${i})">${id}</span>`).join(" > ");
 }
 
 function jumpTo(i){
@@ -145,20 +155,18 @@ width:150,height:150
 });
 }
 
-// 🌐 DISTRICT SYNC
+// DISTRICT SYNC
 if(navigator.onLine && settings.store){
 fetch("https://manager2278.github.io/Counter-Coach/district-config.json?ts="+Date.now())
 .then(r=>r.json())
 .then(data=>{
-
 let bannerMsg="";
-
 if(data.message) bannerMsg=data.message;
 
 if(data.stores && data.stores[settings.store]){
 let u=data.stores[settings.store];
-if(u.manager){localStorage.setItem("manager",u.manager);settings.manager=u.manager;}
-if(u.helpdesk){localStorage.setItem("helpdesk",u.helpdesk);settings.helpdesk=u.helpdesk;}
+if(u.manager){localStorage.setItem("manager",u.manager);}
+if(u.helpdesk){localStorage.setItem("helpdesk",u.helpdesk);}
 if(u.message) bannerMsg=u.message;
 }
 
@@ -172,9 +180,7 @@ localStorage.setItem("lastSync",data.timestamp);
 }
 
 let last=localStorage.getItem("lastSync");
-if(last){
-lastSync.innerText="Last Sync: "+last;
-}
+if(last){ lastSync.innerText="Last Sync: "+last; }
 
 if(data.resetStores && data.resetStores.includes(settings.store)){
 alert("District reset applied.");
@@ -182,12 +188,9 @@ localStorage.clear();
 location.reload();
 }
 
-})
-.catch(()=>{
+}).catch(()=>{
 let last=localStorage.getItem("lastSync");
-if(last){
-lastSync.innerText="Offline (Last Sync: "+last+")";
-}
+if(last){ lastSync.innerText="Offline (Last Sync: "+last+")"; }
 });
 }
 };
@@ -236,8 +239,44 @@ actionBtn.appendChild(a);
 
 function openAdmin(){
 let pin=prompt("Enter Store PIN or District PIN");
-if(pin!==settings.storePin && pin!==DISTRICT_PIN){
+
+if(pin===settings.storePin){
+nextQ("storeAdminPanel");
+editStore.value=settings.store;
+editManager.value=settings.manager;
+editHelpdesk.value=settings.helpdesk;
+}
+else if(pin===DISTRICT_PIN){
+nextQ("districtAdminPanel");
+districtEditStore.value=settings.store;
+districtEditManager.value=settings.manager;
+districtEditHelpdesk.value=settings.helpdesk;
+}
+else{
 alert("Incorrect PIN");
+}
+}
+
+function saveStoreAdmin(){
+localStorage.setItem("store",editStore.value);
+localStorage.setItem("manager",editManager.value);
+localStorage.setItem("helpdesk",editHelpdesk.value);
+alert("Saved");
+location.reload();
+}
+
+function saveDistrictAdmin(){
+localStorage.setItem("store",districtEditStore.value);
+localStorage.setItem("manager",districtEditManager.value);
+localStorage.setItem("helpdesk",districtEditHelpdesk.value);
+alert("District Saved");
+location.reload();
+}
+
+function forceReset(){
+if(confirm("Reset store?")){
+localStorage.clear();
+location.reload();
 }
 }
 
