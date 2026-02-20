@@ -52,6 +52,7 @@ input{width:90%;padding:8px;margin:6px 0;}
 <input id="helpdeskNum" placeholder="Help Desk Phone">
 <input id="storePin" placeholder="Create Store Admin PIN">
 <button class="btn btn-yes" onclick="saveSetup()">Save & Lock Store</button>
+
 </div>
 
 <!-- START -->
@@ -292,6 +293,9 @@ storeDisplay.innerHTML="Store #"+settings.store;
 new QRCode(document.getElementById("storeQR"),{
 text:`https://manager2278.github.io/Counter-Coach/?store=${settings.store}&manager=${settings.manager}&helpdesk=${settings.helpdesk}&pin=${settings.storePin}`,
 width:150,height:150
+
+  runDistrictSync();
+  
 });
 
 // 🔥 SEND HEARTBEAT ON LOAD
