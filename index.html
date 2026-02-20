@@ -119,12 +119,11 @@ breadcrumb.innerHTML=path.map((id,i)=>
 `<span onclick="jumpTo(${i})">${id}</span>`).join(" > ");
 }
 
-function jumpTo(i){
-let target=historyStack[i]||"q1";
-historyStack=historyStack.slice(0,i);
+function goHome(){
+historyStack=[];
 document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
-document.getElementById(target).classList.remove("hidden");
-updateBreadcrumb(target);
+document.getElementById("q1").classList.remove("hidden");
+updateBreadcrumb("q1");
 }
 
 window.onload=function(){
