@@ -1,4 +1,4 @@
-const CACHE = "counter-coach-v1";
+const CACHE_NAME = 'oreillyapp-v2'; // increment this each push
 
 self.addEventListener("install", e => {
   e.waitUntil(
