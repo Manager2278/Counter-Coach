@@ -26,7 +26,6 @@ input{width:90%;padding:8px;margin:6px 0;}
 .call{background:#ffebee;color:#c62828;border:2px solid #c62828;}
 .nocall{background:#e8f5e9;color:#2e7d32;border:2px solid #2e7d32;}
 .footer{margin-top:15px;font-size:12px;color:#666;}
-.breadcrumb span{cursor:pointer;color:#006400;}
 #banner{display:none;background:#ffc107;padding:10px;border-radius:8px;margin-bottom:10px;font-weight:bold;}
 #lastSync{font-size:12px;color:#777;margin-bottom:10px;}
 </style>
@@ -42,7 +41,6 @@ input{width:90%;padding:8px;margin:6px 0;}
 
 <div class="container">
 
-<div id="breadcrumb" class="breadcrumb"></div>
 <div id="banner"></div>
 <div id="lastSync"></div>
 
@@ -97,7 +95,6 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-
 <!-- STAFFING -->
 <div id="q-staff" class="hidden">
 <p>Is an employee calling off or leaving early?</p>
@@ -119,7 +116,6 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-no" onclick="showResult('Adjust schedule and continue','')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
-
 
 <!-- DRIVERS -->
 <div id="q-drivers" class="hidden">
@@ -143,7 +139,6 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-
 <!-- CASH -->
 <div id="q-cash-1" class="hidden">
 <p>Is there a register or cash drawer issue?</p>
@@ -165,7 +160,6 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-no" onclick="showResult('Document variance and continue','')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
-
 
 <!-- OPERATIONS -->
 <div id="q-ops" class="hidden">
@@ -223,28 +217,15 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
 </div>
 
-<div class="footer">Version 5.0 STABLE</div>
+<div class="footer">Version 5.1 NO-BREADCRUMBS</div>
 
 <script>
 const DISTRICT_PIN="Manager2278";
 let settings={},historyStack=[];
 
-function updateBreadcrumb(current){
-let path=[...historyStack,current];
-breadcrumb.innerHTML=path.map((id,i)=>
-`<span onclick="jumpTo(${i})">${id}</span>`).join(" > ");
-}
-
-function jumpTo(i){
-let target=historyStack[i]||"q1";
-historyStack=historyStack.slice(0,i);
-showScreen(target);
-}
-
 function showScreen(id){
 document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
 document.getElementById(id).classList.remove("hidden");
-updateBreadcrumb(id);
 }
 
 window.onload=function(){
@@ -307,17 +288,19 @@ showScreen("q1");
 function showResult(msg,act){
 nextQ("resultScreen");
 resultMsg.innerHTML=msg;
-resultMsg.className=msg.includes("CALL")?"result call":"result nocall";
+resultMsg.className=msg.toLowerCase().includes("call")?"result call":"result nocall";
 actionBtn.innerHTML="";
 
 if(act){
 let a=document.createElement("a");
 
 if(act==="manager"){
+if(!settings.manager){alert("Manager number not set");return;}
 a.href="tel:"+settings.manager;
 a.innerText="Call Manager";
 }
 else if(act==="helpdesk"){
+if(!settings.helpdesk){alert("Help Desk number not set");return;}
 a.href="tel:"+settings.helpdesk;
 a.innerText="Call Help Desk";
 }
@@ -332,6 +315,7 @@ actionBtn.appendChild(a);
 }
 
 function quickCallManager(){
+if(!settings.manager){alert("Manager number not set");return;}
 window.location.href="tel:"+settings.manager;
 }
 
