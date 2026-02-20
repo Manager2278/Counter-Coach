@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Counter Coach</title>
+<title>Manager Counter Coach</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#006400">
@@ -13,6 +13,7 @@
 <style>
 body { font-family: Arial; background:#f4f4f4; padding:20px; text-align:center; }
 .header { background:#006400; color:white; padding:15px; border-radius:10px; margin-bottom:15px; }
+.store-tag { font-size:14px; margin-top:5px; }
 .container { background:white; max-width:480px; margin:auto; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
 p { font-size:18px; font-weight:bold; }
 .btn { display:block; width:100%; padding:14px; margin:10px 0; font-weight:bold; border:none; border-radius:8px; cursor:pointer;}
@@ -26,8 +27,6 @@ input{width:90%;padding:8px;margin:6px 0;}
 .call{background:#ffebee;color:#c62828;border:2px solid #c62828;}
 .nocall{background:#e8f5e9;color:#2e7d32;border:2px solid #2e7d32;}
 .footer{margin-top:15px;font-size:12px;color:#666;}
-#banner{display:none;background:#ffc107;padding:10px;border-radius:8px;margin-bottom:10px;font-weight:bold;}
-#lastSync{font-size:12px;color:#777;margin-bottom:10px;}
 </style>
 </head>
 
@@ -35,14 +34,11 @@ input{width:90%;padding:8px;margin:6px 0;}
 
 <div class="header">
 <h2>Counter Coach</h2>
-<div id="storeDisplay"></div>
+<div id="storeDisplay" class="store-tag"></div>
 <button class="btn btn-blue" onclick="quickCallManager()">📞 Call Manager</button>
 </div>
 
 <div class="container">
-
-<div id="banner"></div>
-<div id="lastSync"></div>
 
 <!-- SETUP -->
 <div id="setupScreen">
@@ -56,7 +52,7 @@ input{width:90%;padding:8px;margin:6px 0;}
 
 <!-- START -->
 <div id="q1" class="hidden">
-<p>Immediate threat to life, safety, or building? (EMERGENCY)</p>
+<p>Immediate threat to life, safety, or building?(EMERGENCY)</p>
 <button class="btn btn-yes" onclick="showResult('CALL 911 FIRST, MANAGER SECOND','tel:911')">YES</button>
 <button class="btn btn-no" onclick="nextQ('q-category')">NO</button>
 </div>
@@ -71,115 +67,84 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-<!-- QUESTIONS -->
-
-<!-- CUSTOMER -->
-<div id="q-cust" class="hidden">
-<p>Is the customer upset or dissatisfied?</p>
-<button class="btn btn-yes" onclick="nextQ('q-cust-2')">YES</button>
-<button class="btn btn-no" onclick="showResult('Continue normal customer service','')">NO</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
-</div>
-
-<div id="q-cust-2" class="hidden">
-<p>Have you attempted to resolve using standard policy (refund, exchange, lookup)?</p>
-<button class="btn btn-yes" onclick="nextQ('q-cust-3')">YES</button>
-<button class="btn btn-no" onclick="showResult('Attempt resolution before escalating','')">NO</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
-</div>
-
-<div id="q-cust-3" class="hidden">
-<p>Is the customer still escalating, threatening, or refusing resolution?</p>
-<button class="btn btn-yes" onclick="showResult('Call Manager Immediately','manager')">YES</button>
-<button class="btn btn-no" onclick="showResult('Complete resolution and move on','')">NO</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
-</div>
-
-<!-- STAFFING -->
-<div id="q-staff" class="hidden">
-<p>Is an employee calling off or leaving early?</p>
-<button class="btn btn-yes" onclick="nextQ('q-staff-2')">YES</button>
-<button class="btn btn-no" onclick="showResult('No action needed','')">NO</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
-</div>
-
-<div id="q-staff-2" class="hidden">
-<p>Have you checked coverage (other employees, shift adjustments)?</p>
-<button class="btn btn-yes" onclick="nextQ('q-staff-3')">YES</button>
-<button class="btn btn-no" onclick="showResult('Check available coverage first','')">NO</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
-</div>
-
-<div id="q-staff-3" class="hidden">
-<p>Will the store be short-staffed or unable to operate normally?</p>
-<button class="btn btn-yes" onclick="showResult('Call Manager','manager')">YES</button>
-<button class="btn btn-no" onclick="showResult('Adjust schedule and continue','')">NO</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
-</div>
-
 <!-- DRIVERS -->
 <div id="q-drivers" class="hidden">
-<p>Is a delivery late, missing, or incorrect?</p>
-<button class="btn btn-yes" onclick="nextQ('q-driver-2')">YES</button>
-<button class="btn btn-no" onclick="showResult('No action needed','')">NO</button>
+<p>Driver call off or vehicle breakdown?</p>
+<button class="btn btn-yes" onclick="nextQ('q-driver-cover')">YES</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-<div id="q-driver-2" class="hidden">
-<p>Have you checked dispatch, route status, or contacted the driver?</p>
-<button class="btn btn-yes" onclick="nextQ('q-driver-3')">YES</button>
-<button class="btn btn-no" onclick="showResult('Check driver/dispatch first','')">NO</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
-</div>
-
-<div id="q-driver-3" class="hidden">
-<p>Is the delay over 30 minutes or impacting a customer?</p>
-<button class="btn btn-yes" onclick="showResult('Notify customer and call manager','manager')">YES</button>
-<button class="btn btn-no" onclick="showResult('Update customer and continue','')">NO</button>
+<div id="q-driver-cover" class="hidden">
+<p>Can counter person cover run?</p>
+<button class="btn btn-yes" onclick="showResult('Switch roles. Text Manager.','sms:'+encodeURIComponent(settings.manager||''))">YES</button>
+<button class="btn btn-no" onclick="showResult('Commercial stopped. CALL MANAGER.','tel:'+encodeURIComponent(settings.manager||''))">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
 <!-- CASH -->
 <div id="q-cash-1" class="hidden">
-<p>Is there a register or cash drawer issue?</p>
-<button class="btn btn-yes" onclick="nextQ('q-cash-2')">YES</button>
-<button class="btn btn-no" onclick="showResult('No action needed','')">NO</button>
+<p>Register over or short?</p>
+<button class="btn btn-yes" onclick="nextQ('q-cash-verify')">YES</button>
+<button class="btn btn-no" onclick="showResult('Ensure deposit signed. DO NOT CALL.')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-<div id="q-cash-2" class="hidden">
-<p>Have you recounted and verified the transaction history?</p>
-<button class="btn btn-yes" onclick="nextQ('q-cash-3')">YES</button>
-<button class="btn btn-no" onclick="showResult('Recount drawer and review transactions','')">NO</button>
+<div id="q-cash-verify" class="hidden">
+<p>Checked all bags/deposits? Did you find it?</p>
+<button class="btn btn-yes" onclick="showResult('Log in Book. DO NOT CALL.')">YES</button>
+<button class="btn btn-no" onclick="nextQ('q-cash-log')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-<div id="q-cash-3" class="hidden">
-<p>Is the variance still over $20?</p>
-<button class="btn btn-yes" onclick="showResult('Call Manager Immediately','manager')">YES</button>
-<button class="btn btn-no" onclick="showResult('Document variance and continue','')">NO</button>
+<div id="q-cash-log" class="hidden">
+<p>Over $20?</p>
+<button class="btn btn-yes" onclick="showResult('Variance logged. TEXT MANAGER.','sms:'+encodeURIComponent(settings.manager||''))">YES</button>
+<button class="btn btn-no" onclick="showResult('Log in Book. DO NOT CALL.')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-<!-- OPERATIONS -->
+<!-- CUSTOMER -->
+<div id="q-cust" class="hidden">
+<p>Customer demanding manager now?</p>
+<button class="btn btn-yes" onclick="nextQ('q-cust-2')">YES</button>
+<button class="btn btn-no" onclick="showResult('Handle per policy. DO NOT CALL.')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-cust-2" class="hidden">
+<p>Key Holder present?</p>
+<button class="btn btn-yes" onclick="nextQ('q-cust-3')">YES</button>
+<button class="btn btn-no" onclick="showResult('Hand to Key Holder.')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-cust-3" class="hidden">
+<p>Can it be resolved per policy?</p>
+<button class="btn btn-yes" onclick="showResult('Log in notes. DO NOT CALL.')">YES</button>
+<button class="btn btn-no" onclick="showResult('CALL MANAGER.','tel:'+encodeURIComponent(settings.manager||''))">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<!-- STAFF -->
+<div id="q-staff" class="hidden">
+<p>Can shift be covered?</p>
+<button class="btn btn-yes" onclick="showResult('Adjust schedule. DO NOT CALL.')">YES</button>
+<button class="btn btn-no" onclick="nextQ('q-staff-2')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-staff-2" class="hidden">
+<p>Store inoperable?</p>
+<button class="btn btn-yes" onclick="showResult('CALL MANAGER.','tel:'+encodeURIComponent(settings.manager||''))">YES</button>
+<button class="btn btn-no" onclick="showResult('Send text update.','sms:'+encodeURIComponent(settings.manager||''))">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<!-- OPS -->
 <div id="q-ops" class="hidden">
-<p>Is there a system, register, or network issue?</p>
-<button class="btn btn-yes" onclick="nextQ('q-ops-2')">YES</button>
-<button class="btn btn-no" onclick="showResult('No action needed','')">NO</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
-</div>
-
-<div id="q-ops-2" class="hidden">
-<p>Have you attempted basic troubleshooting (restart, reconnect, check cables)?</p>
-<button class="btn btn-yes" onclick="nextQ('q-ops-3')">YES</button>
-<button class="btn btn-no" onclick="showResult('Attempt basic troubleshooting first','')">NO</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
-</div>
-
-<div id="q-ops-3" class="hidden">
-<p>Is the system still down or preventing business?</p>
-<button class="btn btn-yes" onclick="showResult('Call Help Desk','helpdesk')">YES</button>
-<button class="btn btn-no" onclick="showResult('Resume normal operations','')">NO</button>
+<p>Stops sales or locking up?</p>
+<button class="btn btn-yes" onclick="showResult('CALL MANAGER.','tel:'+encodeURIComponent(settings.manager||''))">YES</button>
+<button class="btn btn-no" onclick="showResult('Call Help Desk.','tel:'+encodeURIComponent(settings.helpdesk||''))">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
@@ -190,26 +155,6 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-reset" onclick="goHome()">Home</button>
 </div>
 
-<!-- ADMIN PANELS -->
-<div id="storeAdminPanel" class="hidden">
-<h3>Store Admin Settings</h3>
-<input id="editStore">
-<input id="editManager">
-<input id="editHelpdesk">
-<button class="btn btn-yes" onclick="saveStoreAdmin()">Save</button>
-<button class="btn btn-reset" onclick="goHome()">Cancel</button>
-</div>
-
-<div id="districtAdminPanel" class="hidden">
-<h3>District Admin Control</h3>
-<input id="districtEditStore">
-<input id="districtEditManager">
-<input id="districtEditHelpdesk">
-<button class="btn btn-yes" onclick="saveDistrictAdmin()">Save</button>
-<button class="btn btn-no" onclick="forceReset()">Force Reset</button>
-<button class="btn btn-reset" onclick="goHome()">Cancel</button>
-</div>
-
 </div>
 
 <div style="max-width:480px;margin:auto;margin-top:15px;">
@@ -217,7 +162,7 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
 </div>
 
-<div class="footer">Version 5.1 NO-BREADCRUMBS</div>
+<div class="footer">Version 5.2 HYBRID</div>
 
 <script>
 const DISTRICT_PIN="Manager2278";
@@ -250,10 +195,8 @@ width:150,height:150
 
 function saveSetup(){
 if(!storeNum.value || !managerNum.value || !helpdeskNum.value || !storePin.value){
-alert("All fields required");
-return;
+alert("All fields required"); return;
 }
-
 localStorage.setItem("store",storeNum.value);
 localStorage.setItem("manager",managerNum.value);
 localStorage.setItem("helpdesk",helpdeskNum.value);
@@ -263,12 +206,8 @@ location.reload();
 }
 
 function nextQ(id){
-let next=document.getElementById(id);
-if(!next){ alert("Missing screen: "+id); return; }
-
 let current=document.querySelector('.container > div:not(.hidden)');
 if(current) historyStack.push(current.id);
-
 showScreen(id);
 }
 
@@ -293,23 +232,9 @@ actionBtn.innerHTML="";
 
 if(act){
 let a=document.createElement("a");
-
-if(act==="manager"){
-if(!settings.manager){alert("Manager number not set");return;}
-a.href="tel:"+settings.manager;
-a.innerText="Call Manager";
-}
-else if(act==="helpdesk"){
-if(!settings.helpdesk){alert("Help Desk number not set");return;}
-a.href="tel:"+settings.helpdesk;
-a.innerText="Call Help Desk";
-}
-else{
 a.href=act;
-a.innerText="Call";
-}
-
 a.className="btn btn-blue";
+a.innerText=act.startsWith("sms")?"Text":"Call";
 actionBtn.appendChild(a);
 }
 }
@@ -321,44 +246,8 @@ window.location.href="tel:"+settings.manager;
 
 function openAdmin(){
 let pin=prompt("Enter Store PIN or District PIN");
-
-if(pin===settings.storePin){
-nextQ("storeAdminPanel");
-editStore.value=settings.store;
-editManager.value=settings.manager;
-editHelpdesk.value=settings.helpdesk;
-}
-else if(pin===DISTRICT_PIN){
-nextQ("districtAdminPanel");
-districtEditStore.value=settings.store;
-districtEditManager.value=settings.manager;
-districtEditHelpdesk.value=settings.helpdesk;
-}
-else{
+if(pin!==settings.storePin && pin!==DISTRICT_PIN){
 alert("Incorrect PIN");
-}
-}
-
-function saveStoreAdmin(){
-localStorage.setItem("store",editStore.value);
-localStorage.setItem("manager",editManager.value);
-localStorage.setItem("helpdesk",editHelpdesk.value);
-alert("Saved");
-location.reload();
-}
-
-function saveDistrictAdmin(){
-localStorage.setItem("store",districtEditStore.value);
-localStorage.setItem("manager",districtEditManager.value);
-localStorage.setItem("helpdesk",districtEditHelpdesk.value);
-alert("District Saved");
-location.reload();
-}
-
-function forceReset(){
-if(confirm("Reset store?")){
-localStorage.clear();
-location.reload();
 }
 }
 
