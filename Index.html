@@ -290,8 +290,21 @@ alert("Incorrect PIN");
 }
 }
 
-  navigator.serviceWorker.register('service-worker.js').then(reg => {
-  reg.update(); // 🔥 forces update check every load
+navigator.serviceWorker.register('service-worker.js').then(reg => {
+
+  // 🔥 Force update check every load
+  reg.update();
+
+  // 🔥 If new version installs → reload instantly
+  reg.onupdatefound = () => {
+    const newWorker = reg.installing;
+    newWorker.onstatechange = () => {
+      if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+        window.location.reload(); // 🔥 instant refresh
+      }
+    };
+  };
+
 });
   
 </script>
