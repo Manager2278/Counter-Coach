@@ -290,9 +290,10 @@ alert("Incorrect PIN");
 }
 }
 
-if('serviceWorker'in navigator){
-navigator.serviceWorker.register('service-worker.js');
-}
+  navigator.serviceWorker.register('service-worker.js').then(reg => {
+  reg.update(); // 🔥 forces update check every load
+});
+  
 </script>
 
 </body>
