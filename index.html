@@ -329,6 +329,8 @@ document.getElementById("setupScreen").classList.add("hidden");
 
 storeDisplay.innerHTML = "Store #" + settings.store;
 
+  runDistrictSync();
+  
 // 🔥 REGISTER STORE IMMEDIATELY
 sendHeartbeat();
 }
