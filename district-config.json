@@ -1,0 +1,12 @@
+{
+  "stores": {
+    "123": {
+      "manager": "5551112222",
+      "helpdesk": "18005550199",
+      "message": "Truck delivery arrives at 2PM."
+    }
+  },
+  "resetStores": [],
+  "message": "New refund policy in effect.",
+  "timestamp": "2026-02-19 8:00 PM"
+}
