@@ -27,7 +27,7 @@ input{width:90%;padding:8px;margin:6px 0;}
 .nocall{background:#e8f5e9;color:#2e7d32;border:2px solid #2e7d32;}
 .footer{margin-top:15px;font-size:12px;color:#666;}
 .breadcrumb span{cursor:pointer;color:#006400;}
-#banner{display:none;background:#ffc107;padding:10px;border-radius:8px;margin-bottom:10px;}
+#banner{display:none;background:#ffc107;padding:10px;border-radius:8px;margin-bottom:10px;font-weight:bold;}
 #lastSync{font-size:12px;color:#777;margin-bottom:10px;}
 </style>
 </head>
@@ -37,11 +37,12 @@ input{width:90%;padding:8px;margin:6px 0;}
 <div class="header">
 <h2>Counter Coach</h2>
 <div id="storeDisplay"></div>
+<button class="btn btn-blue" onclick="quickCallManager()">📞 Call Manager</button>
 </div>
 
 <div class="container">
 
-<div id="breadcrumb"></div>
+<div id="breadcrumb" class="breadcrumb"></div>
 <div id="banner"></div>
 <div id="lastSync"></div>
 
@@ -72,6 +73,42 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
+<!-- QUESTIONS -->
+<div id="q-cust" class="hidden">
+<p>Is the customer escalating or threatening?</p>
+<button class="btn btn-yes" onclick="showResult('Call Manager Immediately','manager')">YES</button>
+<button class="btn btn-no" onclick="showResult('Handle using customer service policy','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-staff" class="hidden">
+<p>Is coverage available?</p>
+<button class="btn btn-yes" onclick="showResult('Adjust schedule and continue','')">YES</button>
+<button class="btn btn-no" onclick="showResult('Call Manager','manager')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-drivers" class="hidden">
+<p>Is delivery delayed over 30 minutes?</p>
+<button class="btn btn-yes" onclick="showResult('Notify customer and call manager','manager')">YES</button>
+<button class="btn btn-no" onclick="showResult('Continue normal operations','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-cash-1" class="hidden">
+<p>Is variance over $20?</p>
+<button class="btn btn-yes" onclick="showResult('Call Manager','manager')">YES</button>
+<button class="btn btn-no" onclick="showResult('Document and continue','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-ops" class="hidden">
+<p>Is the system down?</p>
+<button class="btn btn-yes" onclick="showResult('Call Help Desk','helpdesk')">YES</button>
+<button class="btn btn-no" onclick="showResult('Troubleshoot locally','')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
 <!-- RESULT -->
 <div id="resultScreen" class="hidden">
 <div id="resultMsg" class="result"></div>
@@ -79,7 +116,7 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-reset" onclick="goHome()">Home</button>
 </div>
 
-<!-- STORE ADMIN PANEL -->
+<!-- ADMIN PANELS -->
 <div id="storeAdminPanel" class="hidden">
 <h3>Store Admin Settings</h3>
 <input id="editStore">
@@ -89,7 +126,6 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-reset" onclick="goHome()">Cancel</button>
 </div>
 
-<!-- DISTRICT ADMIN PANEL -->
 <div id="districtAdminPanel" class="hidden">
 <h3>District Admin Control</h3>
 <input id="districtEditStore">
@@ -107,7 +143,7 @@ input{width:90%;padding:8px;margin:6px 0;}
 <button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
 </div>
 
-<div class="footer">Version 4.2 FINAL</div>
+<div class="footer">Version 5.0 STABLE</div>
 
 <script>
 const DISTRICT_PIN="Manager2278";
@@ -119,22 +155,19 @@ breadcrumb.innerHTML=path.map((id,i)=>
 `<span onclick="jumpTo(${i})">${id}</span>`).join(" > ");
 }
 
-function goHome(){
-historyStack=[];
+function jumpTo(i){
+let target=historyStack[i]||"q1";
+historyStack=historyStack.slice(0,i);
+showScreen(target);
+}
+
+function showScreen(id){
 document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
-document.getElementById("q1").classList.remove("hidden");
-updateBreadcrumb("q1");
+document.getElementById(id).classList.remove("hidden");
+updateBreadcrumb(id);
 }
 
 window.onload=function(){
-const p=new URLSearchParams(location.search);
-if(p.get("store")){
-localStorage.setItem("store",p.get("store"));
-localStorage.setItem("manager",p.get("manager"));
-localStorage.setItem("helpdesk",p.get("helpdesk"));
-localStorage.setItem("storePin",p.get("pin"));
-localStorage.setItem("locked","true");
-}
 
 settings.store=localStorage.getItem("store");
 settings.manager=localStorage.getItem("manager");
@@ -144,57 +177,22 @@ settings.locked=localStorage.getItem("locked");
 
 if(settings.locked==="true"){
 setupScreen.classList.add("hidden");
-q1.classList.remove("hidden");
+showScreen("q1");
 storeDisplay.innerHTML="Store #"+settings.store;
-updateBreadcrumb("q1");
 
 new QRCode(storeQR,{
 text:`https://manager2278.github.io/Counter-Coach/?store=${settings.store}&manager=${settings.manager}&helpdesk=${settings.helpdesk}&pin=${settings.storePin}`,
 width:150,height:150
 });
 }
-
-// DISTRICT SYNC
-if(navigator.onLine && settings.store){
-fetch("https://manager2278.github.io/Counter-Coach/district-config.json?ts="+Date.now())
-.then(r=>r.json())
-.then(data=>{
-let bannerMsg="";
-if(data.message) bannerMsg=data.message;
-
-if(data.stores && data.stores[settings.store]){
-let u=data.stores[settings.store];
-if(u.manager){localStorage.setItem("manager",u.manager);}
-if(u.helpdesk){localStorage.setItem("helpdesk",u.helpdesk);}
-if(u.message) bannerMsg=u.message;
-}
-
-if(bannerMsg){
-banner.innerText=bannerMsg;
-banner.style.display="block";
-}
-
-if(data.timestamp){
-localStorage.setItem("lastSync",data.timestamp);
-}
-
-let last=localStorage.getItem("lastSync");
-if(last){ lastSync.innerText="Last Sync: "+last; }
-
-if(data.resetStores && data.resetStores.includes(settings.store)){
-alert("District reset applied.");
-localStorage.clear();
-location.reload();
-}
-
-}).catch(()=>{
-let last=localStorage.getItem("lastSync");
-if(last){ lastSync.innerText="Offline (Last Sync: "+last+")"; }
-});
-}
 };
 
 function saveSetup(){
+if(!storeNum.value || !managerNum.value || !helpdeskNum.value || !storePin.value){
+alert("All fields required");
+return;
+}
+
 localStorage.setItem("store",storeNum.value);
 localStorage.setItem("manager",managerNum.value);
 localStorage.setItem("helpdesk",helpdeskNum.value);
@@ -204,36 +202,57 @@ location.reload();
 }
 
 function nextQ(id){
-let c=document.querySelector('.container > div:not(.hidden)');
-if(c)historyStack.push(c.id);
-document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
-document.getElementById(id).classList.remove("hidden");
-updateBreadcrumb(id);
+let next=document.getElementById(id);
+if(!next){ alert("Missing screen: "+id); return; }
+
+let current=document.querySelector('.container > div:not(.hidden)');
+if(current) historyStack.push(current.id);
+
+showScreen(id);
 }
 
 function goBack(){
 if(historyStack.length){
-let p=historyStack.pop();
-document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
-document.getElementById(p).classList.remove("hidden");
-updateBreadcrumb(p);
-}else goHome();
+showScreen(historyStack.pop());
+}else{
+goHome();
+}
 }
 
-function goHome(){historyStack=[];nextQ("q1");}
+function goHome(){
+historyStack=[];
+showScreen("q1");
+}
 
 function showResult(msg,act){
 nextQ("resultScreen");
 resultMsg.innerHTML=msg;
 resultMsg.className=msg.includes("CALL")?"result call":"result nocall";
 actionBtn.innerHTML="";
+
 if(act){
 let a=document.createElement("a");
+
+if(act==="manager"){
+a.href="tel:"+settings.manager;
+a.innerText="Call Manager";
+}
+else if(act==="helpdesk"){
+a.href="tel:"+settings.helpdesk;
+a.innerText="Call Help Desk";
+}
+else{
 a.href=act;
+a.innerText="Call";
+}
+
 a.className="btn btn-blue";
-a.innerText=act.startsWith("sms")?"Text":"Call";
 actionBtn.appendChild(a);
 }
+}
+
+function quickCallManager(){
+window.location.href="tel:"+settings.manager;
 }
 
 function openAdmin(){
