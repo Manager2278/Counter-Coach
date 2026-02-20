@@ -68,6 +68,14 @@ message.value = config.message || "";
 alertMsg.value = config.alert || "";
 
 renderStores();
+  // 🔥 AUTO REGISTER STORES FROM HEARTBEAT
+if(config.heartbeat){
+Object.keys(config.heartbeat).forEach(s=>{
+  if(!config.stores[s]){
+    config.stores[s] = { message: "" };
+  }
+});
+}
 
 status.innerText = "Loaded";
 
