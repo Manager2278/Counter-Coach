@@ -151,7 +151,18 @@ setupScreen.classList.add("hidden");
 showScreen("q1");
 storeDisplay.innerHTML="Store #"+settings.store;
 runDistrictSync();
+  
+setInterval(()=>{
+fetch("https://manager2278.github.io/Counter-Coach/district-config.json")
+.then(r=>r.json())
+.then(data=>{
+data.heartbeat = data.heartbeat || {};
+data.heartbeat[settings.store] = Date.now();
 
+// send back (optional advanced later)
+});
+}, 60000);
+  
 new QRCode(document.getElementById("storeQR"),{
 text:`https://manager2278.github.io/Counter-Coach/?store=${settings.store}&manager=${settings.manager}&helpdesk=${settings.helpdesk}&pin=${settings.storePin}`,
 width:150,height:150
