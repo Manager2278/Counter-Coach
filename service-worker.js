@@ -1,41 +1,46 @@
-const CACHE_NAME = 'oreillyapp-v3.1'; // 🔁 CHANGE THIS EACH UPDATE
+const CACHE_NAME = "counter-coach-v1";
 
-const FILES_TO_CACHE = [
+// Files to cache (add more if needed)
+const urlsToCache = [
   "./",
   "./index.html",
-  "./manifest.json",
-  "./district-dashboard.html"
+  "./manifest.json"
 ];
 
-// INSTALL
+// Install → cache files
 self.addEventListener("install", event => {
-  self.skipWaiting(); // activate immediately
+  self.skipWaiting(); // 🔥 activate immediately
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
 });
 
-// ACTIVATE
+// Activate → clear old caches
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
         keys.map(key => {
           if (key !== CACHE_NAME) {
-            return caches.delete(key); // remove old cache
+            return caches.delete(key);
           }
         })
       )
     )
   );
-  self.clients.claim();
+  self.clients.claim(); // 🔥 take control immediately
 });
 
-// FETCH (offline-first)
+// Fetch → always try network first (auto update)
 self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+    fetch(event.request)
+      .then(response => {
+        // Update cache with fresh version
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        return response;
+      })
+      .catch(() => caches.match(event.request)) // fallback offline
   );
 });
