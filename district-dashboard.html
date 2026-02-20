@@ -5,27 +5,51 @@
 <title>District Dashboard</title>
 <style>
 body { font-family: Arial; padding:20px; max-width:500px; margin:auto; }
-input, textarea { width:100%; margin:5px 0; padding:8px; }
+input, textarea, select { width:100%; margin:5px 0; padding:8px; }
 button { padding:10px; margin-top:10px; width:100%; }
+.status { font-size:12px; color:#666; margin-bottom:10px; }
 </style>
 </head>
 <body>
 
 <h2>District Control Panel</h2>
 
+<div id="status" class="status">Loading config...</div>
+
 <h3>Global Message</h3>
 <textarea id="message" placeholder="Enter district-wide message"></textarea>
 
-<h3>Store Specific</h3>
-<input id="store" placeholder="Store Number">
+<h3>Store Specific Message</h3>
+
+<select id="storeSelect">
+  <option value="">-- Select Store --</option>
+  <option value="123">Store 123</option>
+  <option value="456">Store 456</option>
+  <option value="789">Store 789</option>
+</select>
+
+<input id="storeManual" placeholder="Or Enter Store Number">
 <input id="storeMessage" placeholder="Store Message">
 
 <button onclick="addStore()">Add / Update Store Message</button>
 
 <hr>
 
+<h3>Reset Store</h3>
+
+<select id="resetSelect">
+  <option value="">-- Select Store to Reset --</option>
+  <option value="123">Store 123</option>
+  <option value="456">Store 456</option>
+  <option value="789">Store 789</option>
+</select>
+
+<button onclick="addReset()">Add Reset</button>
+
+<hr>
+
 <h3>Generated Config</h3>
-<textarea id="output" rows="12"></textarea>
+<textarea id="output" rows="14"></textarea>
 
 <button onclick="copyJSON()">Copy JSON</button>
 
@@ -37,13 +61,52 @@ let config = {
   timestamp: ""
 };
 
+// 🔄 AUTO LOAD EXISTING CONFIG
+window.onload = function(){
+  fetch("https://manager2278.github.io/Counter-Coach/district-config.json?ts=" + Date.now())
+    .then(res => res.json())
+    .then(data => {
+      config = data;
+
+      // populate fields
+      message.value = config.message || "";
+
+      render();
+      status.innerText = "Config loaded successfully";
+    })
+    .catch(() => {
+      status.innerText = "No existing config found (starting fresh)";
+      render();
+    });
+};
+
+function getStoreValue(){
+  return storeSelect.value || storeManual.value;
+}
+
 function addStore(){
-  let s = store.value;
-  if(!s) return;
+  let s = getStoreValue();
+  if(!s) return alert("Select or enter a store");
+
+  if(!config.stores) config.stores = {};
 
   config.stores[s] = {
+    ...config.stores[s],
     message: storeMessage.value
   };
+
+  render();
+}
+
+function addReset(){
+  let s = resetSelect.value;
+  if(!s) return alert("Select a store");
+
+  if(!config.resetStores) config.resetStores = [];
+
+  if(!config.resetStores.includes(s)){
+    config.resetStores.push(s);
+  }
 
   render();
 }
@@ -58,7 +121,7 @@ function render(){
 function copyJSON(){
   render();
   navigator.clipboard.writeText(output.value);
-  alert("Copied! Now paste into district-config.json");
+  alert("Copied! Paste into district-config.json");
 }
 </script>
 
