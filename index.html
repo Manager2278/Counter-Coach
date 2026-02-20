@@ -224,11 +224,16 @@ sha: sha
 })
 .catch(()=>{});
 }
-
 function showScreen(id){
-document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
+document.querySelectorAll('.container > div').forEach(d=>{
+  if(d.id !== "banner" && d.id !== "lastSync"){
+    d.classList.add("hidden");
+  }
+});
 document.getElementById(id).classList.remove("hidden");
 }
+
+  
 function runDistrictSync(){
 if(navigator.onLine && settings.store){
 fetch("https://manager2278.github.io/Counter-Coach/district-config.json?ts="+Date.now())
