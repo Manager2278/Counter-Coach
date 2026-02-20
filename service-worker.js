@@ -1,13 +1,11 @@
-const CACHE_NAME = "counter-coach-v1";
+const CACHE_NAME = "counter-coach-v2";
 
-// Files to cache (add more if needed)
 const urlsToCache = [
   "./",
   "./index.html",
   "./manifest.json"
 ];
 
-// Install → cache files
 self.addEventListener("install", event => {
   self.skipWaiting(); // 🔥 activate immediately
   event.waitUntil(
@@ -15,7 +13,6 @@ self.addEventListener("install", event => {
   );
 });
 
-// Activate → clear old caches
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -29,18 +26,23 @@ self.addEventListener("activate", event => {
     )
   );
   self.clients.claim(); // 🔥 take control immediately
+
+  // 🔥 FORCE ALL OPEN TABS TO RELOAD
+  self.clients.matchAll({ type: "window" }).then(clients => {
+    clients.forEach(client => {
+      client.navigate(client.url);
+    });
+  });
 });
 
-// Fetch → always try network first (auto update)
 self.addEventListener("fetch", event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Update cache with fresh version
         const copy = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
         return response;
       })
-      .catch(() => caches.match(event.request)) // fallback offline
+      .catch(() => caches.match(event.request))
   );
 });
