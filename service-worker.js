@@ -1,4 +1,4 @@
-const CACHE_NAME = 'oreillyapp-v3'; // 🔁 CHANGE THIS EACH UPDATE
+const CACHE_NAME = 'oreillyapp-v3.1'; // 🔁 CHANGE THIS EACH UPDATE
 
 const FILES_TO_CACHE = [
   "./",
