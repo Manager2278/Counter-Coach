@@ -164,6 +164,9 @@ function goHome(){historyStack=[];nextQ("q1");}
 function showResult(msg,act){nextQ("resultScreen");resultMsg.innerHTML=msg;resultMsg.className=msg.includes("CALL")?"result call":"result nocall";actionBtn.innerHTML="";if(act){let a=document.createElement("a");a.href=act;a.className="btn btn-blue";a.innerText=act.startsWith("sms")?"Text":"Call";actionBtn.appendChild(a);}}
 function openAdmin(){let pin=prompt("Enter Store PIN or District PIN");if(pin!==settings.storePin&&pin!==DISTRICT_PIN)alert("Incorrect PIN");}
 if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js');
+if (navigator.onLine) {
+  // check for updates
+}
 </script>
 
 </body>
