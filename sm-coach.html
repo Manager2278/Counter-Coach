@@ -7,9 +7,9 @@
 
 <style>
 body { font-family: Arial; background:#f4f4f4; padding:20px; text-align:center; }
-.header { background:#1b5e20; color:white; padding:15px; border-radius:10px; margin-bottom:15px; }
+.header { background:#1b5e20; color:white; padding:15px; border-radius:10px; margin-bottom:15px; cursor:pointer; }
 .container { background:white; max-width:480px; margin:auto; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
-p { font-size:18px; font-weight:bold; }
+p { font-size:18px; font-weight:bold; cursor:pointer; }
 .btn { display:block; width:100%; padding:14px; margin:10px 0; font-weight:bold; border:none; border-radius:8px; cursor:pointer;}
 .btn-yes{background:#2e7d32;color:white;}
 .btn-no{background:#c62828;color:white;}
@@ -26,39 +26,39 @@ p { font-size:18px; font-weight:bold; }
 
 <body>
 
-<div class="header">
-<h2>Manager → DM Coach</h2>
+<div class="header" onclick="goHome()">
+<h2>Manager Coach</h2>
 </div>
 
 <div class="container">
 
-<!-- START -->
+<!-- MAIN (CLICKABLE RESET) -->
 <div id="q1">
-<p>🚨 Emergency situation?</p>
+<p onclick="goHome()">🚨 Emergency situation?</p>
 <button class="btn btn-yes" onclick="showResult('CALL 911 FIRST,<br>Call DM SECOND','tel:911')">YES</button>
-<button class="btn btn-no" onclick="nextQ('q-main')">NO</button>
+<button class="btn btn-no" onclick="nextQ('q2')">NO</button>
 </div>
 
-<!-- MAIN MENU -->
-<div id="q-main" class="hidden">
-<p>What type of issue?</p>
+<!-- ISSUE TYPE (INLINE NOW) -->
+<div id="q2" class="hidden">
+<p onclick="goHome()">What type of issue?</p>
 <button class="btn btn-blue" onclick="nextQ('q-staff')">Staffing</button>
-<button class="btn btn-blue" onclick="nextQ('q-customer')">Customer Escalation</button>
-<button class="btn btn-blue" onclick="nextQ('q-ops')">Operations / Systems</button>
-<button class="btn btn-blue" onclick="nextQ('q-financial')">Cash / Financial</button>
+<button class="btn btn-blue" onclick="nextQ('q-customer')">Customer</button>
+<button class="btn btn-blue" onclick="nextQ('q-ops')">Operations</button>
+<button class="btn btn-blue" onclick="nextQ('q-financial')">Financial</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
 <!-- STAFF -->
 <div id="q-staff" class="hidden">
-<p>Shift uncovered?</p>
+<p onclick="goHome()">Shift uncovered?</p>
 <button class="btn btn-yes" onclick="nextQ('q-staff-2')">YES</button>
 <button class="btn btn-no" onclick="showResult('No call needed')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
 <div id="q-staff-2" class="hidden">
-<p>Store at risk of closing?</p>
+<p onclick="goHome()">Store at risk of closing?</p>
 <button class="btn btn-yes" onclick="showResult('Call DM','tel:'+settings.dm)">YES</button>
 <button class="btn btn-no" onclick="showResult('Text DM update','sms:'+settings.dm)">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
@@ -66,14 +66,14 @@ p { font-size:18px; font-weight:bold; }
 
 <!-- CUSTOMER -->
 <div id="q-customer" class="hidden">
-<p>Customer escalation unresolved?</p>
+<p onclick="goHome()">Customer escalation unresolved?</p>
 <button class="btn btn-yes" onclick="nextQ('q-customer-2')">YES</button>
 <button class="btn btn-no" onclick="showResult('Handled correctly')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
 <div id="q-customer-2" class="hidden">
-<p>Policy exception needed?</p>
+<p onclick="goHome()">Policy exception needed?</p>
 <button class="btn btn-yes" onclick="showResult('Text DM for approval','sms:'+settings.dm)">YES</button>
 <button class="btn btn-no" onclick="showResult('Do not call DM')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
@@ -81,7 +81,7 @@ p { font-size:18px; font-weight:bold; }
 
 <!-- OPS -->
 <div id="q-ops" class="hidden">
-<p>Store cannot operate?</p>
+<p onclick="goHome()">Store cannot operate?</p>
 <button class="btn btn-yes" onclick="showResult('Call DM immediately','tel:'+settings.dm)">YES</button>
 <button class="btn btn-no" onclick="showResult('Call Help Desk','tel:'+settings.helpdesk)">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
@@ -89,7 +89,7 @@ p { font-size:18px; font-weight:bold; }
 
 <!-- FINANCIAL -->
 <div id="q-financial" class="hidden">
-<p>Large variance or shortage?</p>
+<p onclick="goHome()">Large variance or shortage?</p>
 <button class="btn btn-yes" onclick="showResult('Text DM details','sms:'+settings.dm)">YES</button>
 <button class="btn btn-no" onclick="showResult('Log and move on')">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
@@ -104,7 +104,7 @@ p { font-size:18px; font-weight:bold; }
 
 </div>
 
-<div class="footer">Manager Version 1.0</div>
+<div class="footer">Manager Version 1.01</div>
 
 <script>
 let settings = {
