@@ -49,6 +49,9 @@ input{width:90%;padding:8px;margin:6px 0;}
 
 <div class="container">
 
+  <div id="banner" style="display:none;background:#ffc107;padding:10px;border-radius:8px;margin-bottom:10px;font-weight:bold;"></div>
+<div id="lastSync" style="font-size:12px;color:#777;margin-bottom:10px;"></div>
+
 <!-- SETUP -->
 <div id="setupScreen">
 <h3>Store Setup</h3>
@@ -224,6 +227,68 @@ input{width:90%;padding:8px;margin:6px 0;}
 <div class="footer">V6.1</div>
 
 <script>
+
+setInterval(runDistrictSync,60000);
+function runDistrictSync(){
+if(navigator.onLine && settings.store){
+
+fetch("https://manager2278.github.io/Counter-Coach/district-config.json?ts="+Date.now())
+.then(r=>r.json())
+.then(data=>{
+
+let bannerMsg = "";
+
+// global message
+if(data.message) bannerMsg = data.message;
+
+// store override
+if(data.stores && data.stores[settings.store]){
+let u = data.stores[settings.store];
+
+if(u.manager){
+settings.manager = u.manager;
+localStorage.setItem("manager", u.manager);
+}
+
+if(u.helpdesk){
+localStorage.setItem("helpdesk", u.helpdesk);
+}
+
+if(u.message){
+bannerMsg = u.message;
+}
+}
+
+// 🚨 ALERT OVERRIDE
+if(data.alert){
+bannerMsg = data.alert;
+}
+
+// show banner
+if(bannerMsg){
+banner.innerHTML = bannerMsg;
+banner.style.display = "block";
+}
+
+// timestamp
+if(data.timestamp){
+localStorage.setItem("lastSync", data.timestamp);
+}
+
+let last = localStorage.getItem("lastSync");
+if(last){
+lastSync.innerText = "Last Sync: " + last;
+}
+
+})
+.catch(()=>{
+banner.innerText = "Offline Mode";
+banner.style.display = "block";
+});
+}
+}
+
+  
 let settings={},historyStack=[];
 
 function showScreen(id){
@@ -314,12 +379,19 @@ storeDisplay.innerHTML="Store #"+storeNum.value;
 }
 
 window.onload=function(){
-if(localStorage.getItem("locked")==="true"){
+
+settings.store=localStorage.getItem("store");
 settings.manager=localStorage.getItem("manager");
+
+if(localStorage.getItem("locked")==="true"){
 showScreen("home");
-storeDisplay.innerHTML="Store #"+localStorage.getItem("store");
+storeDisplay.innerHTML="Store #"+settings.store;
+
+runDistrictSync();
 }
 }
+
+  
 </script>
 
 </body>
