@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manager Decision Coach</title>
+
+<style>
+body { font-family: Arial; background:#f4f4f4; padding:20px; text-align:center; }
+.header { background:#8B0000; color:white; padding:15px; border-radius:10px; margin-bottom:15px; }
+.container { background:white; max-width:480px; margin:auto; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
+p { font-size:18px; font-weight:bold; }
+.btn { display:block; width:100%; padding:14px; margin:10px 0; font-weight:bold; border:none; border-radius:8px; cursor:pointer;}
+.btn-yes{background:#2e7d32;color:white;}
+.btn-no{background:#c62828;color:white;}
+.btn-blue{background:#1565c0;color:white;}
+.btn-reset{background:#777;color:white;}
+.hidden{display:none;}
+.result{padding:20px;font-weight:bold;border-radius:8px;}
+.call{background:#ffebee;color:#c62828;border:2px solid #c62828;}
+.nocall{background:#e8f5e9;color:#2e7d32;border:2px solid #2e7d32;}
+.textonly{background:#e3f2fd;color:#1565c0;border:2px solid #1565c0;}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h2>Manager Decision Coach</h2>
+<div style="font-size:13px;">Before calling District</div>
+</div>
+
+<div class="container">
+
+<!-- START -->
+<div id="q1">
+<p>Is this an emergency (safety, police, injury, fire)?</p>
+<button class="btn btn-yes" onclick="showResult('CALL IMMEDIATELY','call')">YES</button>
+<button class="btn btn-no" onclick="nextQ('q-category')">NO</button>
+</div>
+
+<!-- CATEGORY -->
+<div id="q-category" class="hidden">
+<p>What type of issue?</p>
+<button class="btn btn-blue" onclick="nextQ('q-staff')">Staffing</button>
+<button class="btn btn-blue" onclick="nextQ('q-commercial')">Commercial / Sales</button>
+<button class="btn btn-blue" onclick="nextQ('q-customer')">Customer Issue</button>
+<button class="btn btn-blue" onclick="nextQ('q-cash')">Cash / Deposit</button>
+<button class="btn btn-blue" onclick="nextQ('q-inventory')">Inventory / Shrink</button>
+<button class="btn btn-blue" onclick="nextQ('q-ops')">Systems / Ops</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<!-- STAFFING -->
+<div id="q-staff" class="hidden">
+<p>Did you attempt to find coverage?</p>
+<button class="btn btn-yes" onclick="nextQ('q-staff-2')">YES</button>
+<button class="btn btn-no" onclick="showResult('Call other employees or stores first','nocall')">NO</button>
+</div>
+
+<div id="q-staff-2" class="hidden">
+<p>Can store still operate safely?</p>
+<button class="btn btn-yes" onclick="showConfidence()">YES</button>
+<button class="btn btn-no" onclick="showResult('CALL DISTRICT','call')">NO</button>
+</div>
+
+<!-- COMMERCIAL -->
+<div id="q-commercial" class="hidden">
+<p>Is commercial completely stopped?</p>
+<button class="btn btn-yes" onclick="nextQ('q-commercial-2')">YES</button>
+<button class="btn btn-no" onclick="showResult('Adjust roles and continue','nocall')">NO</button>
+</div>
+
+<div id="q-commercial-2" class="hidden">
+<p>Have you attempted workaround?</p>
+<button class="btn btn-yes" onclick="showConfidence()">YES</button>
+<button class="btn btn-no" onclick="showResult('Try staffing/role adjustment first','nocall')">NO</button>
+</div>
+
+<!-- CUSTOMER -->
+<div id="q-customer" class="hidden">
+<p>Is this legal, corporate, or threat related?</p>
+<button class="btn btn-yes" onclick="showResult('CALL DISTRICT','call')">YES</button>
+<button class="btn btn-no" onclick="nextQ('q-customer-2')">NO</button>
+</div>
+
+<div id="q-customer-2" class="hidden">
+<p>Was policy followed and attempted?</p>
+<button class="btn btn-yes" onclick="showConfidence()">YES</button>
+<button class="btn btn-no" onclick="showResult('Follow policy first','nocall')">NO</button>
+</div>
+
+<!-- CASH -->
+<div id="q-cash" class="hidden">
+<p>Over shortage threshold?</p>
+<button class="btn btn-yes" onclick="nextQ('q-cash-2')">YES</button>
+<button class="btn btn-no" onclick="showResult('Log and continue','nocall')">NO</button>
+</div>
+
+<div id="q-cash-2" class="hidden">
+<p>Recounted and checked all deposits?</p>
+<button class="btn btn-yes" onclick="showConfidence()">YES</button>
+<button class="btn btn-no" onclick="showResult('Verify all cash first','nocall')">NO</button>
+</div>
+
+<!-- INVENTORY -->
+<div id="q-inventory" class="hidden">
+<p>Is theft suspected?</p>
+<button class="btn btn-yes" onclick="showResult('CALL DISTRICT','call')">YES</button>
+<button class="btn btn-no" onclick="showResult('Cycle count / verify first','nocall')">NO</button>
+</div>
+
+<!-- OPS -->
+<div id="q-ops" class="hidden">
+<p>Did you contact Help Desk?</p>
+<button class="btn btn-yes" onclick="nextQ('q-ops-2')">YES</button>
+<button class="btn btn-no" onclick="showResult('Call Help Desk first','nocall')">NO</button>
+</div>
+
+<div id="q-ops-2" class="hidden">
+<p>Store unable to operate?</p>
+<button class="btn btn-yes" onclick="showResult('CALL DISTRICT','call')">YES</button>
+<button class="btn btn-no" onclick="showConfidence()">NO</button>
+</div>
+
+<!-- CONFIDENCE FILTER -->
+<div id="confidence" class="hidden">
+<p>Why are you calling?</p>
+<button class="btn btn-blue" onclick="showResult('CALL DISTRICT','call')">Policy requires it</button>
+<button class="btn btn-blue" onclick="showResult('You have the answer. Proceed.','nocall')">Unsure</button>
+<button class="btn btn-blue" onclick="showResult('No call needed. Execute.','nocall')">Just confirming</button>
+</div>
+
+<!-- RESULT -->
+<div id="resultScreen" class="hidden">
+<div id="resultMsg" class="result"></div>
+<button class="btn btn-reset" onclick="goHome()">Start Over</button>
+</div>
+
+</div>
+
+<script>
+let historyStack=[];
+
+function showScreen(id){
+document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
+document.getElementById(id).classList.remove("hidden");
+}
+
+function nextQ(id){
+let current=document.querySelector('.container > div:not(.hidden)');
+if(current) historyStack.push(current.id);
+showScreen(id);
+}
+
+function goBack(){
+if(historyStack.length){
+showScreen(historyStack.pop());
+}else{
+goHome();
+}
+}
+
+function goHome(){
+historyStack=[];
+showScreen("q1");
+}
+
+function showConfidence(){
+nextQ("confidence");
+}
+
+function showResult(msg,type){
+nextQ("resultScreen");
+resultMsg.innerHTML=msg;
+
+if(type==="call"){
+resultMsg.className="result call";
+}else if(type==="text"){
+resultMsg.className="result textonly";
+}else{
+resultMsg.className="result nocall";
+}
+}
+</script>
+
+</body>
+</html>
