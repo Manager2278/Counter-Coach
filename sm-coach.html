@@ -40,7 +40,7 @@ p { font-size:18px; font-weight:bold; }
 
 <div class="container">
 
-<!-- HOME -->
+<!-- ✅ FULL HOME MENU (RESTORED + EXPANDED) -->
 <div id="home">
 <p>Select Situation</p>
 
@@ -49,10 +49,15 @@ p { font-size:18px; font-weight:bold; }
 <button class="btn btn-blue" onclick="nextQ('cust1')">Customer Escalation</button>
 <button class="btn btn-blue" onclick="nextQ('staff1')">Staffing Issue</button>
 <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
+
+<!-- 🔥 ADDED BACK (your missing buttons) -->
+<button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
+<button class="btn btn-blue" onclick="nextQ('delivery1')">Driver / Delivery</button>
+<button class="btn btn-blue" onclick="nextQ('policy1')">Policy Question</button>
+
 </div>
 
-<!-- YOUR ORIGINAL QUESTIONS BELOW (UNCHANGED) -->
-
+<!-- CUSTOMER -->
 <div id="cust1" class="hidden">
 <p>Customer demanding escalation?</p>
 <button class="btn btn-yes" onclick="nextQ('cust2')">YES</button>
@@ -77,6 +82,7 @@ p { font-size:18px; font-weight:bold; }
 <button class="btn btn-no" onclick="noCall('Resolved in store')">NO</button>
 </div>
 
+<!-- STAFF -->
 <div id="staff1" class="hidden">
 <p>Shift uncovered?</p>
 <button class="btn btn-yes" onclick="nextQ('staff2')">YES</button>
@@ -101,6 +107,7 @@ p { font-size:18px; font-weight:bold; }
 <button class="btn btn-no" onclick="noCall('Store still functional')">NO</button>
 </div>
 
+<!-- OPS -->
 <div id="ops1" class="hidden">
 <p>System or POS down?</p>
 <button class="btn btn-yes" onclick="nextQ('ops2')">YES</button>
@@ -123,6 +130,25 @@ p { font-size:18px; font-weight:bold; }
 <p>Still unable to operate or losing sales?</p>
 <button class="btn btn-yes" onclick="callDM('Operational failure impacting business')">YES</button>
 <button class="btn btn-no" onclick="noCall('Issue handled')">NO</button>
+</div>
+
+<!-- 🔥 NEW FLOWS (simple placeholders — can deepen later) -->
+<div id="cash1" class="hidden">
+<p>Variance over threshold?</p>
+<button class="btn btn-yes" onclick="callDM('Cash variance issue')">YES</button>
+<button class="btn btn-no" onclick="noCall('Handled in store')">NO</button>
+</div>
+
+<div id="delivery1" class="hidden">
+<p>Delivery impacting business significantly?</p>
+<button class="btn btn-yes" onclick="callDM('Delivery failure')">YES</button>
+<button class="btn btn-no" onclick="noCall('Adjusted internally')">NO</button>
+</div>
+
+<div id="policy1" class="hidden">
+<p>Policy unclear after review?</p>
+<button class="btn btn-yes" onclick="callDM('Policy clarification needed')">YES</button>
+<button class="btn btn-no" onclick="noCall('Policy found')">NO</button>
 </div>
 
 <!-- RESULT -->
@@ -155,7 +181,6 @@ historyStack=[];
 showScreen("home");
 }
 
-// ✅ FIXED EMERGENCY ONLY
 function callEmergency(){
 showScreen("result");
 
@@ -166,10 +191,9 @@ whyText.innerHTML="<b>WHY:</b> Life safety situation";
 
 dmText.innerHTML="<b>⚠️ DM WILL ASK:</b> What happened and who is impacted?";
 
-answerText.innerHTML="Emergency occurred. 911 contacted. Situation under control or active.";
+answerText.innerHTML="911 has been contacted. Situation is being handled.";
 }
 
-// ✅ ENHANCED DM CALL (NO FLOW CHANGE)
 function callDM(reason){
 showScreen("result");
 
@@ -188,11 +212,11 @@ dmText.innerHTML = `
 
 answerText.innerHTML = `
 <b>🧠 RECOMMENDED ANSWER:</b><br>
-Here’s the situation: ${reason}.<br>
-Here’s what I’ve already done: (steps taken).<br>
-Policy followed: (policy reference).<br>
-My recommendation: (clear decision).<br>
-Impact: (sales / staffing / customer).
+Situation: ${reason}<br>
+Actions taken: (list steps)<br>
+Policy: (reference)<br>
+Recommendation: (your decision)<br>
+Impact: (sales/staff/customer)
 `;
 }
 
