@@ -27,26 +27,24 @@ p { font-size:18px; font-weight:bold; cursor:pointer; }
 <body>
 
 <div class="header" onclick="goHome()">
-<h2>Manager Coach</h2>
+<h2>Manager → DM Coach</h2>
 </div>
 
 <div class="container">
 
-<!-- MAIN (CLICKABLE RESET) -->
+<!-- MAIN MENU (ALL OPTIONS INCLUDING EMERGENCY) -->
 <div id="q1">
-<p onclick="goHome()">🚨 Emergency situation?</p>
-<button class="btn btn-yes" onclick="showResult('CALL 911 FIRST,<br>Call DM SECOND','tel:911')">YES</button>
-<button class="btn btn-no" onclick="nextQ('q2')">NO</button>
-</div>
-
-<!-- ISSUE TYPE (INLINE NOW) -->
-<div id="q2" class="hidden">
 <p onclick="goHome()">What type of issue?</p>
+
+<button class="btn btn-no" onclick="showResult('CALL 911 FIRST,<br>Call DM SECOND','tel:911')">
+🚨 Emergency
+</button>
+
 <button class="btn btn-blue" onclick="nextQ('q-staff')">Staffing</button>
 <button class="btn btn-blue" onclick="nextQ('q-customer')">Customer</button>
 <button class="btn btn-blue" onclick="nextQ('q-ops')">Operations</button>
 <button class="btn btn-blue" onclick="nextQ('q-financial')">Financial</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
+
 </div>
 
 <!-- STAFF -->
@@ -104,7 +102,7 @@ p { font-size:18px; font-weight:bold; cursor:pointer; }
 
 </div>
 
-<div class="footer">Manager Version 1.01</div>
+<div class="footer">Manager Version 2.1</div>
 
 <script>
 let settings = {
