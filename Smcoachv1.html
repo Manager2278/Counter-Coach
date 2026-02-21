@@ -308,8 +308,11 @@ goHome();
 }
 }
 
-showScreen("home");
-generateQR();
+window.onload = function(){
+  showScreen("home");
+  generateQR();
+};
+
 function generateQR(){
   const url = window.location.href;
 
