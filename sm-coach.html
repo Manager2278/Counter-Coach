@@ -53,81 +53,122 @@ p { font-size:18px; font-weight:bold; }
 <button class="btn btn-blue" onclick="nextQ('cust1')">Customer Escalation</button>
 <button class="btn btn-blue" onclick="nextQ('staff1')">Staffing Issue</button>
 <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
+<button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
+<button class="btn btn-blue" onclick="nextQ('inv1')">Inventory / Commercial</button>
+
 </div>
 
 <!-- CUSTOMER -->
 <div id="cust1" class="hidden">
-<p>Customer demanding escalation?</p>
+<p>Customer requesting refund/override outside policy?</p>
 <button class="btn btn-yes" onclick="nextQ('cust2')">YES</button>
-<button class="btn btn-no" onclick="noCall('Routine customer issue')">NO</button>
+<button class="btn btn-no" onclick="noCall('Handled within policy')">NO</button>
 </div>
 
 <div id="cust2" class="hidden">
-<p>Did you follow policy completely?</p>
+<p>Did you verify receipt, warranty, and policy?</p>
 <button class="btn btn-yes" onclick="nextQ('cust3')">YES</button>
-<button class="btn btn-no" onclick="noCall('Follow policy first')">NO</button>
+<button class="btn btn-no" onclick="noCall('Verify policy first')">NO</button>
 </div>
 
 <div id="cust3" class="hidden">
-<p>Did you offer alternative resolution?</p>
+<p>Did you offer alternative solution (exchange/store credit)?</p>
 <button class="btn btn-yes" onclick="nextQ('cust4')">YES</button>
-<button class="btn btn-no" onclick="noCall('Offer solution before escalation')">NO</button>
+<button class="btn btn-no" onclick="noCall('Offer resolution first')">NO</button>
 </div>
 
 <div id="cust4" class="hidden">
-<p>Customer still refusing resolution?</p>
-<button class="btn btn-yes" onclick="callDM('Customer escalation unresolved')">YES</button>
+<p>Customer still escalating and impacting business?</p>
+<button class="btn btn-yes" onclick="callDM('Customer escalation affecting operations')">YES</button>
 <button class="btn btn-no" onclick="noCall('Resolved in store')">NO</button>
 </div>
 
 <!-- STAFF -->
 <div id="staff1" class="hidden">
-<p>Shift uncovered?</p>
+<p>Call-off creating coverage gap?</p>
 <button class="btn btn-yes" onclick="nextQ('staff2')">YES</button>
-<button class="btn btn-no" onclick="noCall('Normal staffing')">NO</button>
+<button class="btn btn-no" onclick="noCall('Staffing manageable')">NO</button>
 </div>
 
 <div id="staff2" class="hidden">
-<p>Called in backup or coverage?</p>
+<p>Attempted to call in backup or adjust schedule?</p>
 <button class="btn btn-yes" onclick="nextQ('staff3')">YES</button>
-<button class="btn btn-no" onclick="noCall('Attempt coverage first')">NO</button>
+<button class="btn btn-no" onclick="noCall('Must attempt coverage')">NO</button>
 </div>
 
 <div id="staff3" class="hidden">
-<p>Adjusted roles (counter/driver)?</p>
+<p>Reassigned roles (driver ↔ counter)?</p>
 <button class="btn btn-yes" onclick="nextQ('staff4')">YES</button>
-<button class="btn btn-no" onclick="noCall('Adjust team roles first')">NO</button>
+<button class="btn btn-no" onclick="noCall('Adjust team first')">NO</button>
 </div>
 
 <div id="staff4" class="hidden">
-<p>Store cannot function?</p>
-<button class="btn btn-yes" onclick="callDM('Staffing impacts operations')">YES</button>
+<p>Store unable to operate safely or serve customers?</p>
+<button class="btn btn-yes" onclick="callDM('Staffing prevents operations')">YES</button>
 <button class="btn btn-no" onclick="noCall('Store still functional')">NO</button>
 </div>
 
 <!-- OPS -->
 <div id="ops1" class="hidden">
-<p>System or POS down?</p>
+<p>POS/system completely down?</p>
 <button class="btn btn-yes" onclick="nextQ('ops2')">YES</button>
 <button class="btn btn-no" onclick="noCall('Minor issue')">NO</button>
 </div>
 
 <div id="ops2" class="hidden">
-<p>Restarted system?</p>
+<p>Restarted system/register/network?</p>
 <button class="btn btn-yes" onclick="nextQ('ops3')">YES</button>
 <button class="btn btn-no" onclick="noCall('Restart first')">NO</button>
 </div>
 
 <div id="ops3" class="hidden">
-<p>Called helpdesk?</p>
+<p>Helpdesk contacted and troubleshooting done?</p>
 <button class="btn btn-yes" onclick="nextQ('ops4')">YES</button>
 <button class="btn btn-no" onclick="noCall('Use helpdesk first')">NO</button>
 </div>
 
 <div id="ops4" class="hidden">
-<p>Still unable to operate or losing sales?</p>
-<button class="btn btn-yes" onclick="callDM('Operational failure impacting business')">YES</button>
-<button class="btn btn-no" onclick="noCall('Issue handled')">NO</button>
+<p>Store unable to process sales?</p>
+<button class="btn btn-yes" onclick="callDM('System outage affecting revenue')">YES</button>
+<button class="btn btn-no" onclick="noCall('Resolved')">NO</button>
+</div>
+
+<!-- CASH -->
+<div id="cash1" class="hidden">
+<p>Register over/short beyond tolerance?</p>
+<button class="btn btn-yes" onclick="nextQ('cash2')">YES</button>
+<button class="btn btn-no" onclick="noCall('Normal variance')">NO</button>
+</div>
+
+<div id="cash2" class="hidden">
+<p>Recounted till, checked deposits, and logs?</p>
+<button class="btn btn-yes" onclick="nextQ('cash3')">YES</button>
+<button class="btn btn-no" onclick="noCall('Verify cash first')">NO</button>
+</div>
+
+<div id="cash3" class="hidden">
+<p>Variance still unexplained?</p>
+<button class="btn btn-yes" onclick="callDM('Cash variance unresolved')">YES</button>
+<button class="btn btn-no" onclick="noCall('Resolved internally')">NO</button>
+</div>
+
+<!-- INVENTORY -->
+<div id="inv1" class="hidden">
+<p>Major commercial/inventory issue?</p>
+<button class="btn btn-yes" onclick="nextQ('inv2')">YES</button>
+<button class="btn btn-no" onclick="noCall('Routine inventory issue')">NO</button>
+</div>
+
+<div id="inv2" class="hidden">
+<p>Checked on-hands, transfers, and substitutes?</p>
+<button class="btn btn-yes" onclick="nextQ('inv3')">YES</button>
+<button class="btn btn-no" onclick="noCall('Work inventory options first')">NO</button>
+</div>
+
+<div id="inv3" class="hidden">
+<p>Customer/business impact significant?</p>
+<button class="btn btn-yes" onclick="callDM('Inventory impacting key business')">YES</button>
+<button class="btn btn-no" onclick="noCall('Handle at store level')">NO</button>
 </div>
 
 <!-- RESULT -->
@@ -159,34 +200,30 @@ historyStack=[];
 showScreen("home");
 }
 
-// 🔥 NEW DM FUNCTION (WITH QUESTIONS)
-function callDM(reason){
+// 🔥 FIXED EMERGENCY
+function showResult(msg, why, expect, type){
 showScreen("result");
+resultMsg.innerHTML=msg;
+resultMsg.className= type==="call" ? "result call" : "result nocall";
 
-resultMsg.innerHTML="CALL DM";
-resultMsg.className="result call";
-
-whyText.innerHTML="<b>WHY:</b> "+reason;
+whyText.innerHTML="<b>WHY:</b> "+why;
 
 dmText.innerHTML = `
 <b>⚠️ DM WILL ASK YOU:</b><br>
 • What have you already tried?<br>
-• What policy applies here?<br>
-• What solution are you recommending?<br>
+• What policy applies?<br>
+• What solution do you recommend?<br>
 • What is the business impact?<br><br>
-<b>EXPECTATION:</b> Be prepared before calling.
+<b>EXPECTATION:</b> ${expect}
 `;
 }
 
+function callDM(reason){
+showResult("CALL DM", reason, "Be prepared before calling.", "call");
+}
+
 function noCall(reason){
-showScreen("result");
-
-resultMsg.innerHTML="DO NOT CALL DM";
-resultMsg.className="result nocall";
-
-whyText.innerHTML="<b>WHY:</b> "+reason;
-
-dmText.innerHTML="<b>EXPECTATION:</b> Handle at store level.";
+showResult("DO NOT CALL DM", reason, "Handle at store level.", "nocall");
 }
 </script>
 
