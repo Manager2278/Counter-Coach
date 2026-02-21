@@ -270,6 +270,7 @@ resultMsg.innerHTML="CALL DM";
 resultMsg.className="result call";
 
 whyText.innerHTML="<b>WHY:</b> "+reason;
+answerText.className = "answer expect";
 
 dmText.innerHTML = `
 <b>DM WILL ASK:</b><br>
@@ -299,8 +300,9 @@ resultMsg.className="result nocall";
 whyText.innerHTML="<b>WHY:</b> "+reason;
 dmText.innerHTML="<b>EXPECTATION:</b> Manager ownership required";
 answerText.innerHTML="";
+  answerText.className = "answer expect";
 }
-whyText.className = "why";
+
 
 function goBack(){
 if(historyStack.length){
