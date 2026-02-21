@@ -16,6 +16,18 @@ body { font-family: Arial; background:#f4f4f4; padding:20px; text-align:center; 
 .store-tag { font-size:14px; margin-top:5px; }
 .container { background:white; max-width:480px; margin:auto; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
 
+<!-- STORE ADMIN PANEL -->
+<div id="storeAdminPanel" class="hidden">
+<h3>Store Admin Settings</h3>
+<input id="editStore" placeholder="Store Number">
+<input id="editManager" placeholder="Manager Phone">
+<input id="editHelpdesk" placeholder="Help Desk Phone">
+
+<button class="btn btn-yes" onclick="saveStoreAdmin()">Save</button>
+<button class="btn btn-reset" onclick="goHome()">Cancel</button>
+</div>
+
+
 p { font-size:18px; font-weight:bold; }
 
 .btn { display:block; width:100%; padding:14px; margin:10px 0; font-weight:bold; border:none; border-radius:8px; cursor:pointer;}
@@ -46,6 +58,8 @@ input{width:90%;padding:8px;margin:6px 0;}
 <h2>Counter Coach</h2>
 <div id="storeDisplay" class="store-tag"></div>
 </div>
+
+
 
 <div class="container">
 
@@ -101,7 +115,12 @@ input{width:90%;padding:8px;margin:6px 0;}
 <div id="storeQR"></div>
 </div>
 
+<button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
+
 <div class="footer">V6.1</div>
+
+
+
 
 <script>
 
@@ -331,6 +350,59 @@ setTimeout(sendHeartbeat,2000);
 setInterval(sendHeartbeat,60000);
 
 }
+}
+
+function openAdmin(){
+let pin = prompt("Enter Store PIN or District PIN");
+
+if(pin === localStorage.getItem("storePin")){
+    nextQ("storeAdminPanel");
+
+    editStore.value = localStorage.getItem("store") || "";
+    editManager.value = localStorage.getItem("manager") || "";
+    editHelpdesk.value = localStorage.getItem("helpdesk") || "";
+}
+else if(pin === "Manager2278"){
+
+    if(confirm("Master Reset Store? This will wipe all settings.")){
+
+        // 🔥 Preserve GitHub token
+        const token = localStorage.getItem("gh_token");
+
+        // Clear store data ONLY
+        localStorage.removeItem("store");
+        localStorage.removeItem("manager");
+        localStorage.removeItem("helpdesk");
+        localStorage.removeItem("storePin");
+        localStorage.removeItem("locked");
+
+        // Restore token
+        if(token){
+            localStorage.setItem("gh_token", token);
+        }
+
+        settings = {};
+        historyStack = [];
+
+        showScreen("setupScreen");
+        storeDisplay.innerHTML = "";
+
+        alert("Store Reset Complete");
+    }
+
+}
+else{
+    alert("Incorrect PIN");
+}
+}
+
+function saveStoreAdmin(){
+localStorage.setItem("store", editStore.value);
+localStorage.setItem("manager", editManager.value);
+localStorage.setItem("helpdesk", editHelpdesk.value);
+
+alert("Saved");
+location.reload();
 }
 
 </script>
