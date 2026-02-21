@@ -388,7 +388,20 @@ else if(pin === DISTRICT_PIN){
     // 🔥 MASTER RESET
     if(confirm("Master Reset Store? This will wipe all settings.")){
         
-        localStorage.clear();
+        // Preserve token
+const token = localStorage.getItem("gh_token");
+
+// Clear only store data
+localStorage.removeItem("store");
+localStorage.removeItem("manager");
+localStorage.removeItem("helpdesk");
+localStorage.removeItem("storePin");
+localStorage.removeItem("locked");
+
+// Restore token
+if(token){
+  localStorage.setItem("gh_token", token);
+}
 
         settings = {};
         historyStack = [];
