@@ -53,10 +53,9 @@ p { font-size:18px; font-weight:bold; }
 <button class="btn btn-blue" onclick="nextQ('cust1')">Customer Escalation</button>
 <button class="btn btn-blue" onclick="nextQ('staff1')">Staffing Issue</button>
 <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
-
 </div>
 
-<!-- CUSTOMER DEEP -->
+<!-- CUSTOMER -->
 <div id="cust1" class="hidden">
 <p>Customer demanding escalation?</p>
 <button class="btn btn-yes" onclick="nextQ('cust2')">YES</button>
@@ -81,7 +80,7 @@ p { font-size:18px; font-weight:bold; }
 <button class="btn btn-no" onclick="noCall('Resolved in store')">NO</button>
 </div>
 
-<!-- STAFF DEEP -->
+<!-- STAFF -->
 <div id="staff1" class="hidden">
 <p>Shift uncovered?</p>
 <button class="btn btn-yes" onclick="nextQ('staff2')">YES</button>
@@ -106,7 +105,7 @@ p { font-size:18px; font-weight:bold; }
 <button class="btn btn-no" onclick="noCall('Store still functional')">NO</button>
 </div>
 
-<!-- OPS DEEP -->
+<!-- OPS -->
 <div id="ops1" class="hidden">
 <p>System or POS down?</p>
 <button class="btn btn-yes" onclick="nextQ('ops2')">YES</button>
@@ -160,20 +159,34 @@ historyStack=[];
 showScreen("home");
 }
 
+// 🔥 NEW DM FUNCTION (WITH QUESTIONS)
 function callDM(reason){
 showScreen("result");
+
 resultMsg.innerHTML="CALL DM";
 resultMsg.className="result call";
+
 whyText.innerHTML="<b>WHY:</b> "+reason;
-dmText.innerHTML="<b>EXPECTATION:</b> Only after all steps attempted.";
+
+dmText.innerHTML = `
+<b>⚠️ DM WILL ASK YOU:</b><br>
+• What have you already tried?<br>
+• What policy applies here?<br>
+• What solution are you recommending?<br>
+• What is the business impact?<br><br>
+<b>EXPECTATION:</b> Be prepared before calling.
+`;
 }
 
 function noCall(reason){
 showScreen("result");
+
 resultMsg.innerHTML="DO NOT CALL DM";
 resultMsg.className="result nocall";
+
 whyText.innerHTML="<b>WHY:</b> "+reason;
-dmText.innerHTML="<b>EXPECTATION:</b> Manager ownership required.";
+
+dmText.innerHTML="<b>EXPECTATION:</b> Handle at store level.";
 }
 </script>
 
