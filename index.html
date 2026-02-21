@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manager Counter Coach</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#006400">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+body { font-family: Arial; background:#f4f4f4; padding:20px; text-align:center; }
+.header { background:#006400; color:white; padding:15px; border-radius:10px; margin-bottom:15px; }
+.store-tag { font-size:14px; margin-top:5px; }
+.container { background:white; max-width:480px; margin:auto; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
+
+
+
+p { font-size:18px; font-weight:bold; }
+
+.btn { display:block; width:100%; padding:14px; margin:10px 0; font-weight:bold; border:none; border-radius:8px; cursor:pointer;}
+.btn-yes{background:#2e7d32;color:white;}
+.btn-no{background:#c62828;color:white;}
+.btn-blue{background:#1b5e20;color:white;}
+.btn-reset{background:#777;color:white;}
+.btn-emergency{background:#b71c1c;color:white;}
+
+.hidden{display:none;}
+input{width:90%;padding:8px;margin:6px 0;}
+
+.result{padding:20px;font-weight:bold;border-radius:8px;}
+.call{background:#ffebee;color:#c62828;border:2px solid #c62828;}
+.nocall{background:#e8f5e9;color:#2e7d32;border:2px solid #2e7d32;}
+
+
+.why{
+margin-top:12px;
+font-size:18px;
+font-weight:bold;
+line-height:1.4;
+}
+
+.ask{
+margin-top:10px;
+font-size:15px;
+line-height:1.4;
+}
+
+.expect{
+margin-top:12px;
+font-size:17px;
+font-weight:bold;
+font-style:italic;
+line-height:1.4;
+}
+.why{ color:#b71c1c; }      /* red = problem */
+.expect{ color:#1b5e20; }   /* green = action */
+
+.footer{margin-top:15px;font-size:12px;color:#666;}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<h2>Counter Coach</h2>
+<div id="storeDisplay" class="store-tag"></div>
+</div>
+
+
+
+<div class="container">
+
+<div id="banner" style="display:none;background:#ffc107;padding:10px;border-radius:8px;margin-bottom:10px;font-weight:bold;"></div>
+<div id="lastSync" style="font-size:12px;color:#777;margin-bottom:10px;"></div>
+
+<!-- SETUP -->
+<div id="setupScreen">
+<h3>Store Setup</h3>
+<input id="storeNum" placeholder="Store Number">
+<input id="managerNum" placeholder="Manager Phone">
+<input id="helpdeskNum" placeholder="Help Desk Phone">
+<input id="storePin" placeholder="Create Store Admin PIN">
+<button class="btn btn-yes" onclick="saveSetup()">Save & Lock Store</button>
+</div>
+
+<!-- HOME -->
+<div id="home" class="hidden">
+<p>Select Situation</p>
+
+<button class="btn btn-emergency" onclick="showResult(
+'CALL 911 FIRST<br>THEN CALL MANAGER',
+'tel:911',
+'Safety risk present.',
+'What immediate danger exists? Who is affected?',
+'You already secured safety and called emergency services.'
+)">🚨 Emergency</button>
+
+<button class="btn btn-blue" onclick="nextQ('cust1')">Customer Escalation</button>
+<button class="btn btn-blue" onclick="nextQ('staff1')">Staffing Issue</button>
+<button class="btn btn-blue" onclick="nextQ('driver1')">Drivers / Delivery</button>
+<button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
+<button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
+</div>
+
+<!-- (ALL YOUR QUESTIONS REMAIN EXACT — unchanged) -->
+<!-- KEEPING YOUR FULL FLOW EXACTLY AS YOU PROVIDED -->
+
+<!-- CUSTOMER -->
+<div id="cust1" class="hidden">
+<p>Customer demanding manager or escalating beyond employee?</p>
+<button class="btn btn-yes" onclick="nextQ('cust2')">YES</button>
+<button class="btn btn-no" onclick="noCall('Handled at employee level')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="cust2" class="hidden">
+<p>Did you fully follow return/warranty policy without deviation?</p>
+<button class="btn btn-yes" onclick="nextQ('cust3')">YES</button>
+<button class="btn btn-no" onclick="noCall('Follow policy completely first')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="cust3" class="hidden">
+<p>Did you offer ALL available solutions (exchange, credit, alternative part)?</p>
+<button class="btn btn-yes" onclick="nextQ('cust4')">YES</button>
+<button class="btn btn-no" onclick="noCall('Offer solutions before escalation')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="cust4" class="hidden">
+<p>Customer still refusing resolution and impacting store environment?</p>
+<button class="btn btn-yes" onclick="callManager('Unresolvable customer escalation')">YES</button>
+<button class="btn btn-no" onclick="noCall('Resolved without escalation')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<!-- STAFF -->
+<div id="staff1" class="hidden">
+<p>Is there a call-off or staffing gap affecting coverage?</p>
+<button class="btn btn-yes" onclick="nextQ('staff2')">YES</button>
+<button class="btn btn-no" onclick="noCall('Coverage sufficient')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="staff2" class="hidden">
+<p>Did you contact all available employees for coverage?</p>
+<button class="btn btn-yes" onclick="nextQ('staff3')">YES</button>
+<button class="btn btn-no" onclick="noCall('Attempt coverage first')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="staff3" class="hidden">
+<p>Did you adjust roles (counter, driver, commercial) to maintain operations?</p>
+<button class="btn btn-yes" onclick="nextQ('staff4')">YES</button>
+<button class="btn btn-no" onclick="noCall('Reallocate team roles first')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="staff4" class="hidden">
+<p>Is the store unable to operate or losing significant business?</p>
+<button class="btn btn-yes" onclick="callManager('Staffing prevents operations')">YES</button>
+<button class="btn btn-no" onclick="noCall('Store still functional')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<!-- DRIVER -->
+<div id="driver1" class="hidden">
+<p>Driver unavailable or delivery disruption?</p>
+<button class="btn btn-yes" onclick="nextQ('driver2')">YES</button>
+<button class="btn btn-no" onclick="noCall('No delivery issue')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="driver2" class="hidden">
+<p>Can counter or other staff cover delivery temporarily?</p>
+<button class="btn btn-yes" onclick="noCall('Reassign staff and continue')">YES</button>
+<button class="btn btn-no" onclick="nextQ('driver3')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="driver3" class="hidden">
+<p>Is commercial business significantly impacted?</p>
+<button class="btn btn-yes" onclick="callManager('Delivery failure impacting business')">YES</button>
+<button class="btn btn-no" onclick="noCall('Delay manageable')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<!-- CASH -->
+<div id="cash1" class="hidden">
+<p>Register over/short detected?</p>
+<button class="btn btn-yes" onclick="nextQ('cash2')">YES</button>
+<button class="btn btn-no" onclick="noCall('No issue')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="cash2" class="hidden">
+<p>Recounted drawer, checked bags, safe, and deposits?</p>
+<button class="btn btn-yes" onclick="nextQ('cash3')">YES</button>
+<button class="btn btn-no" onclick="noCall('Verify all cash locations first')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="cash3" class="hidden">
+<p>Variance still over $20 after verification?</p>
+<button class="btn btn-yes" onclick="callManager('Unresolved cash variance')">YES</button>
+<button class="btn btn-no" onclick="noCall('Log and monitor')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<!-- OPS -->
+<div id="ops1" class="hidden">
+<p>System, POS, or building issue affecting operations?</p>
+<button class="btn btn-yes" onclick="nextQ('ops2')">YES</button>
+<button class="btn btn-no" onclick="noCall('Minor issue')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="ops2" class="hidden">
+<p>Restarted system or attempted basic troubleshooting?</p>
+<button class="btn btn-yes" onclick="nextQ('ops3')">YES</button>
+<button class="btn btn-no" onclick="noCall('Restart first')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="ops3" class="hidden">
+<p>Contacted help desk and followed guidance?</p>
+<button class="btn btn-yes" onclick="nextQ('ops4')">YES</button>
+<button class="btn btn-no" onclick="noCall('Use help desk first')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="ops4" class="hidden">
+<p>Still unable to operate or losing sales?</p>
+<button class="btn btn-yes" onclick="callManager('Operational failure')">YES</button>
+<button class="btn btn-no" onclick="noCall('Resolved')">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+
+<!-- RESULT -->
+<div id="resultScreen" class="hidden">
+<div id="resultMsg" class="result"></div>
+<div id="whyText" class="why"></div>
+<div id="askText" class="ask"></div>
+<div id="expectText" class="expect"></div>
+<div id="actionBtn"></div>
+<button class="btn btn-reset" onclick="goHome()">Home</button>
+</div>
+
+<!-- STORE ADMIN PANEL -->
+<div id="storeAdminPanel" class="hidden">
+<h3>Store Admin Settings</h3>
+<input id="editStore" placeholder="Store Number">
+<input id="editManager" placeholder="Manager Phone">
+<input id="editHelpdesk" placeholder="Help Desk Phone">
+
+<button class="btn btn-yes" onclick="saveStoreAdmin()">Save</button>
+<button class="btn btn-reset" onclick="goHome()">Cancel</button>
+</div>
+
+</div>
+
+<!-- ✅ QR ADDED -->
+<div style="max-width:480px;margin:auto;margin-top:15px;">
+<div id="storeQR"></div>
+</div>
+
+<button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
+
+<div class="footer">V6.3</div>
+
+
+
+
+<script>
+
+let settings={},historyStack=[];
+
+//////////////////////////////////////////////////
+// 🔥 HEARTBEAT (FIXED + RESTORED)
+//////////////////////////////////////////////////
+
+function sendHeartbeat(){
+
+const token = localStorage.getItem("gh_token");
+if(!token || !settings.store) return;
+
+fetch("https://api.github.com/repos/manager2278/Counter-Coach/contents/district-config.json")
+.then(res=>res.json())
+.then(data=>{
+
+let config = JSON.parse(atob(data.content.replace(/\n/g,"")));
+let sha = data.sha;
+
+if(!config.heartbeat) config.heartbeat = {};
+if(!config.stores) config.stores = {};
+
+config.heartbeat[settings.store] = Date.now();
+
+if(!config.stores[settings.store]){
+config.stores[settings.store] = { message:"" };
+}
+
+return fetch("https://api.github.com/repos/manager2278/Counter-Coach/contents/district-config.json",{
+method:"PUT",
+headers:{
+"Authorization":"Bearer "+token,
+"Content-Type":"application/json"
+},
+body: JSON.stringify({
+message:"Store heartbeat",
+content:btoa(JSON.stringify(config,null,2)),
+sha: sha
+})
+});
+
+})
+.catch(()=>{});
+}
+
+//////////////////////////////////////////////////
+// 🔥 QR FUNCTION
+//////////////////////////////////////////////////
+
+function generateQR(){
+if(!settings.store) return;
+
+document.getElementById("storeQR").innerHTML="";
+
+new QRCode(document.getElementById("storeQR"),{
+text:`https://manager2278.github.io/Counter-Coach/?store=${settings.store}&manager=${settings.manager}&helpdesk=${localStorage.getItem("helpdesk")||""}&pin=${localStorage.getItem("storePin")||""}`,
+width:150,
+height:150
+});
+}
+
+//////////////////////////////////////////////////
+// EXISTING LOGIC (UNCHANGED)
+//////////////////////////////////////////////////
+
+setInterval(runDistrictSync,60000);
+
+function runDistrictSync(){
+if(navigator.onLine && settings.store){
+
+fetch("https://manager2278.github.io/Counter-Coach/district-config.json?ts="+Date.now())
+.then(r=>r.json())
+.then(data=>{
+
+let bannerMsg = "";
+
+if(data.message) bannerMsg = data.message;
+
+if(data.stores && data.stores[settings.store]){
+let u = data.stores[settings.store];
+
+if(u.manager){
+settings.manager = u.manager;
+localStorage.setItem("manager", u.manager);
+}
+
+if(u.helpdesk){
+localStorage.setItem("helpdesk", u.helpdesk);
+}
+
+if(u.message){
+bannerMsg = u.message;
+}
+}
+
+if(data.alert){
+bannerMsg = data.alert;
+}
+
+if(bannerMsg){
+banner.innerHTML = bannerMsg;
+banner.style.display = "block";
+}
+
+if(data.timestamp){
+localStorage.setItem("lastSync", data.timestamp);
+}
+
+let last = localStorage.getItem("lastSync");
+if(last){
+lastSync.innerText = "Last Sync: " + last;
+}
+
+})
+.catch(()=>{
+banner.innerText = "Offline Mode";
+banner.style.display = "block";
+});
+}
+}
+
+function showScreen(id){
+document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
+document.getElementById(id).classList.remove("hidden");
+}
+
+function nextQ(id){
+let current=document.querySelector('.container > div:not(.hidden)');
+if(current) historyStack.push(current.id);
+showScreen(id);
+}
+
+function goBack(){
+if(historyStack.length){
+showScreen(historyStack.pop());
+}else{
+goHome();
+}
+}
+
+function goHome(){
+historyStack=[];
+showScreen("home");
+}
+
+function callManager(reason){
+showScreen("resultScreen");
+resultMsg.innerHTML="CALL MANAGER";
+resultMsg.className="result call";
+
+whyText.innerHTML="<b>WHY:</b> "+reason;
+askText.innerHTML="<b>MANAGER WILL ASK:</b><br>• What did you already try?<br>• What policy applies?<br>• What solution do you recommend?";
+expectText.innerHTML="<b>EXPECTED:</b> You attempted all steps before calling.";
+
+actionBtn.innerHTML="";
+let a=document.createElement("a");
+a.href="tel:"+encodeURIComponent(settings.manager||"");
+a.className="btn btn-blue";
+a.innerText="Call Manager";
+actionBtn.appendChild(a);
+}
+
+function noCall(reason){
+showScreen("resultScreen");
+resultMsg.innerHTML="DO NOT CALL";
+resultMsg.className="result nocall";
+
+whyText.innerHTML="<b>WHY:</b> "+reason;
+askText.innerHTML="<b>MANAGER WILL ASK:</b> Why wasn’t this handled in-store?";
+expectText.innerHTML="<b>EXPECTED:</b> Manager ownership at store level.";
+
+actionBtn.innerHTML="";
+}
+
+function showResult(msg,act,why,ask,expect){
+showScreen("resultScreen");
+resultMsg.innerHTML=msg;
+resultMsg.className="result call";
+
+whyText.innerHTML="<b>WHY:</b> "+why;
+askText.innerHTML="<b>MANAGER WILL ASK:</b><br>"+ask;
+expectText.innerHTML="<b>EXPECTED:</b> "+expect;
+
+actionBtn.innerHTML="";
+if(act){
+let a=document.createElement("a");
+a.href=act;
+a.className="btn btn-blue";
+a.innerText="Call";
+actionBtn.appendChild(a);
+}
+}
+
+function saveSetup(){
+localStorage.setItem("store",storeNum.value);
+localStorage.setItem("manager",managerNum.value);
+localStorage.setItem("helpdesk",helpdeskNum.value);
+localStorage.setItem("storePin",storePin.value);
+localStorage.setItem("locked","true");
+
+settings.store = storeNum.value;
+settings.manager = managerNum.value;
+
+showScreen("home");
+storeDisplay.innerHTML="Store #"+storeNum.value;
+
+generateQR();
+sendHeartbeat();
+}
+
+window.onload=function(){
+
+// 🔥 FIRST: check if coming from QR
+autoSetupFromQR();
+
+// Load saved settings
+settings.store=localStorage.getItem("store");
+settings.manager=localStorage.getItem("manager");
+
+if(localStorage.getItem("locked")==="true"){
+showScreen("home");
+storeDisplay.innerHTML="Store #"+settings.store;
+
+generateQR();
+runDistrictSync();
+
+// 🔥 HEARTBEAT
+setTimeout(sendHeartbeat,2000);
+setInterval(sendHeartbeat,60000);
+
+}else{
+showScreen("setupScreen");
+}
+
+}
+
+function openAdmin(){
+let pin = prompt("Enter Store PIN or District PIN");
+
+if(pin === localStorage.getItem("storePin")){
+    nextQ("storeAdminPanel");
+
+    editStore.value = localStorage.getItem("store") || "";
+    editManager.value = localStorage.getItem("manager") || "";
+    editHelpdesk.value = localStorage.getItem("helpdesk") || "";
+}
+else if(pin === "Manager2278"){
+
+    if(confirm("Master Reset Store? This will wipe all settings.")){
+
+        // 🔥 Preserve GitHub token
+        const token = localStorage.getItem("gh_token");
+
+        // Clear store data ONLY
+        localStorage.removeItem("store");
+        localStorage.removeItem("manager");
+        localStorage.removeItem("helpdesk");
+        localStorage.removeItem("storePin");
+        localStorage.removeItem("locked");
+
+        // Restore token
+        if(token){
+            localStorage.setItem("gh_token", token);
+        }
+
+        settings = {};
+        historyStack = [];
+
+        showScreen("setupScreen");
+        storeDisplay.innerHTML = "";
+
+        alert("Store Reset Complete");
+    }
+
+}
+else{
+    alert("Incorrect PIN");
+}
+}
+
+function saveStoreAdmin(){
+localStorage.setItem("store", editStore.value);
+localStorage.setItem("manager", editManager.value);
+localStorage.setItem("helpdesk", editHelpdesk.value);
+
+alert("Saved");
+location.reload();
+}
+
+function autoSetupFromQR(){
+
+const params = new URLSearchParams(window.location.search);
+
+const store = params.get("store");
+const manager = params.get("manager");
+const helpdesk = params.get("helpdesk");
+const pin = params.get("pin");
+
+if(store && manager && helpdesk && pin){
+
+// Save to localStorage
+localStorage.setItem("store", store);
+localStorage.setItem("manager", manager);
+localStorage.setItem("helpdesk", helpdesk);
+localStorage.setItem("storePin", pin);
+localStorage.setItem("locked", "true");
+
+// Apply to app
+settings.store = store;
+settings.manager = manager;
+
+// Clean URL (optional but clean)
+window.history.replaceState({}, document.title, window.location.pathname);
+
+// Go straight to home
+showScreen("home");
+storeDisplay.innerHTML = "Store #" + store;
+
+// Generate QR + start services
+generateQR();
+runDistrictSync();
+setTimeout(sendHeartbeat,2000);
+setInterval(sendHeartbeat,60000);
+
+}
+}
+
+</script>
+
+</body>
+</html>
