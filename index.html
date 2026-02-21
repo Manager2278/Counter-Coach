@@ -16,15 +16,7 @@ body { font-family: Arial; background:#f4f4f4; padding:20px; text-align:center; 
 .store-tag { font-size:14px; margin-top:5px; }
 .container { background:white; max-width:480px; margin:auto; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
 
-<!-- STORE ADMIN PANEL -->
-<div id="storeAdminPanel" class="hidden">
-<h3>Store Admin Settings</h3>
-<input id="editStore" placeholder="Store Number">
-<input id="editManager" placeholder="Manager Phone">
-<input id="editHelpdesk" placeholder="Help Desk Phone">
 
-<button class="btn btn-yes" onclick="saveStoreAdmin()">Save</button>
-<button class="btn btn-reset" onclick="goHome()">Cancel</button>
 </div>
 
 
@@ -106,6 +98,17 @@ input{width:90%;padding:8px;margin:6px 0;}
 <div id="expectText" class="expect"></div>
 <div id="actionBtn"></div>
 <button class="btn btn-reset" onclick="goHome()">Home</button>
+</div>
+
+<!-- STORE ADMIN PANEL -->
+<div id="storeAdminPanel" class="hidden">
+<h3>Store Admin Settings</h3>
+<input id="editStore" placeholder="Store Number">
+<input id="editManager" placeholder="Manager Phone">
+<input id="editHelpdesk" placeholder="Help Desk Phone">
+
+<button class="btn btn-yes" onclick="saveStoreAdmin()">Save</button>
+<button class="btn btn-reset" onclick="goHome()">Cancel</button>
 </div>
 
 </div>
