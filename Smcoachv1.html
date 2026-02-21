@@ -52,6 +52,7 @@ line-height:1.4;
 
 </style>
 </head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <body>
 
@@ -215,7 +216,9 @@ line-height:1.4;
 <div id="answerText" class="answer"></div>
 <button class="btn btn-reset" onclick="goHome()">Home</button>
 </div>
-
+<div style="margin-top:20px;">
+  <div id="qrcode"></div>
+</div>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 
 </div>
@@ -306,6 +309,19 @@ goHome();
 }
 
 showScreen("home");
+generateQR();
+function generateQR(){
+  const url = window.location.href;
+
+  document.getElementById("qrcode").innerHTML = "";
+
+  new QRCode(document.getElementById("qrcode"), {
+    text: url,
+    width: 140,
+    height: 140
+  });
+}
+
 </script>
 
 </body>
