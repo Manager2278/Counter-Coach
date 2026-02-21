@@ -373,23 +373,46 @@ actionBtn.appendChild(a);
 }
 }
 
+
 function openAdmin(){
 let pin = prompt("Enter Store PIN or District PIN");
 
 if(pin === settings.storePin){
-nextQ("storeAdminPanel");
-editStore.value=settings.store;
-editManager.value=settings.manager;
-editHelpdesk.value=settings.helpdesk;
+    nextQ("storeAdminPanel");
+    editStore.value=settings.store;
+    editManager.value=settings.manager;
+    editHelpdesk.value=settings.helpdesk;
 }
 else if(pin === DISTRICT_PIN){
-window.location.href = "district-dashboard.html";
+
+    // 🔥 MASTER RESET
+    if(confirm("Master Reset Store? This will wipe all settings.")){
+        
+        localStorage.clear();
+
+        settings = {};
+        historyStack = [];
+
+        // show setup again
+        document.querySelectorAll('.container > div').forEach(d=>{
+            if(d.id !== "banner" && d.id !== "lastSync"){
+                d.classList.add("hidden");
+            }
+        });
+
+        document.getElementById("setupScreen").classList.remove("hidden");
+        storeDisplay.innerHTML = "";
+
+        alert("Store Reset Complete");
+    }
+
 }
 else{
-alert("Incorrect PIN");
+    alert("Incorrect PIN");
 }
-}
+  }
 
+  
 function saveStoreAdmin(){
 localStorage.setItem("store",editStore.value);
 localStorage.setItem("manager",editManager.value);
