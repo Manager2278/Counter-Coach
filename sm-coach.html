@@ -3,120 +3,179 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Manager Decision Coach</title>
+<title>Manager Counter Coach - DM Edition</title>
 
 <style>
 body { font-family: Arial; background:#f4f4f4; padding:20px; text-align:center; }
-.header { background:#1b5e20; color:white; padding:15px; border-radius:10px; margin-bottom:15px; cursor:pointer; }
+.header { background:#006400; color:white; padding:15px; border-radius:10px; margin-bottom:15px; }
 .container { background:white; max-width:480px; margin:auto; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
-p { font-size:18px; font-weight:bold; cursor:pointer; }
+
+p { font-size:18px; font-weight:bold; }
+
 .btn { display:block; width:100%; padding:14px; margin:10px 0; font-weight:bold; border:none; border-radius:8px; cursor:pointer;}
 .btn-yes{background:#2e7d32;color:white;}
 .btn-no{background:#c62828;color:white;}
-.btn-blue{background:#1565c0;color:white;}
+.btn-blue{background:#1b5e20;color:white;}
 .btn-reset{background:#777;color:white;}
+
 .hidden{display:none;}
-.result{padding:20px;font-weight:bold;border-radius:8px;}
+
+.result{padding:20px;border-radius:8px;}
 .call{background:#ffebee;color:#c62828;border:2px solid #c62828;}
 .nocall{background:#e8f5e9;color:#2e7d32;border:2px solid #2e7d32;}
-.footer{margin-top:15px;font-size:12px;color:#666;}
-.action-btn{width:auto;padding:10px 16px;display:inline-block;}
+
+.why{margin-top:10px;font-size:14px;font-weight:normal;}
+.dm{margin-top:8px;font-size:13px;color:#333;font-style:italic;}
 </style>
 </head>
 
 <body>
 
-<div class="header" onclick="goHome()">
-<h2>Manager → DM Coach</h2>
+<div class="header">
+<h2>Manager Decision Coach</h2>
+<div>Before You Call DM</div>
 </div>
 
 <div class="container">
 
-<!-- MAIN MENU (ALL OPTIONS INCLUDING EMERGENCY) -->
+<!-- START -->
 <div id="q1">
-<p onclick="goHome()">What type of issue?</p>
+<p>Immediate threat to life, safety, or building?</p>
+<button class="btn btn-yes" onclick="showResult(
+'CALL 911 FIRST, THEN CALL DM',
+'This is an emergency situation where safety overrides all process.',
+'DM expects immediate escalation AFTER emergency services are contacted.',
+'call'
+)">YES</button>
 
-<button class="btn btn-no" onclick="showResult('CALL 911 FIRST,<br>Call DM SECOND','tel:911')">
-🚨 Emergency
-</button>
+<button class="btn btn-no" onclick="nextQ('q-category')">NO</button>
+</div>
 
+<div id="q-category" class="hidden">
+<p>What type of issue?</p>
+<button class="btn btn-blue" onclick="nextQ('q-cust')">Customer Issue</button>
 <button class="btn btn-blue" onclick="nextQ('q-staff')">Staffing</button>
-<button class="btn btn-blue" onclick="nextQ('q-customer')">Customer</button>
-<button class="btn btn-blue" onclick="nextQ('q-ops')">Operations</button>
-<button class="btn btn-blue" onclick="nextQ('q-financial')">Financial</button>
-
-</div>
-
-<!-- STAFF -->
-<div id="q-staff" class="hidden">
-<p onclick="goHome()">Shift uncovered?</p>
-<button class="btn btn-yes" onclick="nextQ('q-staff-2')">YES</button>
-<button class="btn btn-no" onclick="showResult('No call needed')">NO</button>
-<button class="btn btn-reset" onclick="goBack()">Back</button>
-</div>
-
-<div id="q-staff-2" class="hidden">
-<p onclick="goHome()">Store at risk of closing?</p>
-<button class="btn btn-yes" onclick="showResult('Call DM','tel:'+settings.dm)">YES</button>
-<button class="btn btn-no" onclick="showResult('Text DM update','sms:'+settings.dm)">NO</button>
+<button class="btn btn-blue" onclick="nextQ('q-ops')">Operations / Systems</button>
+<button class="btn btn-blue" onclick="nextQ('q-sales')">Sales / Commercial</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
 <!-- CUSTOMER -->
-<div id="q-customer" class="hidden">
-<p onclick="goHome()">Customer escalation unresolved?</p>
-<button class="btn btn-yes" onclick="nextQ('q-customer-2')">YES</button>
-<button class="btn btn-no" onclick="showResult('Handled correctly')">NO</button>
+<div id="q-cust" class="hidden">
+<p>Customer demanding manager or escalation?</p>
+<button class="btn btn-yes" onclick="nextQ('q-cust-2')">YES</button>
+<button class="btn btn-no" onclick="showResult(
+'HANDLE IN STORE - DO NOT CALL DM',
+'Routine customer interactions should be handled at store level.',
+'DM expects managers to resolve standard complaints independently.',
+'nocall'
+)">NO</button>
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-<div id="q-customer-2" class="hidden">
-<p onclick="goHome()">Policy exception needed?</p>
-<button class="btn btn-yes" onclick="showResult('Text DM for approval','sms:'+settings.dm)">YES</button>
-<button class="btn btn-no" onclick="showResult('Do not call DM')">NO</button>
+<div id="q-cust-2" class="hidden">
+<p>Can this be resolved using policy?</p>
+<button class="btn btn-yes" onclick="showResult(
+'RESOLVE USING POLICY - DO NOT CALL DM',
+'If policy covers it, escalation is unnecessary.',
+'DM expects policy-based decision making.',
+'nocall'
+)">YES</button>
+
+<button class="btn btn-no" onclick="showResult(
+'CALL DM',
+'Policy does not cover situation or risk is high.',
+'DM expects involvement when policy cannot guide decision.',
+'call'
+)">NO</button>
+
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<!-- STAFF -->
+<div id="q-staff" class="hidden">
+<p>Coverage issue impacting operations?</p>
+<button class="btn btn-yes" onclick="nextQ('q-staff-2')">YES</button>
+<button class="btn btn-no" onclick="showResult(
+'ADJUST SCHEDULE - DO NOT CALL DM',
+'Minor staffing gaps are normal and manageable.',
+'DM expects schedule ownership.',
+'nocall'
+)">NO</button>
+<button class="btn btn-reset" onclick="goBack()">Back</button>
+</div>
+
+<div id="q-staff-2" class="hidden">
+<p>Store unable to operate effectively?</p>
+<button class="btn btn-yes" onclick="showResult(
+'CALL DM',
+'Business operations are impacted.',
+'DM expects awareness when store performance is at risk.',
+'call'
+)">YES</button>
+
+<button class="btn btn-no" onclick="showResult(
+'TEXT UPDATE ONLY',
+'Informational update without escalation.',
+'DM prefers updates vs unnecessary calls.',
+'nocall'
+)">NO</button>
+
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
 <!-- OPS -->
 <div id="q-ops" class="hidden">
-<p onclick="goHome()">Store cannot operate?</p>
-<button class="btn btn-yes" onclick="showResult('Call DM immediately','tel:'+settings.dm)">YES</button>
-<button class="btn btn-no" onclick="showResult('Call Help Desk','tel:'+settings.helpdesk)">NO</button>
+<p>Issue stopping sales or locking store?</p>
+<button class="btn btn-yes" onclick="showResult(
+'CALL DM',
+'Revenue or access is impacted.',
+'DM must be aware of business interruption.',
+'call'
+)">YES</button>
+
+<button class="btn btn-no" onclick="showResult(
+'CONTACT SUPPORT - DO NOT CALL DM',
+'Routine system or maintenance issue.',
+'DM expects proper escalation through support channels first.',
+'nocall'
+)">NO</button>
+
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-<!-- FINANCIAL -->
-<div id="q-financial" class="hidden">
-<p onclick="goHome()">Large variance or shortage?</p>
-<button class="btn btn-yes" onclick="showResult('Text DM details','sms:'+settings.dm)">YES</button>
-<button class="btn btn-no" onclick="showResult('Log and move on')">NO</button>
+<!-- SALES -->
+<div id="q-sales" class="hidden">
+<p>Major commercial account risk?</p>
+<button class="btn btn-yes" onclick="showResult(
+'CALL DM',
+'High value customer or revenue at risk.',
+'DM expects visibility on major account threats.',
+'call'
+)">YES</button>
+
+<button class="btn btn-no" onclick="showResult(
+'HANDLE IN STORE',
+'Standard sales activity.',
+'DM expects autonomy in daily sales operations.',
+'nocall'
+)">NO</button>
+
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
 <!-- RESULT -->
 <div id="resultScreen" class="hidden">
 <div id="resultMsg" class="result"></div>
-<div id="actionBtn"></div>
+<div id="whyText" class="why"></div>
+<div id="dmText" class="dm"></div>
 <button class="btn btn-reset" onclick="goHome()">Home</button>
 </div>
 
 </div>
 
-<div class="footer">Manager Version 2.1</div>
-
 <script>
-let settings = {
-  dm: localStorage.getItem("dm") || "",
-  helpdesk: localStorage.getItem("helpdesk") || ""
-};
-
 let historyStack=[];
-
-const LABELS = {
-  CALL_DM: "Call DM",
-  TEXT_DM: "Text DM",
-  CALL_HELPDESK: "Call Help Desk"
-};
 
 function showScreen(id){
 document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
@@ -124,7 +183,7 @@ document.getElementById(id).classList.remove("hidden");
 }
 
 function nextQ(id){
-let current = document.querySelector('.container > div:not(.hidden)');
+let current=document.querySelector('.container > div:not(.hidden)');
 if(current) historyStack.push(current.id);
 showScreen(id);
 }
@@ -142,38 +201,14 @@ historyStack=[];
 showScreen("q1");
 }
 
-function showResult(msg,act){
+function showResult(msg,why,dm,type){
 nextQ("resultScreen");
 
-resultMsg.innerHTML = msg;
-resultMsg.className = msg.toLowerCase().includes("call") ? "result call" : "result nocall";
+resultMsg.innerHTML=msg;
+resultMsg.className = type==="call" ? "result call" : "result nocall";
 
-actionBtn.innerHTML = "";
-
-if(act){
-let a = document.createElement("a");
-a.href = act;
-a.className = "btn btn-blue action-btn";
-
-if(act.startsWith("tel:")){
-  if(act.includes(settings.dm)){
-    a.innerText = LABELS.CALL_DM;
-  } else if(act.includes(settings.helpdesk)){
-    a.innerText = LABELS.CALL_HELPDESK;
-  } else {
-    a.innerText = "Call";
-  }
-}
-else if(act.startsWith("sms:")){
-  if(act.includes(settings.dm)){
-    a.innerText = LABELS.TEXT_DM;
-  } else {
-    a.innerText = "Text";
-  }
-}
-
-actionBtn.appendChild(a);
-}
+whyText.innerHTML = "<b>WHY:</b> " + why;
+dmText.innerHTML = "<b>DM EXPECTATION:</b> " + dm;
 }
 </script>
 
