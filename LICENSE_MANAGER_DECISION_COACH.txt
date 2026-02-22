@@ -1,0 +1,23 @@
+MANAGER DECISION COACH LICENSE
+Copyright (c) 2026 Justin Thomas
+
+All rights reserved.
+
+This software, known as "Manager Decision Coach", is the intellectual property of Justin Thomas.
+
+Permission is granted for internal operational use by authorized district-level personnel only.
+
+The following actions are strictly prohibited without explicit written consent:
+
+- Selling, sublicensing, or monetizing this software in any form
+- Sharing outside of approved organizational use
+- Modifying, copying, or recreating the system for commercial advantage
+- Removing or altering ownership or branding
+
+This tool is designed for district-level decision support and operational consistency.
+
+Violations of these terms may result in legal enforcement.
+
+For permissions beyond this license, contact the author.
+
+END OF TERMS
