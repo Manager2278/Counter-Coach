@@ -337,7 +337,7 @@ window.onload = function(){
 
 
 function generateQR(){
-  const url = "https://manager2278.github.io/Counter-Coach/sm-coach.html";
+  const url = window.location.href;
 
   const qrContainer = document.getElementById("qrcode");
   qrContainer.innerHTML = ""; // clear first
