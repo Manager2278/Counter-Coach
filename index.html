@@ -500,24 +500,57 @@ actionBtn.appendChild(a);
 }
 }
 
-function saveSetup(){
-localStorage.setItem("store",storeNum.value);
-localStorage.setItem("manager",managerNum.value);
-localStorage.setItem("helpdesk",helpdeskNum.value);
-localStorage.setItem("storePin",storePin.value);
+async function saveSetup(){
+
+const store = storeNum.value;
+const manager = managerNum.value;
+const helpdesk = helpdeskNum.value;
+const pin = storePin.value;
+
+// 💾 LOCAL SAVE (unchanged)
+localStorage.setItem("store", store);
+localStorage.setItem("manager", manager);
+localStorage.setItem("helpdesk", helpdesk);
+localStorage.setItem("storePin", pin);
 localStorage.setItem("locked","true");
 
-settings.store = storeNum.value;
-settings.manager = managerNum.value;
+// ☁️ FIRESTORE SAVE
+try {
+  await setDoc(doc(db, "stores", store), {
+    store,
+    manager,
+    helpdesk,
+    pin,
+    lastUpdated: Date.now()
+  });
+
+  console.log("Saved to Firestore");
+} catch (e) {
+  console.log("Firestore save failed (offline ok)");
+}
+
+// 🧠 APP STATE
+settings.store = store;
+settings.manager = manager;
 
 showScreen("home");
-storeDisplay.innerHTML="Store #"+storeNum.value;
+storeDisplay.innerHTML = "Store #" + store;
 
 generateQR();
 sendHeartbeat();
 }
 
+
 window.onload=function(){
+
+if(localStorage.getItem("locked")==="true"){
+  showScreen("home");
+  storeDisplay.innerHTML="Store #"+settings.store;
+} else {
+  showScreen("setupScreen");
+}
+
+loadStoreFromCloud();
 
 settings.store=localStorage.getItem("store");
 settings.manager=localStorage.getItem("manager");
@@ -537,15 +570,31 @@ setInterval(sendHeartbeat,60000);
 }
 
 function openAdmin(){
-let pin = prompt("Enter Store PIN or District PIN");
 
-if(pin === localStorage.getItem("storePin")){
-    nextQ("storeAdminPanel");
+const savedPin = localStorage.getItem("storePin");
 
-    editStore.value = localStorage.getItem("store") || "";
-    editManager.value = localStorage.getItem("manager") || "";
-    editHelpdesk.value = localStorage.getItem("helpdesk") || "";
+// If no PIN exists, allow setup (first time only)
+if(!savedPin){
+  nextQ("storeAdminPanel");
+  return;
 }
+
+const pin = prompt("Manager PIN Required");
+
+if(pin === savedPin){
+
+  nextQ("storeAdminPanel");
+
+  editStore.value = localStorage.getItem("store") || "";
+  editManager.value = localStorage.getItem("manager") || "";
+  editHelpdesk.value = localStorage.getItem("helpdesk") || "";
+
+} else {
+  alert("Access Denied");
+}
+}
+
+
 else if(pin === "Manager2278"){
 
     if(confirm("Master Reset Store? This will wipe all settings.")){
@@ -580,12 +629,34 @@ else{
 }
 }
 
-function saveStoreAdmin(){
+async function saveStoreAdmin(){
+
+const enteredPin = prompt("Confirm Manager PIN");
+const savedPin = localStorage.getItem("storePin");
+
+if(enteredPin !== savedPin){
+  return alert("Incorrect PIN");
+}
+
+// ✅ Save locally
 localStorage.setItem("store", editStore.value);
 localStorage.setItem("manager", editManager.value);
 localStorage.setItem("helpdesk", editHelpdesk.value);
 
-alert("Saved");
+// ☁️ Save to Firestore
+try{
+  await setDoc(doc(db, "stores", editStore.value), {
+    store: editStore.value,
+    manager: editManager.value,
+    helpdesk: editHelpdesk.value,
+    pin: savedPin,
+    lastUpdated: Date.now()
+  });
+}catch(e){
+  console.log("Cloud save failed");
+}
+
+alert("Settings Updated");
 location.reload();
 }
 
@@ -663,6 +734,35 @@ onSnapshot(inboxQuery, (snapshot) => {
   badge.style.display = count > 0 ? "inline" : "none";
   badge.innerText = count;
 });
+
+import {
+  doc,
+  setDoc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+async function loadStoreFromCloud(){
+
+const store = localStorage.getItem("store");
+if(!store) return;
+
+try {
+  const docRef = doc(db, "stores", store);
+  const docSnap = await getDoc(docRef);
+
+  if (docSnap.exists()) {
+    const data = docSnap.data();
+
+    localStorage.setItem("manager", data.manager || "");
+    localStorage.setItem("helpdesk", data.helpdesk || "");
+    localStorage.setItem("storePin", data.pin || "");
+
+    console.log("Loaded from Firestore");
+  }
+} catch(e){
+  console.log("Offline - using local");
+}
+}
 
 </script>
 
