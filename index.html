@@ -76,6 +76,15 @@ line-height:1.4;
 <div id="banner" style="display:none;background:#ffc107;padding:10px;border-radius:8px;margin-bottom:10px;font-weight:bold;"></div>
 <div id="lastSync" style="font-size:12px;color:#777;margin-bottom:10px;"></div>
 
+<div id="loginScreen">
+  <h3>Store Login</h3>
+  <input id="loginEmail" placeholder="Store Email">
+  <input id="loginPassword" type="password" placeholder="Password">
+  
+  <button class="btn btn-yes" onclick="login()">Login</button>
+  <button class="btn btn-blue" onclick="createAccount()">Create Store</button>
+</div>
+
 <!-- SETUP -->
 <div id="setupScreen">
 <h3>Store Setup</h3>
@@ -335,6 +344,56 @@ line-height:1.4;
 
 
 <script>
+
+window.login = async function(){
+
+const email = document.getElementById("loginEmail").value;
+const password = document.getElementById("loginPassword").value;
+
+try {
+  await signInWithEmailAndPassword(auth, email, password);
+  alert("Logged in");
+} catch(e){
+  alert("Login failed");
+}
+
+};
+
+window.createAccount = async function(){
+
+const email = document.getElementById("loginEmail").value;
+const password = document.getElementById("loginPassword").value;
+
+try {
+  await createUserWithEmailAndPassword(auth, email, password);
+  alert("Store created");
+} catch(e){
+  alert("Error creating account");
+}
+
+};
+
+onAuthStateChanged(auth, (user) => {
+
+if(user){
+
+  const email = user.email;
+
+  // Extract store number from email
+  const store = email.split("@")[0].replace("store","");
+
+  localStorage.setItem("store", store);
+
+  settings.store = store;
+
+  showScreen("home");
+  storeDisplay.innerHTML = "Store #" + store;
+
+} else {
+  showScreen("loginScreen");
+}
+
+});
 
 let settings={},historyStack=[];
 
@@ -699,6 +758,8 @@ function openManagerInbox() {
   window.location.href = "daily-recap.html#manager";
 }
 
+const auth = getAuth(app);
+
 </script>
 
 <script type="module">
@@ -880,6 +941,15 @@ onSnapshot(
     }
   }
 );
+
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+
   
 </script>
 
