@@ -802,39 +802,85 @@ onSnapshot(recapQuery, (snapshot) => {
 
   if (count > 0) {
     badge.style.display = "inline";
-    badge.innerText = count;
 
-    // 🔥 GLOW EFFECT
-    btn.style.boxShadow = "0 0 15px rgba(255,0,0,0.7)";
-  } else {
-    badge.style.display = "none";
+// 📋 RECAP PRIORITY SYSTEM
+onSnapshot(
+  query(
+    collection(db, "recapEntries"),
+    where("storeNumber", "==", storeNumber),
+    where("status", "==", "open")
+  ),
+  (snapshot) => {
 
-    // remove glow
-    btn.style.boxShadow = "none";
+    const badge = document.getElementById("recapCount");
+    const btn = document.getElementById("recapBtn");
+
+    if (!badge || !btn) return;
+
+    let total = 0;
+    let hasIssue = false;
+    let hasProgress = false;
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      total++;
+
+      if (data.type === "issue") hasIssue = true;
+      if (data.type === "progress") hasProgress = true;
+    });
+
+    // Badge
+    if (total > 0) {
+      badge.style.display = "inline";
+      badge.innerText = total;
+    } else {
+      badge.style.display = "none";
+    }
+
+    // 🔥 PRIORITY GLOW
+    if (hasIssue) {
+      // 🔴 HIGH PRIORITY
+      btn.style.boxShadow = "0 0 18px rgba(255,0,0,0.9)";
+    } else if (hasProgress) {
+      // 🟡 MEDIUM
+      btn.style.boxShadow = "0 0 18px rgba(255,193,7,0.9)";
+    } else {
+      // 🟢 CLEAN
+      btn.style.boxShadow = "none";
+    }
   }
-});
+);
 
-// 🔒 INBOX ALERT
-onSnapshot(inboxQuery, (snapshot) => {
-  const count = snapshot.size;
-  const badge = document.getElementById("inboxCount");
-  const btn = document.getElementById("inboxBtn");
 
-  if (!badge || !btn) return;
+// 🔒 INBOX (ALWAYS HIGH PRIORITY)
+onSnapshot(
+  query(
+    collection(db, "managerInbox"),
+    where("storeNumber", "==", storeNumber),
+    where("status", "==", "open")
+  ),
+  (snapshot) => {
 
-  if (count > 0) {
-    badge.style.display = "inline";
-    badge.innerText = count;
+    const badge = document.getElementById("inboxCount");
+    const btn = document.getElementById("inboxBtn");
 
-    // 🔥 GLOW EFFECT
-    btn.style.boxShadow = "0 0 15px rgba(255,0,0,0.7)";
-  } else {
-    badge.style.display = "none";
+    if (!badge || !btn) return;
 
-    btn.style.boxShadow = "none";
+    const count = snapshot.size;
+
+    if (count > 0) {
+      badge.style.display = "inline";
+      badge.innerText = count;
+
+      // 🔴 ALWAYS RED
+      btn.style.boxShadow = "0 0 18px rgba(255,0,0,0.9)";
+    } else {
+      badge.style.display = "none";
+      btn.style.boxShadow = "none";
+    }
   }
-});
-
+);
+  
 </script>
 
 </body>
