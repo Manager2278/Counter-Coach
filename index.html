@@ -373,18 +373,26 @@ try {
 
 };
 
+
 onAuthStateChanged(auth, (user) => {
 
 if(user){
 
   const email = user.email;
 
-  // Extract store number from email
   const store = email.split("@")[0].replace("store","");
 
   localStorage.setItem("store", store);
-
   settings.store = store;
+
+  // 🔥 ROLE LOGIC
+  // Default = employee
+  userRole = "employee";
+
+  // If manager PIN already verified earlier
+  if(localStorage.getItem("managerVerified") === "true"){
+    userRole = "manager";
+  }
 
   showScreen("home");
   storeDisplay.innerHTML = "Store #" + store;
@@ -396,6 +404,7 @@ if(user){
 });
 
 let settings={},historyStack=[];
+let userRole = "employee";
 
 //////////////////////////////////////////////////
 // 🔥 HEARTBEAT (FIXED + RESTORED)
@@ -656,19 +665,16 @@ setInterval(sendHeartbeat,60000);
 }
 }
 
+
 function openAdmin(){
 
+const pin = prompt("Manager PIN");
 const savedPin = localStorage.getItem("storePin");
 
-// If no PIN exists, allow setup (first time only)
-if(!savedPin){
-  nextQ("storeAdminPanel");
-  return;
-}
-
-const pin = prompt("Manager PIN Required");
-
 if(pin === savedPin){
+
+  userRole = "manager";
+  localStorage.setItem("managerVerified","true");
 
   nextQ("storeAdminPanel");
 
@@ -680,7 +686,6 @@ if(pin === savedPin){
   alert("Access Denied");
 }
 }
-
 
 else if(pin === "Manager2278"){
 
@@ -751,14 +756,17 @@ function openRecap() {
   window.location.href = "daily-recap.html";
 }
 
-function openManagerInbox() {
-  const pin = prompt("Enter Manager PIN");
-  if (pin !== localStorage.getItem("storePin")) return alert("Wrong PIN");
-
-  window.location.href = "daily-recap.html#manager";
-}
 
 const auth = getAuth(app);
+
+function openManagerInbox(){
+
+if(userRole !== "manager"){
+  return alert("Manager access only");
+}
+
+window.location.href = "daily-recap.html#manager";
+}
 
 </script>
 
@@ -949,7 +957,14 @@ import {
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 
-
+await setDoc(doc(db, "stores", store), {
+  store,
+  manager,
+  helpdesk,
+  pin,
+  role: "manager",
+  lastUpdated: Date.now()
+});
   
 </script>
 
