@@ -105,33 +105,61 @@ line-height:1.4;
 <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
 <div style="display:flex; gap:10px; margin-top:10px;">
 
-<button onclick="openRecap()" style="position:relative;">
-📋 Daily Recap
-<span id="recapCount" style="
-position:absolute;
-top:-5px;
-right:-5px;
-background:red;
-color:white;
-border-radius:50%;
-padding:3px 7px;
-font-size:12px;
-display:none;">0</span>
-</button>
+<div style="margin-top:15px; display:flex; flex-direction:column; gap:12px;">
 
-<button onclick="openManagerInbox()" style="position:relative;">
-🔒 Inbox
-<span id="inboxCount" style="
-position:absolute;
-top:-5px;
-right:-5px;
-background:red;
-color:white;
-border-radius:50%;
-padding:3px 7px;
-font-size:12px;
-display:none;">0</span>
-</button>
+  <!-- 📋 DAILY RECAP -->
+  <button id="recapBtn" onclick="openRecap()" style="
+    position:relative;
+    width:100%;
+    padding:18px;
+    font-size:18px;
+    font-weight:bold;
+    border-radius:12px;
+    background:#1b5e20;
+    color:white;
+    transition:0.3s;
+  ">
+    📋 Daily Recap
+    <span id="recapCount" style="
+      position:absolute;
+      top:-6px;
+      right:-6px;
+      background:red;
+      color:white;
+      border-radius:50%;
+      padding:5px 9px;
+      font-size:13px;
+      display:none;
+    ">0</span>
+  </button>
+
+  <!-- 🔒 MANAGER INBOX -->
+  <button id="inboxBtn" onclick="openManagerInbox()" style="
+    position:relative;
+    width:100%;
+    padding:18px;
+    font-size:18px;
+    font-weight:bold;
+    border-radius:12px;
+    background:#004d40;
+    color:white;
+    transition:0.3s;
+  ">
+    🔒 Manager Inbox
+    <span id="inboxCount" style="
+      position:absolute;
+      top:-6px;
+      right:-6px;
+      background:red;
+      color:white;
+      border-radius:50%;
+      padding:5px 9px;
+      font-size:13px;
+      display:none;
+    ">0</span>
+  </button>
+
+</div>
 
 </div>
 </div>
@@ -763,6 +791,49 @@ try {
   console.log("Offline - using local");
 }
 }
+
+// 📋 RECAP ALERT
+onSnapshot(recapQuery, (snapshot) => {
+  const count = snapshot.size;
+  const badge = document.getElementById("recapCount");
+  const btn = document.getElementById("recapBtn");
+
+  if (!badge || !btn) return;
+
+  if (count > 0) {
+    badge.style.display = "inline";
+    badge.innerText = count;
+
+    // 🔥 GLOW EFFECT
+    btn.style.boxShadow = "0 0 15px rgba(255,0,0,0.7)";
+  } else {
+    badge.style.display = "none";
+
+    // remove glow
+    btn.style.boxShadow = "none";
+  }
+});
+
+// 🔒 INBOX ALERT
+onSnapshot(inboxQuery, (snapshot) => {
+  const count = snapshot.size;
+  const badge = document.getElementById("inboxCount");
+  const btn = document.getElementById("inboxBtn");
+
+  if (!badge || !btn) return;
+
+  if (count > 0) {
+    badge.style.display = "inline";
+    badge.innerText = count;
+
+    // 🔥 GLOW EFFECT
+    btn.style.boxShadow = "0 0 15px rgba(255,0,0,0.7)";
+  } else {
+    badge.style.display = "none";
+
+    btn.style.boxShadow = "none";
+  }
+});
 
 </script>
 
