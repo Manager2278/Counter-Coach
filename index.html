@@ -108,7 +108,41 @@ line-height:1.4;
 <button class="btn btn-blue" onclick="nextQ('driver1')">Drivers / Delivery</button>
 <button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
 <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
-<button onclick="openRecap()">📋 Daily Recap</button>
+
+<div style="display:flex; gap:10px; margin-top:10px;">
+
+  <button onclick="openRecap()" style="position:relative;">
+    📋 Daily Recap
+    <span id="recapCount" style="
+      position:absolute;
+      top:-5px;
+      right:-5px;
+      background:red;
+      color:white;
+      border-radius:50%;
+      padding:3px 7px;
+      font-size:12px;
+      display:none;
+    ">0</span>
+  </button>
+
+  <button onclick="openManagerInbox()" style="position:relative;">
+    🔒 Inbox
+    <span id="inboxCount" style="
+      position:absolute;
+      top:-5px;
+      right:-5px;
+      background:red;
+      color:white;
+      border-radius:50%;
+      padding:3px 7px;
+      font-size:12px;
+      display:none;
+    ">0</span>
+  </button>
+
+</div>
+
 </div>
 
 <!-- (ALL YOUR QUESTIONS REMAIN EXACT — unchanged) -->
@@ -615,6 +649,53 @@ setInterval(sendHeartbeat,60000);
 function openRecap() {
   window.location.href = "daily-recap.html";
 }
+
+import {
+  getFirestore, collection, onSnapshot,
+  query, where
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+const db = getFirestore();
+
+const storeNumber = localStorage.getItem("storeNumber");
+
+// 📋 RECAP ALERT COUNT
+const recapQuery = query(
+  collection(db, "recapEntries"),
+  where("storeNumber", "==", storeNumber),
+  where("status", "==", "open")
+);
+
+onSnapshot(recapQuery, (snapshot) => {
+  const count = snapshot.size;
+  const badge = document.getElementById("recapCount");
+
+  if (count > 0) {
+    badge.style.display = "inline";
+    badge.innerText = count;
+  } else {
+    badge.style.display = "none";
+  }
+});
+
+// 🔒 INBOX ALERT COUNT
+const inboxQuery = query(
+  collection(db, "managerInbox"),
+  where("storeNumber", "==", storeNumber),
+  where("status", "==", "open")
+);
+
+onSnapshot(inboxQuery, (snapshot) => {
+  const count = snapshot.size;
+  const badge = document.getElementById("inboxCount");
+
+  if (count > 0) {
+    badge.style.display = "inline";
+    badge.innerText = count;
+  } else {
+    badge.style.display = "none";
+  }
+});
 
 </script>
 
