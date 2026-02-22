@@ -221,9 +221,11 @@ line-height:1.4;
 <div id="answerText" class="answer"></div>
 <button class="btn btn-reset" onclick="goHome()">Home</button>
 </div>
-<div style="margin-top:20px;">
+
+<div id="qrWrap" style="margin-top:20px;">
   <div id="qrcode"></div>
 </div>
+
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 
 </div>
@@ -231,13 +233,24 @@ line-height:1.4;
 <script>
 
 
+#qrcode {
+  display:flex;
+  justify-content:center;
+}
+
+
 
 let historyStack=[];
+
 
 function showScreen(id){
 document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
 document.getElementById(id).classList.remove("hidden");
+
+// 👇 Show QR only on home
+document.getElementById("qrWrap").style.display = (id === "home") ? "block" : "none";
 }
+
 
 function nextQ(id){
 let current=document.querySelector('.container > div:not(.hidden)');
@@ -321,17 +334,21 @@ window.onload = function(){
   generateQR();
 };
 
+
+
 function generateQR(){
-  const url = window.location.href;
+  const url = "https://manager2278.github.io/Counter-Coach/sm-coach.html";
 
-  document.getElementById("qrcode").innerHTML = "";
+  const qrContainer = document.getElementById("qrcode");
+  qrContainer.innerHTML = ""; // clear first
 
-  new QRCode(document.getElementById("qrcode"), {
+  new QRCode(qrContainer, {
     text: url,
     width: 140,
     height: 140
   });
 }
+
 
 </script>
 
