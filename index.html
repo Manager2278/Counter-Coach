@@ -646,8 +646,16 @@ setInterval(sendHeartbeat,60000);
 
 }
 }
+
 function openRecap() {
   window.location.href = "daily-recap.html";
+}
+
+function openManagerInbox() {
+  const pin = prompt("Enter Manager PIN");
+  if (pin !== localStorage.getItem("managerPin")) return alert("Wrong PIN");
+
+  window.location.href = "daily-recap.html#manager";
 }
 
 import {
