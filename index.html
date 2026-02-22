@@ -1,9 +1,5 @@
 <!DOCTYPE html>
 <html>
-<!-- Counter Coach developed by Justin Thomas - 2026 -->
-<!-- Manager Decision Coach developed by Justin Thomas - 2026 -->
-
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -92,8 +88,7 @@ line-height:1.4;
 
 <!-- HOME -->
 <div id="home" class="hidden">
-<!--
-<p>Select Situation</p> -->
+<p>Select Situation</p>
 
 <button class="btn btn-emergency" onclick="showResult(
 'CALL 911 FIRST<br>THEN CALL MANAGER',
@@ -108,41 +103,37 @@ line-height:1.4;
 <button class="btn btn-blue" onclick="nextQ('driver1')">Drivers / Delivery</button>
 <button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
 <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
-
 <div style="display:flex; gap:10px; margin-top:10px;">
 
-  <button onclick="openRecap()" style="position:relative;">
-    📋 Daily Recap
-    <span id="recapCount" style="
-      position:absolute;
-      top:-5px;
-      right:-5px;
-      background:red;
-      color:white;
-      border-radius:50%;
-      padding:3px 7px;
-      font-size:12px;
-      display:none;
-    ">0</span>
-  </button>
+<button onclick="openRecap()" style="position:relative;">
+📋 Daily Recap
+<span id="recapCount" style="
+position:absolute;
+top:-5px;
+right:-5px;
+background:red;
+color:white;
+border-radius:50%;
+padding:3px 7px;
+font-size:12px;
+display:none;">0</span>
+</button>
 
-  <button onclick="openManagerInbox()" style="position:relative;">
-    🔒 Inbox
-    <span id="inboxCount" style="
-      position:absolute;
-      top:-5px;
-      right:-5px;
-      background:red;
-      color:white;
-      border-radius:50%;
-      padding:3px 7px;
-      font-size:12px;
-      display:none;
-    ">0</span>
-  </button>
+<button onclick="openManagerInbox()" style="position:relative;">
+🔒 Inbox
+<span id="inboxCount" style="
+position:absolute;
+top:-5px;
+right:-5px;
+background:red;
+color:white;
+border-radius:50%;
+padding:3px 7px;
+font-size:12px;
+display:none;">0</span>
+</button>
 
 </div>
-
 </div>
 
 <!-- (ALL YOUR QUESTIONS REMAIN EXACT — unchanged) -->
@@ -310,15 +301,65 @@ line-height:1.4;
 
 <button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
 
-<div class="footer">V6.3</div>
-
-<footer style="text-align:center; font-size:10px; margin-top:20px; color:#555;">
-Counter Coach © 2026 Justin Thomas • Internal Use Only • Unauthorized commercial use prohibited
-</footer>
+<div class="footer">V6.2</div>
 
 
 
 
+<script>
+
+let settings={},historyStack=[];
+
+//////////////////////////////////////////////////
+// 🔥 HEARTBEAT (FIXED + RESTORED)
+//////////////////////////////////////////////////
+
+function sendHeartbeat(){
+
+const token = localStorage.getItem("gh_token");
+if(!token || !settings.store) return;
+
+fetch("https://api.github.com/repos/manager2278/Counter-Coach/contents/district-config.json")
+.then(res=>res.json())
+.then(data=>{
+
+let config = JSON.parse(atob(data.content.replace(/\n/g,"")));
+let sha = data.sha;
+
+if(!config.heartbeat) config.heartbeat = {};
+if(!config.stores) config.stores = {};
+
+config.heartbeat[settings.store] = Date.now();
+
+if(!config.stores[settings.store]){
+config.stores[settings.store] = { message:"" };
+}
+
+return fetch("https://api.github.com/repos/manager2278/Counter-Coach/contents/district-config.json",{
+method:"PUT",
+headers:{
+"Authorization":"Bearer "+token,
+"Content-Type":"application/json"
+},
+body: JSON.stringify({
+message:"Store heartbeat",
+content:btoa(JSON.stringify(config,null,2)),
+sha: sha
+})
+});
+
+})
+.catch(()=>{});
+}
+
+//////////////////////////////////////////////////
+// 🔥 QR FUNCTION
+//////////////////////////////////////////////////
+
+function generateQR(){
+if(!settings.store) return;
+
+document.getElementById("storeQR").innerHTML="";
 
 new QRCode(document.getElementById("storeQR"),{
 text:`https://manager2278.github.io/Counter-Coach/?store=${settings.store}&manager=${settings.manager}&helpdesk=${localStorage.getItem("helpdesk")||""}&pin=${localStorage.getItem("storePin")||""}`,
@@ -478,10 +519,6 @@ sendHeartbeat();
 
 window.onload=function(){
 
-// 🔥 FIRST: check if coming from QR
-autoSetupFromQR();
-
-// Load saved settings
 settings.store=localStorage.getItem("store");
 settings.manager=localStorage.getItem("manager");
 
@@ -492,14 +529,11 @@ storeDisplay.innerHTML="Store #"+settings.store;
 generateQR();
 runDistrictSync();
 
-// 🔥 HEARTBEAT
+// 🔥 HEARTBEAT START
 setTimeout(sendHeartbeat,2000);
 setInterval(sendHeartbeat,60000);
 
-}else{
-showScreen("setupScreen");
 }
-
 }
 
 function openAdmin(){
@@ -555,44 +589,21 @@ alert("Saved");
 location.reload();
 }
 
-function autoSetupFromQR(){
+function openRecap() {
+  window.location.href = "daily-recap.html";
+}
 
-const params = new URLSearchParams(window.location.search);
+function openManagerInbox() {
+  const pin = prompt("Enter Manager PIN");
+  if (pin !== localStorage.getItem("storePin")) return alert("Wrong PIN");
 
-const store = params.get("store");
-const manager = params.get("manager");
-const helpdesk = params.get("helpdesk");
-const pin = params.get("pin");
+  window.location.href = "daily-recap.html#manager";
+}
 
-if(store && manager && helpdesk && pin){
-
-// Save to localStorage
-localStorage.setItem("store", store);
-localStorage.setItem("manager", manager);
-localStorage.setItem("helpdesk", helpdesk);
-localStorage.setItem("storePin", pin);
-localStorage.setItem("locked", "true");
-
-// Apply to app
-settings.store = store;
-settings.manager = manager;
-
-// Clean URL (optional but clean)
-window.history.replaceState({}, document.title, window.location.pathname);
-
-// Go straight to home
-showScreen("home");
-storeDisplay.innerHTML = "Store #" + store;
-
-// Generate QR + start services
-generateQR();
-runDistrictSync();
-setTimeout(sendHeartbeat,2000);
-setInterval(sendHeartbeat,60000);
+</script>
 
 <script type="module">
 
-// 🔥 FIREBASE INIT (SAFE ADD)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import {
   getFirestore,
@@ -602,6 +613,7 @@ import {
   where
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
+// 🔥 Firebase Config
 const firebaseConfig = {
   apiKey: "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
   authDomain: "daily-recap-v1.firebaseapp.com",
@@ -611,286 +623,14 @@ const firebaseConfig = {
   appId: "1:476802421766:web:171eccca066feb711bdf87"
 };
 
+// Init
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 🔥 KEEP ALL YOUR EXISTING CODE BELOW
-
-let settings={},historyStack=[];
-
-function sendHeartbeat(){
-const token = localStorage.getItem("gh_token");
-if(!token || !settings.store) return;
-
-fetch("https://api.github.com/repos/manager2278/Counter-Coach/contents/district-config.json")
-.then(res=>res.json())
-.then(data=>{
-let config = JSON.parse(atob(data.content.replace(/\n/g,"")));
-let sha = data.sha;
-
-if(!config.heartbeat) config.heartbeat = {};
-if(!config.stores) config.stores = {};
-
-config.heartbeat[settings.store] = Date.now();
-
-if(!config.stores[settings.store]){
-config.stores[settings.store] = { message:"" };
-}
-
-return fetch("https://api.github.com/repos/manager2278/Counter-Coach/contents/district-config.json",{
-method:"PUT",
-headers:{
-"Authorization":"Bearer "+token,
-"Content-Type":"application/json"
-},
-body: JSON.stringify({
-message:"Store heartbeat",
-content:btoa(JSON.stringify(config,null,2)),
-sha: sha
-})
-});
-})
-.catch(()=>{});
-}
-
-function generateQR(){
-if(!settings.store) return;
-
-document.getElementById("storeQR").innerHTML="";
-
-new QRCode(document.getElementById("storeQR"),{
-text:`https://manager2278.github.io/Counter-Coach/?store=${settings.store}&manager=${settings.manager}&helpdesk=${localStorage.getItem("helpdesk")||""}&pin=${localStorage.getItem("storePin")||""}`,
-width:150,
-height:150
-});
-}
-
-setInterval(runDistrictSync,60000);
-
-function runDistrictSync(){
-if(navigator.onLine && settings.store){
-fetch("https://manager2278.github.io/Counter-Coach/district-config.json?ts="+Date.now())
-.then(r=>r.json())
-.then(data=>{
-let bannerMsg = "";
-
-if(data.message) bannerMsg = data.message;
-
-if(data.stores && data.stores[settings.store]){
-let u = data.stores[settings.store];
-
-if(u.manager){
-settings.manager = u.manager;
-localStorage.setItem("manager", u.manager);
-}
-
-if(u.helpdesk){
-localStorage.setItem("helpdesk", u.helpdesk);
-}
-
-if(u.message){
-bannerMsg = u.message;
-}
-}
-
-if(data.alert){
-bannerMsg = data.alert;
-}
-
-if(bannerMsg){
-banner.innerHTML = bannerMsg;
-banner.style.display = "block";
-}
-
-if(data.timestamp){
-localStorage.setItem("lastSync", data.timestamp);
-}
-
-let last = localStorage.getItem("lastSync");
-if(last){
-lastSync.innerText = "Last Sync: " + last;
-}
-})
-.catch(()=>{
-banner.innerText = "Offline Mode";
-banner.style.display = "block";
-});
-}
-}
-
-function showScreen(id){
-document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
-document.getElementById(id).classList.remove("hidden");
-}
-
-function nextQ(id){
-let current=document.querySelector('.container > div:not(.hidden)');
-if(current) historyStack.push(current.id);
-showScreen(id);
-}
-
-function goBack(){
-if(historyStack.length){
-showScreen(historyStack.pop());
-}else{
-goHome();
-}
-}
-
-function goHome(){
-historyStack=[];
-showScreen("home");
-}
-
-function callManager(reason){
-showScreen("resultScreen");
-resultMsg.innerHTML="CALL MANAGER";
-resultMsg.className="result call";
-
-whyText.innerHTML="<b>WHY:</b> "+reason;
-askText.innerHTML="<b>MANAGER WILL ASK:</b><br>• What did you already try?<br>• What policy applies?<br>• What solution do you recommend?";
-expectText.innerHTML="<b>EXPECTED:</b> You attempted all steps before calling.";
-
-actionBtn.innerHTML="";
-let a=document.createElement("a");
-a.href="tel:"+encodeURIComponent(settings.manager||"");
-a.className="btn btn-blue";
-a.innerText="Call Manager";
-actionBtn.appendChild(a);
-}
-
-function noCall(reason){
-showScreen("resultScreen");
-resultMsg.innerHTML="DO NOT CALL";
-resultMsg.className="result nocall";
-
-whyText.innerHTML="<b>WHY:</b> "+reason;
-askText.innerHTML="<b>MANAGER WILL ASK:</b> Why wasn’t this handled in-store?";
-expectText.innerHTML="<b>EXPECTED:</b> Manager ownership at store level.";
-
-actionBtn.innerHTML="";
-}
-
-function showResult(msg,act,why,ask,expect){
-showScreen("resultScreen");
-resultMsg.innerHTML=msg;
-resultMsg.className="result call";
-
-whyText.innerHTML="<b>WHY:</b> "+why;
-askText.innerHTML="<b>MANAGER WILL ASK:</b><br>"+ask;
-expectText.innerHTML="<b>EXPECTED:</b> "+expect;
-
-actionBtn.innerHTML="";
-if(act){
-let a=document.createElement("a");
-a.href=act;
-a.className="btn btn-blue";
-a.innerText="Call";
-actionBtn.appendChild(a);
-}
-}
-
-function saveSetup(){
-localStorage.setItem("store",storeNum.value);
-localStorage.setItem("manager",managerNum.value);
-localStorage.setItem("helpdesk",helpdeskNum.value);
-localStorage.setItem("storePin",storePin.value);
-localStorage.setItem("locked","true");
-
-settings.store = storeNum.value;
-settings.manager = managerNum.value;
-
-showScreen("home");
-storeDisplay.innerHTML="Store #"+storeNum.value;
-
-generateQR();
-sendHeartbeat();
-}
-
-window.onload=function(){
-autoSetupFromQR();
-settings.store=localStorage.getItem("store");
-settings.manager=localStorage.getItem("manager");
-
-if(localStorage.getItem("locked")==="true"){
-showScreen("home");
-storeDisplay.innerHTML="Store #"+settings.store;
-
-generateQR();
-runDistrictSync();
-setTimeout(sendHeartbeat,2000);
-setInterval(sendHeartbeat,60000);
-
-}else{
-showScreen("setupScreen");
-}
-}
-
-function openAdmin(){
-let pin = prompt("Enter Store PIN or District PIN");
-
-if(pin === localStorage.getItem("storePin")){
-    nextQ("storeAdminPanel");
-    editStore.value = localStorage.getItem("store") || "";
-    editManager.value = localStorage.getItem("manager") || "";
-    editHelpdesk.value = localStorage.getItem("helpdesk") || "";
-}
-else if(pin === "Manager2278"){
-    if(confirm("Master Reset Store?")){
-        const token = localStorage.getItem("gh_token");
-        localStorage.clear();
-        if(token) localStorage.setItem("gh_token", token);
-        location.reload();
-    }
-}
-else{
-    alert("Incorrect PIN");
-}
-}
-
-function saveStoreAdmin(){
-localStorage.setItem("store", editStore.value);
-localStorage.setItem("manager", editManager.value);
-localStorage.setItem("helpdesk", editHelpdesk.value);
-alert("Saved");
-location.reload();
-}
-
-function autoSetupFromQR(){
-const params = new URLSearchParams(window.location.search);
-
-const store = params.get("store");
-const manager = params.get("manager");
-const helpdesk = params.get("helpdesk");
-const pin = params.get("pin");
-
-if(store && manager && helpdesk && pin){
-localStorage.setItem("store", store);
-localStorage.setItem("manager", manager);
-localStorage.setItem("helpdesk", helpdesk);
-localStorage.setItem("storePin", pin);
-localStorage.setItem("locked", "true");
-
-settings.store = store;
-settings.manager = manager;
-
-window.history.replaceState({}, document.title, window.location.pathname);
-
-showScreen("home");
-storeDisplay.innerHTML = "Store #" + store;
-
-generateQR();
-runDistrictSync();
-setTimeout(sendHeartbeat,2000);
-setInterval(sendHeartbeat,60000);
-}
-}
-
-// 🔥 ALERT SYSTEM (FIXED)
-
+// 🔥 USE CORRECT STORE KEY (IMPORTANT)
 const storeNumber = localStorage.getItem("store");
 
-// RECAP COUNT
+// 📋 RECAP ALERTS
 const recapQuery = query(
   collection(db, "recapEntries"),
   where("storeNumber", "==", storeNumber),
@@ -898,18 +638,16 @@ const recapQuery = query(
 );
 
 onSnapshot(recapQuery, (snapshot) => {
-  const count = snapshot.size;
   const badge = document.getElementById("recapCount");
+  if (!badge) return;
 
-  if (count > 0) {
-    badge.style.display = "inline";
-    badge.innerText = count;
-  } else {
-    badge.style.display = "none";
-  }
+  const count = snapshot.size;
+
+  badge.style.display = count > 0 ? "inline" : "none";
+  badge.innerText = count;
 });
 
-// INBOX COUNT
+// 🔒 INBOX ALERTS
 const inboxQuery = query(
   collection(db, "managerInbox"),
   where("storeNumber", "==", storeNumber),
@@ -917,15 +655,13 @@ const inboxQuery = query(
 );
 
 onSnapshot(inboxQuery, (snapshot) => {
-  const count = snapshot.size;
   const badge = document.getElementById("inboxCount");
+  if (!badge) return;
 
-  if (count > 0) {
-    badge.style.display = "inline";
-    badge.innerText = count;
-  } else {
-    badge.style.display = "none";
-  }
+  const count = snapshot.size;
+
+  badge.style.display = count > 0 ? "inline" : "none";
+  badge.innerText = count;
 });
 
 </script>
