@@ -1,0 +1,23 @@
+COUNTER COACH LICENSE
+Copyright (c) 2026 Justin Thomas
+
+All rights reserved.
+
+This software, known as "Counter Coach", is the intellectual property of Justin Thomas.
+
+Permission is granted to use this software for internal business purposes only within authorized store locations.
+
+The following actions are strictly prohibited without prior written permission from the author:
+
+- Commercial use, resale, or monetization of Counter Coach
+- Redistribution outside of approved store personnel
+- Modification, reverse engineering, or duplication for profit
+- Removal or alteration of branding, ownership, or license information
+
+This tool is intended solely to support store-level operational performance.
+
+Unauthorized use may result in legal action.
+
+For licensing or commercial use inquiries, contact the author.
+
+END OF TERMS
