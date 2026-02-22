@@ -108,6 +108,7 @@ line-height:1.4;
 <button class="btn btn-blue" onclick="nextQ('driver1')">Drivers / Delivery</button>
 <button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
 <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
+<button onclick="openRecap()">📋 Daily Recap</button>
 </div>
 
 <!-- (ALL YOUR QUESTIONS REMAIN EXACT — unchanged) -->
@@ -610,6 +611,9 @@ setTimeout(sendHeartbeat,2000);
 setInterval(sendHeartbeat,60000);
 
 }
+}
+function openRecap() {
+  window.location.href = "daily-recap.html";
 }
 
 </script>
