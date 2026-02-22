@@ -374,25 +374,19 @@ try {
 };
 
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
 
 if(user){
 
-  const email = user.email;
+  const token = await user.getIdTokenResult();
 
-  const store = email.split("@")[0].replace("store","");
+  const role = token.claims.role || "employee";
+  const store = token.claims.storeNumber;
 
-  localStorage.setItem("store", store);
+  userRole = role;
   settings.store = store;
 
-  // 🔥 ROLE LOGIC
-  // Default = employee
-  userRole = "employee";
-
-  // If manager PIN already verified earlier
-  if(localStorage.getItem("managerVerified") === "true"){
-    userRole = "manager";
-  }
+  localStorage.setItem("store", store);
 
   showScreen("home");
   storeDisplay.innerHTML = "Store #" + store;
@@ -402,7 +396,7 @@ if(user){
 }
 
 });
-
+  
 let settings={},historyStack=[];
 let userRole = "employee";
 
