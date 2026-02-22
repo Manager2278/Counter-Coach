@@ -338,327 +338,26 @@ line-height:1.4;
 
 <button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
 
-<div class="footer">V6.2</div>
+<div class="footer">V6.3</div>
 
 
 
 
 <script>
 
-window.login = async function(){
-
-const email = document.getElementById("loginEmail").value;
-const password = document.getElementById("loginPassword").value;
-
-try {
-  await signInWithEmailAndPassword(auth, email, password);
-  alert("Logged in");
-} catch(e){
-  alert("Login failed");
-}
-
-};
-
-window.createAccount = async function(){
-
-const email = document.getElementById("loginEmail").value;
-const password = document.getElementById("loginPassword").value;
-
-try {
-  await createUserWithEmailAndPassword(auth, email, password);
-  alert("Store created");
-} catch(e){
-  alert("Error creating account");
-}
-
-};
-
-
-onAuthStateChanged(auth, async (user) => {
-
-if(user){
-
-  const token = await user.getIdTokenResult();
-
-  const role = token.claims.role || "employee";
-  const store = token.claims.storeNumber;
-
-  userRole = role;
-  settings.store = store;
-
-  localStorage.setItem("store", store);
-
-  showScreen("home");
-  storeDisplay.innerHTML = "Store #" + store;
-
-} else {
-  showScreen("loginScreen");
-}
-
-});
-  
 let settings={},historyStack=[];
 let userRole = "employee";
 
-//////////////////////////////////////////////////
-// 🔥 HEARTBEAT (FIXED + RESTORED)
-//////////////////////////////////////////////////
-
-function sendHeartbeat(){
-
-const token = localStorage.getItem("gh_token");
-if(!token || !settings.store) return;
-
-fetch("https://api.github.com/repos/manager2278/Counter-Coach/contents/district-config.json")
-.then(res=>res.json())
-.then(data=>{
-
-let config = JSON.parse(atob(data.content.replace(/\n/g,"")));
-let sha = data.sha;
-
-if(!config.heartbeat) config.heartbeat = {};
-if(!config.stores) config.stores = {};
-
-config.heartbeat[settings.store] = Date.now();
-
-if(!config.stores[settings.store]){
-config.stores[settings.store] = { message:"" };
+function openManagerInbox(){
+  if(userRole !== "manager"){
+    return alert("Manager access only");
+  }
+  window.location.href = "daily-recap.html#manager";
 }
 
-return fetch("https://api.github.com/repos/manager2278/Counter-Coach/contents/district-config.json",{
-method:"PUT",
-headers:{
-"Authorization":"Bearer "+token,
-"Content-Type":"application/json"
-},
-body: JSON.stringify({
-message:"Store heartbeat",
-content:btoa(JSON.stringify(config,null,2)),
-sha: sha
-})
-});
-
-})
-.catch(()=>{});
+function openRecap(){
+  window.location.href = "daily-recap.html";
 }
-
-//////////////////////////////////////////////////
-// 🔥 QR FUNCTION
-//////////////////////////////////////////////////
-
-function generateQR(){
-if(!settings.store) return;
-
-document.getElementById("storeQR").innerHTML="";
-
-new QRCode(document.getElementById("storeQR"),{
-text:`https://manager2278.github.io/Counter-Coach/?store=${settings.store}&manager=${settings.manager}&helpdesk=${localStorage.getItem("helpdesk")||""}&pin=${localStorage.getItem("storePin")||""}`,
-width:150,
-height:150
-});
-}
-
-//////////////////////////////////////////////////
-// EXISTING LOGIC (UNCHANGED)
-//////////////////////////////////////////////////
-
-setInterval(runDistrictSync,60000);
-
-function runDistrictSync(){
-if(navigator.onLine && settings.store){
-
-fetch("https://manager2278.github.io/Counter-Coach/district-config.json?ts="+Date.now())
-.then(r=>r.json())
-.then(data=>{
-
-let bannerMsg = "";
-
-if(data.message) bannerMsg = data.message;
-
-if(data.stores && data.stores[settings.store]){
-let u = data.stores[settings.store];
-
-if(u.manager){
-settings.manager = u.manager;
-localStorage.setItem("manager", u.manager);
-}
-
-if(u.helpdesk){
-localStorage.setItem("helpdesk", u.helpdesk);
-}
-
-if(u.message){
-bannerMsg = u.message;
-}
-}
-
-if(data.alert){
-bannerMsg = data.alert;
-}
-
-if(bannerMsg){
-banner.innerHTML = bannerMsg;
-banner.style.display = "block";
-}
-
-if(data.timestamp){
-localStorage.setItem("lastSync", data.timestamp);
-}
-
-let last = localStorage.getItem("lastSync");
-if(last){
-lastSync.innerText = "Last Sync: " + last;
-}
-
-})
-.catch(()=>{
-banner.innerText = "Offline Mode";
-banner.style.display = "block";
-});
-}
-}
-
-function showScreen(id){
-document.querySelectorAll('.container > div').forEach(d=>d.classList.add("hidden"));
-document.getElementById(id).classList.remove("hidden");
-}
-
-function nextQ(id){
-let current=document.querySelector('.container > div:not(.hidden)');
-if(current) historyStack.push(current.id);
-showScreen(id);
-}
-
-function goBack(){
-if(historyStack.length){
-showScreen(historyStack.pop());
-}else{
-goHome();
-}
-}
-
-function goHome(){
-historyStack=[];
-showScreen("home");
-}
-
-function callManager(reason){
-showScreen("resultScreen");
-resultMsg.innerHTML="CALL MANAGER";
-resultMsg.className="result call";
-
-whyText.innerHTML="<b>WHY:</b> "+reason;
-askText.innerHTML="<b>MANAGER WILL ASK:</b><br>• What did you already try?<br>• What policy applies?<br>• What solution do you recommend?";
-expectText.innerHTML="<b>EXPECTED:</b> You attempted all steps before calling.";
-
-actionBtn.innerHTML="";
-let a=document.createElement("a");
-a.href="tel:"+encodeURIComponent(settings.manager||"");
-a.className="btn btn-blue";
-a.innerText="Call Manager";
-actionBtn.appendChild(a);
-}
-
-function noCall(reason){
-showScreen("resultScreen");
-resultMsg.innerHTML="DO NOT CALL";
-resultMsg.className="result nocall";
-
-whyText.innerHTML="<b>WHY:</b> "+reason;
-askText.innerHTML="<b>MANAGER WILL ASK:</b> Why wasn’t this handled in-store?";
-expectText.innerHTML="<b>EXPECTED:</b> Manager ownership at store level.";
-
-actionBtn.innerHTML="";
-}
-
-function showResult(msg,act,why,ask,expect){
-showScreen("resultScreen");
-resultMsg.innerHTML=msg;
-resultMsg.className="result call";
-
-whyText.innerHTML="<b>WHY:</b> "+why;
-askText.innerHTML="<b>MANAGER WILL ASK:</b><br>"+ask;
-expectText.innerHTML="<b>EXPECTED:</b> "+expect;
-
-actionBtn.innerHTML="";
-if(act){
-let a=document.createElement("a");
-a.href=act;
-a.className="btn btn-blue";
-a.innerText="Call";
-actionBtn.appendChild(a);
-}
-}
-
-async function saveSetup(){
-
-const store = storeNum.value;
-const manager = managerNum.value;
-const helpdesk = helpdeskNum.value;
-const pin = storePin.value;
-
-// 💾 LOCAL SAVE (unchanged)
-localStorage.setItem("store", store);
-localStorage.setItem("manager", manager);
-localStorage.setItem("helpdesk", helpdesk);
-localStorage.setItem("storePin", pin);
-localStorage.setItem("locked","true");
-
-// ☁️ FIRESTORE SAVE
-try {
-  await setDoc(doc(db, "stores", store), {
-    store,
-    manager,
-    helpdesk,
-    pin,
-    lastUpdated: Date.now()
-  });
-
-  console.log("Saved to Firestore");
-} catch (e) {
-  console.log("Firestore save failed (offline ok)");
-}
-
-// 🧠 APP STATE
-settings.store = store;
-settings.manager = manager;
-
-showScreen("home");
-storeDisplay.innerHTML = "Store #" + store;
-
-generateQR();
-sendHeartbeat();
-}
-
-
-window.onload=function(){
-
-if(localStorage.getItem("locked")==="true"){
-  showScreen("home");
-  storeDisplay.innerHTML="Store #"+settings.store;
-} else {
-  showScreen("setupScreen");
-}
-
-loadStoreFromCloud();
-
-settings.store=localStorage.getItem("store");
-settings.manager=localStorage.getItem("manager");
-
-if(localStorage.getItem("locked")==="true"){
-showScreen("home");
-storeDisplay.innerHTML="Store #"+settings.store;
-
-generateQR();
-runDistrictSync();
-
-// 🔥 HEARTBEAT START
-setTimeout(sendHeartbeat,2000);
-setInterval(sendHeartbeat,60000);
-
-}
-}
-
 
 function openAdmin(){
 
@@ -681,85 +380,38 @@ if(pin === savedPin){
 }
 }
 
-else if(pin === "Manager2278"){
+async function saveSetup(){
 
-    if(confirm("Master Reset Store? This will wipe all settings.")){
+const store = storeNum.value;
+const manager = managerNum.value;
+const helpdesk = helpdeskNum.value;
+const pin = storePin.value;
 
-        // 🔥 Preserve GitHub token
-        const token = localStorage.getItem("gh_token");
+localStorage.setItem("store", store);
+localStorage.setItem("manager", manager);
+localStorage.setItem("helpdesk", helpdesk);
+localStorage.setItem("storePin", pin);
+localStorage.setItem("locked","true");
 
-        // Clear store data ONLY
-        localStorage.removeItem("store");
-        localStorage.removeItem("manager");
-        localStorage.removeItem("helpdesk");
-        localStorage.removeItem("storePin");
-        localStorage.removeItem("locked");
+settings.store = store;
+settings.manager = manager;
 
-        // Restore token
-        if(token){
-            localStorage.setItem("gh_token", token);
-        }
+showScreen("home");
+storeDisplay.innerHTML = "Store #" + store;
 
-        settings = {};
-        historyStack = [];
+generateQR();
+sendHeartbeat();
 
-        showScreen("setupScreen");
-        storeDisplay.innerHTML = "";
-
-        alert("Store Reset Complete");
-    }
-
-}
-else{
-    alert("Incorrect PIN");
-}
+// 🔥 FIRESTORE SAVE (uses global db)
+if(window.db){
+  try{
+    await setDoc(doc(db,"stores",store),{
+      store, manager, helpdesk, pin,
+      lastUpdated: Date.now()
+    });
+  }catch(e){console.log("cloud fail")}
 }
 
-async function saveStoreAdmin(){
-
-const enteredPin = prompt("Confirm Manager PIN");
-const savedPin = localStorage.getItem("storePin");
-
-if(enteredPin !== savedPin){
-  return alert("Incorrect PIN");
-}
-
-// ✅ Save locally
-localStorage.setItem("store", editStore.value);
-localStorage.setItem("manager", editManager.value);
-localStorage.setItem("helpdesk", editHelpdesk.value);
-
-// ☁️ Save to Firestore
-try{
-  await setDoc(doc(db, "stores", editStore.value), {
-    store: editStore.value,
-    manager: editManager.value,
-    helpdesk: editHelpdesk.value,
-    pin: savedPin,
-    lastUpdated: Date.now()
-  });
-}catch(e){
-  console.log("Cloud save failed");
-}
-
-alert("Settings Updated");
-location.reload();
-}
-
-function openRecap() {
-  window.location.href = "daily-recap.html";
-}
-
-
-const auth = getAuth(app);
-
-function openManagerInbox(){
-
-if(userRole !== "manager"){
-  return alert("Manager access only");
-}
-
-window.location.href = "daily-recap.html#manager";
 }
 
 </script>
@@ -768,14 +420,17 @@ window.location.href = "daily-recap.html#manager";
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import {
-  getFirestore,
-  collection,
-  onSnapshot,
-  query,
-  where
+  getFirestore, collection, onSnapshot, query, where,
+  doc, setDoc, getDoc
 } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-// 🔥 Firebase Config
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
   authDomain: "daily-recap-v1.firebaseapp.com",
@@ -785,182 +440,120 @@ const firebaseConfig = {
   appId: "1:476802421766:web:171eccca066feb711bdf87"
 };
 
-// Init
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-// 🔥 USE CORRECT STORE KEY (IMPORTANT)
-const storeNumber = localStorage.getItem("store");
+// 🔥 MAKE GLOBAL (THIS FIXES EVERYTHING)
+window.db = db;
+window.auth = auth;
+window.setDoc = setDoc;
+window.doc = doc;
 
-// 📋 RECAP ALERTS
+// LOGIN
+window.login = async function(){
+  const email = loginEmail.value;
+  const password = loginPassword.value;
+
+  try{
+    await signInWithEmailAndPassword(auth,email,password);
+  }catch(e){
+    alert("Login failed");
+  }
+};
+
+// CREATE ACCOUNT
+window.createAccount = async function(){
+  const email = loginEmail.value;
+  const password = loginPassword.value;
+
+  try{
+    await createUserWithEmailAndPassword(auth,email,password);
+  }catch(e){
+    alert("Error creating account");
+  }
+};
+
+// AUTH STATE
+onAuthStateChanged(auth, async (user)=>{
+
+if(user){
+
+  const token = await user.getIdTokenResult();
+
+  const role = token.claims.role || "employee";
+  const store = token.claims.storeNumber || localStorage.getItem("store");
+
+  userRole = role;
+  settings.store = store;
+
+  localStorage.setItem("store", store);
+
+  showScreen("home");
+  storeDisplay.innerHTML = "Store #" + store;
+
+  startListeners(store);
+
+}else{
+  showScreen("loginScreen");
+}
+
+});
+
+// 🔥 ALERT LISTENERS (CLEAN VERSION)
+function startListeners(store){
+
 const recapQuery = query(
-  collection(db, "recapEntries"),
-  where("storeNumber", "==", storeNumber),
-  where("status", "==", "open")
+  collection(db,"recapEntries"),
+  where("storeNumber","==",store),
+  where("status","==","open")
 );
 
-onSnapshot(recapQuery, (snapshot) => {
-  const badge = document.getElementById("recapCount");
-  if (!badge) return;
+onSnapshot(recapQuery,(snap)=>{
 
-  const count = snapshot.size;
+  let hasIssue=false;
+  let hasProgress=false;
 
-  badge.style.display = count > 0 ? "inline" : "none";
-  badge.innerText = count;
+  snap.forEach(d=>{
+    const data=d.data();
+    if(data.type==="issue") hasIssue=true;
+    if(data.type==="progress") hasProgress=true;
+  });
+
+  recapCount.innerText=snap.size;
+  recapCount.style.display=snap.size>0?"inline":"none";
+
+  if(hasIssue){
+    recapBtn.style.boxShadow="0 0 18px red";
+  } else if(hasProgress){
+    recapBtn.style.boxShadow="0 0 18px orange";
+  } else {
+    recapBtn.style.boxShadow="none";
+  }
+
 });
 
-// 🔒 INBOX ALERTS
 const inboxQuery = query(
-  collection(db, "managerInbox"),
-  where("storeNumber", "==", storeNumber),
-  where("status", "==", "open")
+  collection(db,"managerInbox"),
+  where("storeNumber","==",store),
+  where("status","==","open")
 );
 
-onSnapshot(inboxQuery, (snapshot) => {
-  const badge = document.getElementById("inboxCount");
-  if (!badge) return;
+onSnapshot(inboxQuery,(snap)=>{
 
-  const count = snapshot.size;
+  inboxCount.innerText=snap.size;
+  inboxCount.style.display=snap.size>0?"inline":"none";
 
-  badge.style.display = count > 0 ? "inline" : "none";
-  badge.innerText = count;
+  inboxBtn.style.boxShadow = snap.size>0
+    ? "0 0 18px red"
+    : "none";
+
 });
 
-import {
-  doc,
-  setDoc,
-  getDoc
-} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-
-async function loadStoreFromCloud(){
-
-const store = localStorage.getItem("store");
-if(!store) return;
-
-try {
-  const docRef = doc(db, "stores", store);
-  const docSnap = await getDoc(docRef);
-
-  if (docSnap.exists()) {
-    const data = docSnap.data();
-
-    localStorage.setItem("manager", data.manager || "");
-    localStorage.setItem("helpdesk", data.helpdesk || "");
-    localStorage.setItem("storePin", data.pin || "");
-
-    console.log("Loaded from Firestore");
-  }
-} catch(e){
-  console.log("Offline - using local");
-}
 }
 
-// 📋 RECAP ALERT
-onSnapshot(recapQuery, (snapshot) => {
-  const count = snapshot.size;
-  const badge = document.getElementById("recapCount");
-  const btn = document.getElementById("recapBtn");
-
-  if (!badge || !btn) return;
-
-  if (count > 0) {
-    badge.style.display = "inline";
-
-// 📋 RECAP PRIORITY SYSTEM
-onSnapshot(
-  query(
-    collection(db, "recapEntries"),
-    where("storeNumber", "==", storeNumber),
-    where("status", "==", "open")
-  ),
-  (snapshot) => {
-
-    const badge = document.getElementById("recapCount");
-    const btn = document.getElementById("recapBtn");
-
-    if (!badge || !btn) return;
-
-    let total = 0;
-    let hasIssue = false;
-    let hasProgress = false;
-
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      total++;
-
-      if (data.type === "issue") hasIssue = true;
-      if (data.type === "progress") hasProgress = true;
-    });
-
-    // Badge
-    if (total > 0) {
-      badge.style.display = "inline";
-      badge.innerText = total;
-    } else {
-      badge.style.display = "none";
-    }
-
-    // 🔥 PRIORITY GLOW
-    if (hasIssue) {
-      // 🔴 HIGH PRIORITY
-      btn.style.boxShadow = "0 0 18px rgba(255,0,0,0.9)";
-    } else if (hasProgress) {
-      // 🟡 MEDIUM
-      btn.style.boxShadow = "0 0 18px rgba(255,193,7,0.9)";
-    } else {
-      // 🟢 CLEAN
-      btn.style.boxShadow = "none";
-    }
-  }
-);
-
-
-// 🔒 INBOX (ALWAYS HIGH PRIORITY)
-onSnapshot(
-  query(
-    collection(db, "managerInbox"),
-    where("storeNumber", "==", storeNumber),
-    where("status", "==", "open")
-  ),
-  (snapshot) => {
-
-    const badge = document.getElementById("inboxCount");
-    const btn = document.getElementById("inboxBtn");
-
-    if (!badge || !btn) return;
-
-    const count = snapshot.size;
-
-    if (count > 0) {
-      badge.style.display = "inline";
-      badge.innerText = count;
-
-      // 🔴 ALWAYS RED
-      btn.style.boxShadow = "0 0 18px rgba(255,0,0,0.9)";
-    } else {
-      badge.style.display = "none";
-      btn.style.boxShadow = "none";
-    }
-  }
-);
-
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-
-await setDoc(doc(db, "stores", store), {
-  store,
-  manager,
-  helpdesk,
-  pin,
-  role: "manager",
-  lastUpdated: Date.now()
-});
-  
 </script>
+  
 
 </body>
 </html>
