@@ -367,6 +367,43 @@ if(localStorage.getItem("role") !== "manager"){
 
 window.location.href = "dashboard.html";
 }
+
+onSnapshot(recapQuery, (snapshot) => {
+
+const btn = document.getElementById("recapBtn");
+
+let hasIssue = false;
+let hasProgress = false;
+
+snapshot.forEach(doc=>{
+  const d = doc.data();
+  if(d.type === "issue") hasIssue = true;
+  if(d.type === "progress") hasProgress = true;
+});
+
+if(hasIssue){
+  btn.style.boxShadow = "0 0 18px rgba(255,0,0,0.9)";
+}
+else if(hasProgress){
+  btn.style.boxShadow = "0 0 18px rgba(255,193,7,0.9)";
+}
+else{
+  btn.style.boxShadow = "none";
+}
+
+});
+
+  onSnapshot(inboxQuery, (snapshot) => {
+
+const btn = document.getElementById("inboxBtn");
+
+if(snapshot.size > 0){
+  btn.style.boxShadow = "0 0 18px rgba(255,0,0,0.9)";
+} else {
+  btn.style.boxShadow = "none";
+}
+
+});
   
 </script>
 
