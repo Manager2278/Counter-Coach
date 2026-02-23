@@ -82,6 +82,7 @@ p { font-size:18px; font-weight:bold; }
 <button class="btn btn-blue" onclick="nextQ('driver1')">Drivers / Delivery</button>
 <button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
 <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
+<button class="btn btn-blue" onclick="openDashboard()">📊 Dashboard</button>
 
 <div style="display:flex;flex-direction:column;gap:10px;margin-top:15px;">
 <button id="recapBtn" class="btn btn-blue" style="position:relative;" onclick="openRecap()">
@@ -325,6 +326,48 @@ expectText.innerHTML=expect;
 window.openRecap = ()=>location.href="daily-recap.html";
 window.openInbox = ()=>alert("Manager only");
 
+function generateEmployeeQR(){
+
+const store = localStorage.getItem("store");
+
+document.getElementById("storeQR").innerHTML = "";
+
+new QRCode(document.getElementById("storeQR"),{
+  text: `https://yourapp.com/?store=${store}&role=employee`,
+  width:150,
+  height:150
+});
+}
+
+function autoLoginFromQR(){
+
+const params = new URLSearchParams(window.location.search);
+
+const store = params.get("store");
+const role = params.get("role");
+
+if(store && role === "employee"){
+
+  localStorage.setItem("store", store);
+  localStorage.setItem("role", "employee");
+
+  show("home");
+  storeDisplay.innerHTML = "Store #" + store;
+
+}
+}
+
+autoLoginFromQR();
+
+function openDashboard(){
+
+if(localStorage.getItem("role") !== "manager"){
+  return alert("Manager only");
+}
+
+window.location.href = "dashboard.html";
+}
+  
 </script>
 
 </body>
