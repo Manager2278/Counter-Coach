@@ -1,3 +1,22 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { 
+  getFirestore, collection, addDoc, onSnapshot, query, where, updateDoc, doc 
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+
+const app = initializeApp({
+apiKey:"AIzaSyC50...",
+authDomain:"daily-recap-v1.firebaseapp.com",
+projectId:"daily-recap-v1"
+});
+
+
+
+
+
+
+
 <!-- DRIVERS -->
 <div id="q-drivers" class="hidden">
 <p>Driver call off or vehicle breakdown?</p>
