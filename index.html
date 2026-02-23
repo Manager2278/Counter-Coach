@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counter Coach FULL Enterprise</title>
+
+<style>
+body{font-family:Arial;background:#f4f4f4;padding:15px;text-align:center;}
+.header{background:#006400;color:white;padding:15px;border-radius:10px;}
+.container{background:white;max-width:600px;margin:auto;padding:20px;border-radius:12px;}
+
+input, select {
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border:1px solid #ccc;
+  border-radius:8px;
+  box-sizing:border-box;
+  font-size:15px;
+}
+
+.btn{width:100%;padding:14px;margin:8px 0;border:none;border-radius:10px;font-weight:bold;font-size:15px;cursor:pointer;}
+.btn-yes{background:#2e7d32;color:white;}
+.btn-no{background:#c62828;color:white;}
+.btn-blue{background:#1b5e20;color:white;}
+.btn-reset{background:#777;color:white;}
+.btn-emergency{background:#b71c1c;color:white;}
+
+.hidden{display:none;}
+
+.result{padding:20px;border-radius:10px;font-size:20px;font-weight:bold;}
+.call{background:#ffebee;color:#c62828;}
+.nocall{background:#e8f5e9;color:#2e7d32;}
+
+.why{color:#b71c1c;margin-top:10px;font-weight:bold;}
+.ask{margin-top:10px;}
+.expect{color:#1b5e20;margin-top:10px;font-weight:bold;}
+
+.log{border-bottom:1px solid #ddd;padding:8px;text-align:left;}
+.complete{text-decoration:line-through;opacity:0.6;}
+
+.dashboard{background:#eef7ee;padding:10px;margin-top:10px;border-radius:10px;}
+
+#error-banner{display:none;background:#ffcccc;color:#900;padding:10px;border-radius:8px;margin-bottom:10px;font-size:13px;}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>Counter Coach</h2>
+  <div id="storeDisplay"></div>
+</div>
+
+<div id="error-banner"></div>
+
+<div class="container">
+
+  <!-- SETUP -->
+  <div id="setup">
+    <input id="store" placeholder="Store # or comma list for DM"><br>
+    <input id="name" placeholder="Employee Name"><br>
+    <select id="roleSelect">
+      <option value="employee">Employee</option>
+      <option value="manager">Manager</option>
+      <option value="district_manager">District Manager</option>
+    </select><br>
+    <button class="btn btn-blue" onclick="start()">Start</button>
+  </div>
+
+  <!-- HOME -->
+  <div id="home" class="hidden">
+
+    <button class="btn btn-emergency" onclick="emergency()">🚨 Emergency</button>
+
+    <button class="btn btn-blue" onclick="show('cust1')">Customer Escalation</button>
+    <button class="btn btn-blue" onclick="show('staff1')">Staffing Issue</button>
+    <button class="btn btn-blue" onclick="show('cash1')">Cash / Variance</button>
+
+    <hr>
+
+    <button class="btn btn-blue" onclick="toggleRecap()">📋 Daily Recap</button>
+
+    <div id="dashboard" class="hidden dashboard">
+      <h3>Dashboard</h3>
+      <div id="stats"></div>
+    </div>
+
+    <div id="recap" class="hidden">
+      <input id="recapInput" placeholder="Log update">
+      <select id="type">
+        <option value="progress">Progress</option>
+        <option value="issue">Issue</option>
+      </select>
+      <button onclick="addRecap()">Add</button>
+      <div id="recapList"></div>
+    </div>
+
+  </div>
+
+  <!-- ===================== -->
+  <!-- FULL CUSTOMER FLOW -->
+  <!-- ===================== -->
+
+  <div id="cust1" class="hidden">
+    <p>Customer demanding manager or escalating beyond employee?</p>
+    <button class="btn btn-yes" onclick="show('cust2')">YES</button>
+    <button class="btn btn-no" onclick="noCall('Handled at employee level')">NO</button>
+    <button class="btn btn-reset" onclick="goHome()">Back</button>
+  </div>
+
+  <div id="cust2" class="hidden">
+    <p>Did you fully follow return/warranty policy?</p>
+    <button class="btn btn-yes" onclick="show('cust3')">YES</button>
+    <button class="btn btn-no" onclick="noCall('Follow full policy first')">NO</button>
+    <button class="btn btn-reset" onclick="goHome()">Back</button>
+  </div>
+
+  <div id="cust3" class="hidden">
+    <p>Did you offer ALL solutions (exchange, credit)?</p>
+    <button class="btn btn-yes" onclick="show('cust4')">YES</button>
+    <button class="btn btn-no" onclick="noCall('Offer all solutions')">NO</button>
+    <button class="btn btn-reset" onclick="goHome()">Back</button>
+  </div>
+
+  <div id="cust4" class="hidden">
+    <p>Customer still refusing and disrupting store?</p>
+    <button class="btn btn-yes" onclick="callManager('Unresolvable escalation')">YES</button>
+    <button class="btn btn-no" onclick="noCall('Resolved')">NO</button>
+    <button class="btn btn-reset" onclick="goHome()">Back</button>
+  </div>
+
+  <!-- ===================== -->
+  <!-- FULL STAFF FLOW -->
+  <!-- ===================== -->
+
+  <div id="staff1" class="hidden">
+    <p>Call-off affecting coverage?</p>
+    <button class="btn btn-yes" onclick="show('staff2')">YES</button>
+    <button class="btn btn-no" onclick="noCall('Coverage sufficient')">NO</button>
+    <button class="btn btn-reset" onclick="goHome()">Back</button>
+  </div>
+
+  <div id="staff2" class="hidden">
+    <p>Contacted all available employees?</p>
+    <button class="btn btn-yes" onclick="show('staff3')">YES</button>
+    <button class="btn btn-no" onclick="noCall('Attempt coverage first')">NO</button>
+    <button class="btn btn-reset" onclick="goHome()">Back</button>
+  </div>
+
+  <div id="staff3" class="hidden">
+    <p>Adjusted roles to maintain operations?</p>
+    <button class="btn btn-yes" onclick="callManager('Staffing prevents operations')">YES</button>
+    <button class="btn btn-no" onclick="noCall('Store still functional')">NO</button>
+    <button class="btn btn-reset" onclick="goHome()">Back</button>
+  </div>
+
+  <!-- ===================== -->
+  <!-- FULL CASH FLOW -->
+  <!-- ===================== -->
+
+  <div id="cash1" class="hidden">
+    <p>Register variance detected?</p>
+    <button class="btn btn-yes" onclick="show('cash2')">YES</button>
+    <button class="btn btn-no" onclick="noCall('No issue')">NO</button>
+    <button class="btn btn-reset" onclick="goHome()">Back</button>
+  </div>
+
+  <div id="cash2" class="hidden">
+    <p>Recounted and verified all areas?</p>
+    <button class="btn btn-yes" onclick="callManager('Unresolved cash variance')">YES</button>
+    <button class="btn btn-no" onclick="noCall('Verify all cash first')">NO</button>
+    <button class="btn btn-reset" onclick="goHome()">Back</button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result" class="hidden">
+    <div id="resultText" class="result"></div>
+    <div id="why" class="why"></div>
+    <div id="ask" class="ask"></div>
+    <div id="expect" class="expect"></div>
+    <button class="btn btn-reset" onclick="goHome()">Home</button>
+  </div>
+
+</div><!-- end .container -->
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, where, updateDoc, doc }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInAnonymously }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// ── Firebase config ──────────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
+  authDomain: "daily-recap-v1.firebaseapp.com",
+  projectId: "daily-recap-v1",
+  storageBucket: "daily-recap-v1.firebasestorage.app",
+  messagingSenderId: "476802421766",
+  appId: "1:476802421766:web:171eccca066feb711bdf87"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+const auth = getAuth(app);
+
+// ── DOM refs ─────────────────────────────────────────────────────────
+const resultText  = document.getElementById("resultText");
+const whyEl       = document.getElementById("why");
+const askEl       = document.getElementById("ask");
+const expectEl    = document.getElementById("expect");
+const recapInput  = document.getElementById("recapInput");
+const recapList   = document.getElementById("recapList");
+const statsEl     = document.getElementById("stats");
+const recapEl     = document.getElementById("recap");
+const dashboardEl = document.getElementById("dashboard");
+const errorBanner = document.getElementById("error-banner");
+
+// ── State ─────────────────────────────────────────────────────────────
+let store = "", role = "", stores = [], name = "";
+
+// ── Auth ──────────────────────────────────────────────────────────────
+try {
+  await signInAnonymously(auth);
+} catch(e) {
+  showError("Firebase auth failed: " + e.message);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function showError(msg) {
+  errorBanner.style.display = "block";
+  errorBanner.textContent = "⚠️ " + msg;
+}
+
+function hideAll() {
+  document.querySelectorAll('.container > div').forEach(d => d.classList.add("hidden"));
+}
+
+// ── Global nav functions (called from onclick attributes) ─────────────
+window.start = () => {
+  store = document.getElementById("store").value.trim();
+  name  = document.getElementById("name").value.trim();
+  role  = document.getElementById("roleSelect").value;
+
+  if (!store || !name) { showError("Please enter Store # and Name."); return; }
+
+  if (role === "district_manager") {
+    stores = store.split(",").map(s => s.trim());
+  }
+
+  document.getElementById("storeDisplay").innerText = "Store: " + store + "  |  " + name;
+
+  if (role !== "employee") {
+    dashboardEl.classList.remove("hidden");
+  }
+
+  hideAll();
+  document.getElementById("home").classList.remove("hidden");
+  listen();
+};
+
+window.goHome = () => {
+  hideAll();
+  document.getElementById("home").classList.remove("hidden");
+};
+
+window.show = (id) => {
+  hideAll();
+  document.getElementById(id).classList.remove("hidden");
+};
+
+window.callManager = (reason) => {
+  window.show("result");
+  resultText.innerHTML  = "📞 CALL MANAGER";
+  resultText.className  = "result call";
+  whyEl.innerHTML       = "WHY: " + reason;
+  askEl.innerHTML       = "MANAGER WILL ASK: What did you try? What policy applies?";
+  expectEl.innerHTML    = "EXPECTED: You attempted all steps.";
+};
+
+window.noCall = (reason) => {
+  window.show("result");
+  resultText.innerHTML  = "✅ DO NOT CALL";
+  resultText.className  = "result nocall";
+  whyEl.innerHTML       = "WHY: " + reason;
+  askEl.innerHTML       = "MANAGER WILL ASK: Why wasn't this handled?";
+  expectEl.innerHTML    = "EXPECTED: Store ownership.";
+};
+
+window.emergency = () => {
+  window.show("result");
+  resultText.innerHTML  = "🚨 CALL 911 THEN MANAGER";
+  resultText.className  = "result call";
+  whyEl.innerHTML       = "WHY: Safety risk";
+  askEl.innerHTML       = "MANAGER WILL ASK: What danger exists?";
+  expectEl.innerHTML    = "EXPECTED: Secure safety first.";
+};
+
+window.toggleRecap = () => recapEl.classList.toggle("hidden");
+
+window.addRecap = async () => {
+  const text = recapInput.value.trim();
+  if (!text) return;
+  try {
+    await addDoc(collection(db, "recap"), {
+      store,
+      name,
+      text,
+      status: "open",
+      time: Date.now()
+    });
+    recapInput.value = "";
+  } catch(e) {
+    showError("Could not save recap: " + e.message);
+  }
+};
+
+window.markComplete = async (id) => {
+  try {
+    await updateDoc(doc(db, "recap", id), { status: "complete" });
+  } catch(e) {
+    showError("Could not update: " + e.message);
+  }
+};
+
+// ── Firestore listener ────────────────────────────────────────────────
+function listen() {
+  let q;
+  try {
+    if (role === "district_manager") {
+      q = query(collection(db, "recap"));
+    } else {
+      q = query(collection(db, "recap"), where("store", "==", store));
+    }
+
+    onSnapshot(q, snap => {
+      recapList.innerHTML = "";
+      let open = 0;
+
+      snap.forEach(d => {
+        const data = d.data();
+
+        // DM: filter to their store list client-side
+        if (role === "district_manager" && !stores.includes(data.store)) return;
+
+        if (data.status === "open") open++;
+
+        const completeClass = data.status === "complete" ? "complete" : "";
+        const btn = role !== "employee"
+          ? `<button onclick="markComplete('${d.id}')">✔</button>`
+          : "";
+
+        recapList.innerHTML += `
+          <div class="log ${completeClass}">
+            <strong>${data.store}</strong> — ${data.name}: ${data.text} ${btn}
+          </div>`;
+      });
+
+      statsEl.innerHTML = "Open Issues: <strong>" + open + "</strong>";
+    }, err => {
+      showError("Firestore error: " + err.message);
+    });
+
+  } catch(e) {
+    showError("Could not connect to database: " + e.message);
+  }
+}
+
+</script>
+</body>
+</html>
