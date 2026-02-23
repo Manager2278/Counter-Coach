@@ -12,15 +12,12 @@
 
 <style>
 body { font-family: Arial; background:#f4f4f4; padding:20px; text-align:center; }
-.header { background:#006400; color:white; padding:15px; border-radius:10px; margin-bottom:15px; }
-.store-tag { font-size:14px; margin-top:5px; }
-.container { background:white; max-width:480px; margin:auto; padding:25px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
-
-
+.header { background:#006400; color:white; padding:16px; border-radius:12px; margin-bottom:15px; }
+.container { background:white; max-width:480px; margin:auto; padding:25px; border-radius:14px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
 
 p { font-size:18px; font-weight:bold; }
 
-.btn { display:block; width:100%; padding:14px; margin:10px 0; font-weight:bold; border:none; border-radius:8px; cursor:pointer;}
+.btn { width:100%; padding:16px; margin:10px 0; border:none; border-radius:10px; font-weight:bold; }
 .btn-yes{background:#2e7d32;color:white;}
 .btn-no{background:#c62828;color:white;}
 .btn-blue{background:#1b5e20;color:white;}
@@ -28,37 +25,16 @@ p { font-size:18px; font-weight:bold; }
 .btn-emergency{background:#b71c1c;color:white;}
 
 .hidden{display:none;}
-input{width:90%;padding:8px;margin:6px 0;}
 
-.result{padding:20px;font-weight:bold;border-radius:8px;}
+.result{padding:20px;border-radius:10px;font-size:20px;}
 .call{background:#ffebee;color:#c62828;border:2px solid #c62828;}
 .nocall{background:#e8f5e9;color:#2e7d32;border:2px solid #2e7d32;}
 
+.why{color:#b71c1c;margin-top:12px;font-weight:bold;}
+.ask{margin-top:10px;}
+.expect{color:#1b5e20;margin-top:12px;font-weight:bold;}
 
-.why{
-margin-top:12px;
-font-size:18px;
-font-weight:bold;
-line-height:1.4;
-}
-
-.ask{
-margin-top:10px;
-font-size:15px;
-line-height:1.4;
-}
-
-.expect{
-margin-top:12px;
-font-size:17px;
-font-weight:bold;
-font-style:italic;
-line-height:1.4;
-}
-.why{ color:#b71c1c; }      /* red = problem */
-.expect{ color:#1b5e20; }   /* green = action */
-
-.footer{margin-top:15px;font-size:12px;color:#666;}
+.badge{position:absolute;top:-6px;right:-6px;background:red;color:white;border-radius:50%;padding:4px 8px;font-size:12px;}
 </style>
 </head>
 
@@ -66,38 +42,32 @@ line-height:1.4;
 
 <div class="header">
 <h2>Counter Coach</h2>
-<div id="storeDisplay" class="store-tag"></div>
+<div id="storeDisplay"></div>
 </div>
-
-
 
 <div class="container">
 
-<div id="banner" style="display:none;background:#ffc107;padding:10px;border-radius:8px;margin-bottom:10px;font-weight:bold;"></div>
-<div id="lastSync" style="font-size:12px;color:#777;margin-bottom:10px;"></div>
-
+<!-- LOGIN -->
 <div id="loginScreen">
-  <h3>Store Login</h3>
-  <input id="loginEmail" placeholder="Store Email">
-  <input id="loginPassword" type="password" placeholder="Password">
-  
-  <button class="btn btn-yes" onclick="login()">Login</button>
-  <button class="btn btn-blue" onclick="createAccount()">Create Store</button>
+<h3>Store Login</h3>
+<input id="email" placeholder="Email"><br>
+<input id="password" type="password" placeholder="Password"><br>
+<button class="btn btn-yes" onclick="login()">Login</button>
+<button class="btn btn-blue" onclick="signup()">Create Store</button>
 </div>
 
 <!-- SETUP -->
-<div id="setupScreen">
+<div id="setupScreen" class="hidden">
 <h3>Store Setup</h3>
-<input id="storeNum" placeholder="Store Number">
-<input id="managerNum" placeholder="Manager Phone">
-<input id="helpdeskNum" placeholder="Help Desk Phone">
-<input id="storePin" placeholder="Create Store Admin PIN">
-<button class="btn btn-yes" onclick="saveSetup()">Save & Lock Store</button>
+<input id="storeNum" placeholder="Store Number"><br>
+<input id="managerNum" placeholder="Manager Phone"><br>
+<input id="helpdeskNum" placeholder="Help Desk Phone"><br>
+<input id="storePin" placeholder="Manager PIN"><br>
+<button class="btn btn-yes" onclick="saveSetup()">Save Store</button>
 </div>
 
 <!-- HOME -->
 <div id="home" class="hidden">
-<p>Select Situation</p>
 
 <button class="btn btn-emergency" onclick="showResult(
 'CALL 911 FIRST<br>THEN CALL MANAGER',
@@ -112,69 +82,22 @@ line-height:1.4;
 <button class="btn btn-blue" onclick="nextQ('driver1')">Drivers / Delivery</button>
 <button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
 <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
-<div style="display:flex; gap:10px; margin-top:10px;">
 
-<div style="margin-top:15px; display:flex; flex-direction:column; gap:12px;">
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:15px;">
+<button id="recapBtn" class="btn btn-blue" style="position:relative;" onclick="openRecap()">
+📋 Daily Recap
+<span id="recapCount" class="badge" style="display:none;">0</span>
+</button>
 
-  <!-- 📋 DAILY RECAP -->
-  <button id="recapBtn" onclick="openRecap()" style="
-    position:relative;
-    width:100%;
-    padding:18px;
-    font-size:18px;
-    font-weight:bold;
-    border-radius:12px;
-    background:#1b5e20;
-    color:white;
-    transition:0.3s;
-  ">
-    📋 Daily Recap
-    <span id="recapCount" style="
-      position:absolute;
-      top:-6px;
-      right:-6px;
-      background:red;
-      color:white;
-      border-radius:50%;
-      padding:5px 9px;
-      font-size:13px;
-      display:none;
-    ">0</span>
-  </button>
-
-  <!-- 🔒 MANAGER INBOX -->
-  <button id="inboxBtn" onclick="openManagerInbox()" style="
-    position:relative;
-    width:100%;
-    padding:18px;
-    font-size:18px;
-    font-weight:bold;
-    border-radius:12px;
-    background:#004d40;
-    color:white;
-    transition:0.3s;
-  ">
-    🔒 Manager Inbox
-    <span id="inboxCount" style="
-      position:absolute;
-      top:-6px;
-      right:-6px;
-      background:red;
-      color:white;
-      border-radius:50%;
-      padding:5px 9px;
-      font-size:13px;
-      display:none;
-    ">0</span>
-  </button>
-
+<button id="inboxBtn" class="btn btn-blue" style="position:relative;" onclick="openInbox()">
+🔒 Manager Inbox
+<span id="inboxCount" class="badge" style="display:none;">0</span>
+</button>
 </div>
 
 </div>
-</div>
 
-<!-- (ALL YOUR QUESTIONS REMAIN EXACT — unchanged) -->
-<!-- KEEPING YOUR FULL FLOW EXACTLY AS YOU PROVIDED -->
+<!-- ================= FULL QUESTION FLOW ================= -->
 
 <!-- CUSTOMER -->
 <div id="cust1" class="hidden">
@@ -307,253 +230,102 @@ line-height:1.4;
 <button class="btn btn-reset" onclick="goBack()">Back</button>
 </div>
 
-
 <!-- RESULT -->
 <div id="resultScreen" class="hidden">
 <div id="resultMsg" class="result"></div>
 <div id="whyText" class="why"></div>
 <div id="askText" class="ask"></div>
 <div id="expectText" class="expect"></div>
-<div id="actionBtn"></div>
 <button class="btn btn-reset" onclick="goHome()">Home</button>
 </div>
 
-<!-- STORE ADMIN PANEL -->
-<div id="storeAdminPanel" class="hidden">
-<h3>Store Admin Settings</h3>
-<input id="editStore" placeholder="Store Number">
-<input id="editManager" placeholder="Manager Phone">
-<input id="editHelpdesk" placeholder="Help Desk Phone">
-
-<button class="btn btn-yes" onclick="saveStoreAdmin()">Save</button>
-<button class="btn btn-reset" onclick="goHome()">Cancel</button>
 </div>
-
-</div>
-
-<!-- ✅ QR ADDED -->
-<div style="max-width:480px;margin:auto;margin-top:15px;">
-<div id="storeQR"></div>
-</div>
-
-<button class="btn btn-blue" onclick="openAdmin()">Admin ⚙</button>
-
-<div class="footer">V6.3</div>
-
-
-
-
-<script>
-
-let settings={},historyStack=[];
-let userRole = "employee";
-
-function openManagerInbox(){
-  if(userRole !== "manager"){
-    return alert("Manager access only");
-  }
-  window.location.href = "daily-recap.html#manager";
-}
-
-function openRecap(){
-  window.location.href = "daily-recap.html";
-}
-
-function openAdmin(){
-
-const pin = prompt("Manager PIN");
-const savedPin = localStorage.getItem("storePin");
-
-if(pin === savedPin){
-
-  userRole = "manager";
-  localStorage.setItem("managerVerified","true");
-
-  nextQ("storeAdminPanel");
-
-  editStore.value = localStorage.getItem("store") || "";
-  editManager.value = localStorage.getItem("manager") || "";
-  editHelpdesk.value = localStorage.getItem("helpdesk") || "";
-
-} else {
-  alert("Access Denied");
-}
-}
-
-async function saveSetup(){
-
-const store = storeNum.value;
-const manager = managerNum.value;
-const helpdesk = helpdeskNum.value;
-const pin = storePin.value;
-
-localStorage.setItem("store", store);
-localStorage.setItem("manager", manager);
-localStorage.setItem("helpdesk", helpdesk);
-localStorage.setItem("storePin", pin);
-localStorage.setItem("locked","true");
-
-settings.store = store;
-settings.manager = manager;
-
-showScreen("home");
-storeDisplay.innerHTML = "Store #" + store;
-
-generateQR();
-sendHeartbeat();
-
-// 🔥 FIRESTORE SAVE (uses global db)
-if(window.db){
-  try{
-    await setDoc(doc(db,"stores",store),{
-      store, manager, helpdesk, pin,
-      lastUpdated: Date.now()
-    });
-  }catch(e){console.log("cloud fail")}
-}
-
-}
-
-</script>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import {
-  getFirestore, collection, onSnapshot, query, where,
-  doc, setDoc, getDoc
-} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
-
-const firebaseConfig = {
+const app = initializeApp({
   apiKey: "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
   authDomain: "daily-recap-v1.firebaseapp.com",
-  projectId: "daily-recap-v1",
-  storageBucket: "daily-recap-v1.firebasestorage.app",
-  messagingSenderId: "476802421766",
-  appId: "1:476802421766:web:171eccca066feb711bdf87"
-};
+  projectId: "daily-recap-v1"
+});
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 const auth = getAuth(app);
+const db = getFirestore(app);
 
-// 🔥 MAKE GLOBAL (THIS FIXES EVERYTHING)
-window.db = db;
-window.auth = auth;
-window.setDoc = setDoc;
-window.doc = doc;
-
-// LOGIN
-window.login = async function(){
-  const email = loginEmail.value;
-  const password = loginPassword.value;
-
-  try{
-    await signInWithEmailAndPassword(auth,email,password);
-  }catch(e){
-    alert("Login failed");
-  }
+window.login = async () => {
+  await signInWithEmailAndPassword(auth, email.value, password.value);
 };
 
-// CREATE ACCOUNT
-window.createAccount = async function(){
-  const email = loginEmail.value;
-  const password = loginPassword.value;
-
-  try{
-    await createUserWithEmailAndPassword(auth,email,password);
-  }catch(e){
-    alert("Error creating account");
-  }
+window.signup = async () => {
+  await createUserWithEmailAndPassword(auth, email.value, password.value);
 };
 
-// AUTH STATE
-onAuthStateChanged(auth, async (user)=>{
-
-if(user){
-
-  const token = await user.getIdTokenResult();
-
-  const role = token.claims.role || "employee";
-  const store = token.claims.storeNumber || localStorage.getItem("store");
-
-  userRole = role;
-  settings.store = store;
-
-  localStorage.setItem("store", store);
-
-  showScreen("home");
-  storeDisplay.innerHTML = "Store #" + store;
-
-  startListeners(store);
-
-}else{
-  showScreen("loginScreen");
-}
-
-});
-
-// 🔥 ALERT LISTENERS (CLEAN VERSION)
-function startListeners(store){
-
-const recapQuery = query(
-  collection(db,"recapEntries"),
-  where("storeNumber","==",store),
-  where("status","==","open")
-);
-
-onSnapshot(recapQuery,(snap)=>{
-
-  let hasIssue=false;
-  let hasProgress=false;
-
-  snap.forEach(d=>{
-    const data=d.data();
-    if(data.type==="issue") hasIssue=true;
-    if(data.type==="progress") hasProgress=true;
-  });
-
-  recapCount.innerText=snap.size;
-  recapCount.style.display=snap.size>0?"inline":"none";
-
-  if(hasIssue){
-    recapBtn.style.boxShadow="0 0 18px red";
-  } else if(hasProgress){
-    recapBtn.style.boxShadow="0 0 18px orange";
+onAuthStateChanged(auth, (user)=>{
+  if(user){
+    show("setupScreen");
   } else {
-    recapBtn.style.boxShadow="none";
+    show("loginScreen");
   }
-
 });
 
-const inboxQuery = query(
-  collection(db,"managerInbox"),
-  where("storeNumber","==",store),
-  where("status","==","open")
-);
+window.saveSetup = async () => {
 
-onSnapshot(inboxQuery,(snap)=>{
+const store = storeNum.value;
 
-  inboxCount.innerText=snap.size;
-  inboxCount.style.display=snap.size>0?"inline":"none";
+localStorage.setItem("store", store);
+localStorage.setItem("storePin", storePin.value);
 
-  inboxBtn.style.boxShadow = snap.size>0
-    ? "0 0 18px red"
-    : "none";
-
+await setDoc(doc(db,"stores",store),{
+  store,
+  manager: managerNum.value,
+  helpdesk: helpdeskNum.value,
+  pin: storePin.value
 });
 
+show("home");
+storeDisplay.innerHTML = "Store #" + store;
+};
+
+function show(id){
+document.querySelectorAll(".container > div").forEach(d=>d.classList.add("hidden"));
+document.getElementById(id).classList.remove("hidden");
 }
+
+window.nextQ = id => show(id);
+window.goHome = ()=>show("home");
+
+window.callManager = (reason)=>{
+show("resultScreen");
+resultMsg.innerHTML="CALL MANAGER";
+resultMsg.className="result call";
+whyText.innerHTML="<b>WHY:</b> "+reason;
+askText.innerHTML="<b>MANAGER WILL ASK:</b> What did you try?";
+expectText.innerHTML="<b>EXPECTED:</b> Follow full process";
+};
+
+window.noCall = (reason)=>{
+show("resultScreen");
+resultMsg.innerHTML="DO NOT CALL";
+resultMsg.className="result nocall";
+whyText.innerHTML="<b>WHY:</b> "+reason;
+};
+
+window.showResult = (msg,act,why,ask,expect)=>{
+show("resultScreen");
+resultMsg.innerHTML=msg;
+whyText.innerHTML=why;
+askText.innerHTML=ask;
+expectText.innerHTML=expect;
+};
+
+window.openRecap = ()=>location.href="daily-recap.html";
+window.openInbox = ()=>alert("Manager only");
 
 </script>
-  
 
 </body>
 </html>
