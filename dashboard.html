@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Manager Dashboard</title>
+</head>
+<body>
+
+<h2>Store Dashboard</h2>
+<div id="list"></div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+import { getFirestore, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIza...",
+  authDomain: "daily-recap-v1.firebaseapp.com",
+  projectId: "daily-recap-v1"
+});
+
+const db = getFirestore(app);
+
+const store = localStorage.getItem("store");
+
+onSnapshot(
+  query(collection(db,"recapEntries"), where("storeNumber","==",store)),
+  (snap)=>{
+    let html = "";
+    snap.forEach(doc=>{
+      const d = doc.data();
+      html += `<p>${d.type} - ${d.text}</p>`;
+    });
+    document.getElementById("list").innerHTML = html;
+  }
+);
+
+</script>
+
+</body>
+</html>
