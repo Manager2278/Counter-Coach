@@ -244,6 +244,8 @@ p { font-size:18px; font-weight:bold; }
 
 <script type="module">
 
+document.body.style.display = "none";
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
 import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
@@ -265,31 +267,53 @@ window.signup = async () => {
   await createUserWithEmailAndPassword(auth, email.value, password.value);
 };
 
-onAuthStateChanged(auth, (user)=>{
-  if(user){
-    show("setupScreen");
-  } else {
-    show("loginScreen");
+onAuthStateChanged(auth, async (user)=>{
+
+if(user){
+
+  const store = localStorage.getItem("store");
+
+  // 🔥 IF STORE EXISTS → GO HOME
+  if(store){
+    settings.store = store;
+    show("home");
+    storeDisplay.innerHTML = "Store #" + store;
+    return;
   }
+
+  // 🔥 OTHERWISE → SETUP
+  show("setupScreen");
+
+} else {
+
+  show("loginScreen");
+
+}
+  document.body.style.display = "block";
 });
 
 window.saveSetup = async () => {
 
-const store = storeNum.value;
+  const store = storeNum.value;
 
-localStorage.setItem("store", store);
-localStorage.setItem("storePin", storePin.value);
+  if(!store) return alert("Enter store number");
 
-await setDoc(doc(db,"stores",store),{
-  store,
-  manager: managerNum.value,
-  helpdesk: helpdeskNum.value,
-  pin: storePin.value
-});
+  localStorage.setItem("store", store);
+  localStorage.setItem("storePin", storePin.value);
 
-show("home");
-storeDisplay.innerHTML = "Store #" + store;
+  await setDoc(doc(db,"stores",store),{
+    store,
+    manager: managerNum.value,
+    helpdesk: helpdeskNum.value,
+    pin: storePin.value
+  });
+
+  storeDisplay.innerHTML = "Store #" + store;
+
+  show("home");
 };
+
+
 
 function show(id){
 document.querySelectorAll(".container > div").forEach(d=>d.classList.add("hidden"));
