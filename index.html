@@ -23,6 +23,7 @@
     .btn-blue{background:#1b5e20;color:white;}
     .btn-reset{background:#777;color:white;}
     .btn-emergency{background:#b71c1c;color:white;}
+    .btn-recap{background:#1565c0;color:white;text-decoration:none;display:block;width:100%;padding:14px;margin:8px 0;border:none;border-radius:10px;font-weight:bold;font-size:15px;cursor:pointer;box-sizing:border-box;}
     .hidden{display:none;}
     .result{padding:20px;border-radius:10px;font-size:20px;font-weight:bold;}
     .call{background:#ffebee;color:#c62828;}
@@ -30,9 +31,6 @@
     .why{color:#b71c1c;margin-top:10px;font-weight:bold;}
     .ask{margin-top:10px;}
     .expect{color:#1b5e20;margin-top:10px;font-weight:bold;}
-    .log{border-bottom:1px solid #ddd;padding:8px;text-align:left;}
-    .complete{text-decoration:line-through;opacity:0.6;}
-    .dashboard{background:#eef7ee;padding:10px;margin-top:10px;border-radius:10px;}
     #error-banner{display:none;background:#ffcccc;color:#900;padding:10px;border-radius:8px;margin-bottom:10px;font-size:13px;}
   </style>
 </head>
@@ -65,25 +63,10 @@
       <button class="btn btn-blue" onclick="show('cash1')">Cash / Variance</button>
       <button class="btn btn-blue" onclick="show('ops1')">System / Store Issue</button>
       <hr>
-      <button class="btn btn-blue" onclick="toggleRecap()">&#x1F4CB; Daily Recap</button>
-      <div id="dashboard" class="hidden dashboard">
-        <h3>Dashboard</h3>
-        <div id="stats"></div>
-      </div>
-      <div id="recap" class="hidden">
-        <input id="recapInput" placeholder="Log update">
-        <select id="type">
-          <option value="progress">Progress</option>
-          <option value="issue">Issue</option>
-        </select>
-        <button onclick="addRecap()">Add</button>
-        <div id="recapList"></div>
-      </div>
+      <a id="recap-link" class="btn-recap" href="recap.html">&#x1F4CB; Daily Recap</a>
     </div>
 
-    <!-- ===================== -->
-    <!-- CUSTOMER FLOW         -->
-    <!-- ===================== -->
+    <!-- CUSTOMER FLOW -->
     <div id="cust1" class="hidden">
       <p>Customer demanding manager or escalating beyond employee?</p>
       <button class="btn btn-yes" onclick="show('cust2')">YES</button>
@@ -109,9 +92,7 @@
       <button class="btn btn-reset" onclick="goHome()">Back</button>
     </div>
 
-    <!-- ===================== -->
-    <!-- STAFFING FLOW         -->
-    <!-- ===================== -->
+    <!-- STAFFING FLOW -->
     <div id="staff1" class="hidden">
       <p>Is there a call-off or staffing gap affecting coverage?</p>
       <button class="btn btn-yes" onclick="show('staff2')">YES</button>
@@ -137,9 +118,7 @@
       <button class="btn btn-reset" onclick="goHome()">Back</button>
     </div>
 
-    <!-- ===================== -->
-    <!-- DRIVERS / DELIVERY    -->
-    <!-- ===================== -->
+    <!-- DRIVERS / DELIVERY -->
     <div id="driver1" class="hidden">
       <p>Driver unavailable or delivery disruption?</p>
       <button class="btn btn-yes" onclick="show('driver2')">YES</button>
@@ -159,9 +138,7 @@
       <button class="btn btn-reset" onclick="goHome()">Back</button>
     </div>
 
-    <!-- ===================== -->
-    <!-- CASH / VARIANCE       -->
-    <!-- ===================== -->
+    <!-- CASH / VARIANCE -->
     <div id="cash1" class="hidden">
       <p>Register over/short detected?</p>
       <button class="btn btn-yes" onclick="show('cash2')">YES</button>
@@ -181,9 +158,7 @@
       <button class="btn btn-reset" onclick="goHome()">Back</button>
     </div>
 
-    <!-- ===================== -->
-    <!-- SYSTEM / STORE ISSUE  -->
-    <!-- ===================== -->
+    <!-- SYSTEM / STORE ISSUE -->
     <div id="ops1" class="hidden">
       <p>System, POS, or building issue affecting operations?</p>
       <button class="btn btn-yes" onclick="show('ops2')">YES</button>
@@ -218,11 +193,10 @@
       <button class="btn btn-reset" onclick="goHome()">Home</button>
     </div>
 
-  </div><!-- end .container -->
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -235,27 +209,16 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
     const auth = getAuth(app);
-
-    const resultText = document.getElementById("resultText");
-    const whyEl = document.getElementById("why");
-    const askEl = document.getElementById("ask");
-    const expectEl = document.getElementById("expect");
-    const recapInput = document.getElementById("recapInput");
-    const recapList = document.getElementById("recapList");
-    const statsEl = document.getElementById("stats");
-    const recapEl = document.getElementById("recap");
-    const dashboardEl = document.getElementById("dashboard");
     const errorBanner = document.getElementById("error-banner");
 
-    let store = "", role = "", stores = [], name = "";
+    let store = "", role = "", name = "";
 
     try { await signInAnonymously(auth); } catch(e) { showError("Firebase auth failed: " + e.message); }
 
     function showError(msg) {
       errorBanner.style.display = "block";
-      errorBanner.textContent = "&#x26A0;&#xFE0F; " + msg;
+      errorBanner.textContent = "\u26A0\uFE0F " + msg;
     }
 
     function hideAll() {
@@ -264,84 +227,46 @@
 
     window.start = () => {
       store = document.getElementById("store").value.trim();
-      name = document.getElementById("name").value.trim();
-      role = document.getElementById("roleSelect").value;
+      name  = document.getElementById("name").value.trim();
+      role  = document.getElementById("roleSelect").value;
       if (!store || !name) { showError("Please enter Store # and Name."); return; }
-      if (role === "district_manager") { stores = store.split(",").map(s => s.trim()); }
       document.getElementById("storeDisplay").innerText = "Store: " + store + " | " + name;
-      if (role !== "employee") { dashboardEl.classList.remove("hidden"); }
+      // Pass store + name to recap.html via the link
+      const recapLink = document.getElementById("recap-link");
+      recapLink.href = `recap.html?store=${encodeURIComponent(store)}&name=${encodeURIComponent(name)}`;
       hideAll();
       document.getElementById("home").classList.remove("hidden");
-      listen();
     };
 
     window.goHome = () => { hideAll(); document.getElementById("home").classList.remove("hidden"); };
-
-    window.show = (id) => { hideAll(); document.getElementById(id).classList.remove("hidden"); };
+    window.show   = (id) => { hideAll(); document.getElementById(id).classList.remove("hidden"); };
 
     window.callManager = (reason) => {
       window.show("result");
-      resultText.innerHTML = "&#x1F4DE; CALL MANAGER";
-      resultText.className = "result call";
-      whyEl.innerHTML = "<b>WHY:</b> " + reason;
-      askEl.innerHTML = "<b>MANAGER WILL ASK:</b><br>&bull; What did you already try?<br>&bull; What policy applies?<br>&bull; What solution do you recommend?";
-      expectEl.innerHTML = "<b>EXPECTED:</b> You attempted all steps before calling.";
+      document.getElementById("resultText").innerHTML = "&#x1F4DE; CALL MANAGER";
+      document.getElementById("resultText").className = "result call";
+      document.getElementById("why").innerHTML   = "<b>WHY:</b> " + reason;
+      document.getElementById("ask").innerHTML   = "<b>MANAGER WILL ASK:</b><br>&bull; What did you already try?<br>&bull; What policy applies?<br>&bull; What solution do you recommend?";
+      document.getElementById("expect").innerHTML = "<b>EXPECTED:</b> You attempted all steps before calling.";
     };
 
     window.noCall = (reason) => {
       window.show("result");
-      resultText.innerHTML = "&#x2705; DO NOT CALL";
-      resultText.className = "result nocall";
-      whyEl.innerHTML = "<b>WHY:</b> " + reason;
-      askEl.innerHTML = "<b>MANAGER WILL ASK:</b> Why wasn't this handled in-store?";
-      expectEl.innerHTML = "<b>EXPECTED:</b> Store-level ownership.";
+      document.getElementById("resultText").innerHTML = "&#x2705; DO NOT CALL";
+      document.getElementById("resultText").className = "result nocall";
+      document.getElementById("why").innerHTML   = "<b>WHY:</b> " + reason;
+      document.getElementById("ask").innerHTML   = "<b>MANAGER WILL ASK:</b> Why wasn't this handled in-store?";
+      document.getElementById("expect").innerHTML = "<b>EXPECTED:</b> Store-level ownership.";
     };
 
     window.emergency = () => {
       window.show("result");
-      resultText.innerHTML = "&#x1F6A8; CALL 911 THEN MANAGER";
-      resultText.className = "result call";
-      whyEl.innerHTML = "<b>WHY:</b> Safety risk present.";
-      askEl.innerHTML = "<b>MANAGER WILL ASK:</b> What immediate danger exists? Who is affected?";
-      expectEl.innerHTML = "<b>EXPECTED:</b> You secured safety and called emergency services first.";
+      document.getElementById("resultText").innerHTML = "&#x1F6A8; CALL 911 THEN MANAGER";
+      document.getElementById("resultText").className = "result call";
+      document.getElementById("why").innerHTML   = "<b>WHY:</b> Safety risk present.";
+      document.getElementById("ask").innerHTML   = "<b>MANAGER WILL ASK:</b> What immediate danger exists? Who is affected?";
+      document.getElementById("expect").innerHTML = "<b>EXPECTED:</b> You secured safety and called emergency services first.";
     };
-
-    window.toggleRecap = () => recapEl.classList.toggle("hidden");
-
-    window.addRecap = async () => {
-      const text = recapInput.value.trim();
-      if (!text) return;
-      try {
-        await addDoc(collection(db, "recap"), { store, name, text, status: "open", time: Date.now() });
-        recapInput.value = "";
-      } catch(e) { showError("Could not save recap: " + e.message); }
-    };
-
-    window.markComplete = async (id) => {
-      try { await updateDoc(doc(db, "recap", id), { status: "complete" }); }
-      catch(e) { showError("Could not update: " + e.message); }
-    };
-
-    function listen() {
-      try {
-        let q;
-        if (role === "district_manager") { q = query(collection(db, "recap")); }
-        else { q = query(collection(db, "recap"), where("store", "==", store)); }
-        onSnapshot(q, snap => {
-          recapList.innerHTML = "";
-          let open = 0;
-          snap.forEach(d => {
-            const data = d.data();
-            if (role === "district_manager" && !stores.includes(data.store)) return;
-            if (data.status === "open") open++;
-            const completeClass = data.status === "complete" ? "complete" : "";
-            const btn = role !== "employee" ? `<button onclick="markComplete('${d.id}')">&#x2714;</button>` : "";
-            recapList.innerHTML += `<div class="log ${completeClass}"><strong>${data.store}</strong> &mdash; ${data.name}: ${data.text} ${btn}</div>`;
-          });
-          statsEl.innerHTML = "Open Issues: <strong>" + open + "</strong>";
-        }, err => { showError("Firestore error: " + err.message); });
-      } catch(e) { showError("Could not connect to database: " + e.message); }
-    }
   </script>
 </body>
-      </html>
+</html>
