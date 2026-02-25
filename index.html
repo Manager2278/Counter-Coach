@@ -3,270 +3,477 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Counter Coach FULL Enterprise</title>
+  <title>Counter Coach</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#006400">
   <style>
-    body{font-family:Arial;background:#f4f4f4;padding:15px;text-align:center;}
-    .header{background:#006400;color:white;padding:15px;border-radius:10px;}
-    .container{background:white;max-width:600px;margin:auto;padding:20px;border-radius:12px;}
-    input, select {
-      width:100%;
-      padding:10px;
-      margin:6px 0;
-      border:1px solid #ccc;
-      border-radius:8px;
-      box-sizing:border-box;
-      font-size:15px;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f0f4f0; min-height: 100vh; }
+
+    .header {
+      background: #006400;
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
-    .btn{width:100%;padding:14px;margin:8px 0;border:none;border-radius:10px;font-weight:bold;font-size:15px;cursor:pointer;}
-    .btn-yes{background:#2e7d32;color:white;}
-    .btn-no{background:#c62828;color:white;}
-    .btn-blue{background:#1b5e20;color:white;}
-    .btn-reset{background:#777;color:white;}
-    .btn-emergency{background:#b71c1c;color:white;}
-    .btn-recap{background:#1565c0;color:white;text-decoration:none;display:block;width:100%;padding:14px;margin:8px 0;border:none;border-radius:10px;font-weight:bold;font-size:15px;cursor:pointer;box-sizing:border-box;}
-    .hidden{display:none;}
-    .result{padding:20px;border-radius:10px;font-size:20px;font-weight:bold;}
-    .call{background:#ffebee;color:#c62828;}
-    .nocall{background:#e8f5e9;color:#2e7d32;}
-    .why{color:#b71c1c;margin-top:10px;font-weight:bold;}
-    .ask{margin-top:10px;}
-    .expect{color:#1b5e20;margin-top:10px;font-weight:bold;}
-    #error-banner{display:none;background:#ffcccc;color:#900;padding:10px;border-radius:8px;margin-bottom:10px;font-size:13px;}
+    .header h2 { font-size: 18px; letter-spacing: 0.5px; }
+    .header-right { font-size: 12px; opacity: 0.85; text-align: right; line-height: 1.4; }
+
+    .wrap { max-width: 540px; margin: 0 auto; padding: 20px 16px 40px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .login-box, .setup-box, .home-box, .q-box {
+      background: white;
+      border-radius: 14px;
+      padding: 28px 24px;
+      box-shadow: 0 3px 16px rgba(0,0,0,0.1);
+      margin-top: 16px;
+    }
+    .login-box h3, .setup-box h3 { font-size: 20px; color: #1a3a1a; margin-bottom: 6px; }
+    .login-box > p, .setup-box > p { font-size: 13px; color: #666; margin-bottom: 20px; line-height: 1.5; }
+
+    .qr-hint {
+      background: #e8f5e9;
+      border: 1.5px solid #a5d6a7;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: #2e7d32;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .qr-hint strong { display: block; font-size: 14px; margin-bottom: 4px; }
+
+    input, select {
+      width: 100%;
+      padding: 11px 14px;
+      margin: 6px 0 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      transition: border .2s;
+    }
+    input:focus, select:focus { outline: none; border-color: #006400; background: white; }
+
+    .field-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #888; display: block; }
+
+    .btn {
+      display: block; width: 100%; padding: 14px;
+      margin: 8px 0; font-weight: bold; font-size: 15px;
+      border: none; border-radius: 10px; cursor: pointer;
+      transition: filter .15s, transform .1s;
+      text-align: center; text-decoration: none;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-green     { background: #2e7d32; color: white; }
+    .btn-blue      { background: #1b5e20; color: white; }
+    .btn-red       { background: #c62828; color: white; }
+    .btn-gray      { background: #757575; color: white; }
+    .btn-emergency { background: #b71c1c; color: white; }
+    .btn-navy      { background: #1565c0; color: white; }
+
+    .err-box {
+      background: #ffebee; border: 1px solid #ffcdd2;
+      color: #c62828; padding: 10px 14px; border-radius: 8px;
+      font-size: 13px; margin-bottom: 12px; display: none;
+    }
+    .err-box.show { display: block; }
+
+    .manager-link {
+      text-align: center; margin-top: 18px;
+      font-size: 13px; color: #888;
+    }
+    .manager-link button {
+      background: none; border: none; color: #006400;
+      font-weight: 700; cursor: pointer; font-size: 13px;
+      text-decoration: underline;
+    }
+
+    .home-box p { font-size: 16px; font-weight: bold; color: #1a3a1a; margin-bottom: 14px; }
+    hr { border: none; border-top: 1px solid #e8e8e8; margin: 10px 0; }
+
+    .q-box p { font-size: 18px; font-weight: bold; color: #1a2a1a; margin-bottom: 18px; line-height: 1.4; }
+
+    .result { padding: 18px; border-radius: 10px; font-size: 20px; font-weight: bold; }
+    .call   { background: #ffebee; color: #c62828; }
+    .nocall { background: #e8f5e9; color: #2e7d32; }
+    .why    { color: #b71c1c; margin-top: 12px; font-weight: bold; font-size: 15px; line-height: 1.5; }
+    .ask    { margin-top: 10px; font-size: 14px; line-height: 1.5; }
+    .expect { color: #1b5e20; margin-top: 12px; font-weight: bold; font-style: italic; font-size: 15px; line-height: 1.5; }
+
+    #error-banner {
+      display: none; background: #ffcccc; color: #900;
+      padding: 10px 14px; border-radius: 8px; margin: 12px 16px;
+      font-size: 13px;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h2>Counter Coach</h2>
-    <div id="storeDisplay"></div>
-  </div>
-  <div id="error-banner"></div>
-  <div class="container">
 
-    <!-- SETUP -->
-    <div id="setup">
-      <input id="store" placeholder="Store # or comma list for DM"><br>
-      <input id="name" placeholder="Employee Name"><br>
-      <select id="roleSelect">
-        <option value="employee">Employee</option>
-        <option value="manager">Manager</option>
-        <option value="district_manager">District Manager</option>
-      </select><br>
-      <button class="btn btn-blue" onclick="start()">Start</button>
+<div class="header">
+  <h2>&#x1F3EA; Counter Coach</h2>
+  <div class="header-right" id="header-info"></div>
+</div>
+<div id="error-banner"></div>
+
+<div class="wrap">
+
+  <!-- ══ EMPLOYEE LOGIN ══════════════════════════════════════ -->
+  <div class="screen active" id="screen-emp-login">
+    <div class="login-box">
+      <h3>Welcome</h3>
+      <p>Enter your store number and name to get started.</p>
+
+      <div class="qr-hint">
+        <strong>&#x1F4F1; Scanned a QR code?</strong>
+        Your store is pre-filled — just enter your name and tap Enter.
+      </div>
+
+      <span class="field-label">Store Number</span>
+      <input type="text" id="emp-store" placeholder="e.g. 101" inputmode="numeric">
+
+      <span class="field-label">Your Name</span>
+      <input type="text" id="emp-name" placeholder="First name"
+        onkeydown="if(event.key==='Enter') empLogin()">
+
+      <div class="err-box" id="emp-err"></div>
+      <button class="btn btn-green" onclick="empLogin()">Enter Store &#x2192;</button>
+
+      <div class="manager-link">
+        Manager? <button onclick="showManagerLogin()">Manager / Store Setup &#x2192;</button>
+      </div>
     </div>
+  </div>
 
-    <!-- HOME -->
-    <div id="home" class="hidden">
+  <!-- ══ MANAGER LOGIN ═══════════════════════════════════════ -->
+  <div class="screen" id="screen-mgr-login">
+    <div class="setup-box">
+      <h3>&#x1F511; Manager Setup</h3>
+      <p>First time? Create your store PIN to set it up. Returning? Enter your PIN to update settings.</p>
+
+      <span class="field-label">Store Number</span>
+      <input type="text" id="mgr-store" placeholder="e.g. 101" inputmode="numeric">
+
+      <span class="field-label">Manager Name</span>
+      <input type="text" id="mgr-name" placeholder="Your name">
+
+      <span class="field-label">Manager Phone (used for call buttons)</span>
+      <input type="tel" id="mgr-phone" placeholder="10-digit number">
+
+      <span class="field-label">Help Desk Phone</span>
+      <input type="tel" id="mgr-helpdesk" placeholder="10-digit number">
+
+      <span class="field-label">Store PIN (4+ characters)</span>
+      <input type="password" id="mgr-pin" placeholder="Create or enter existing PIN">
+
+      <div class="err-box" id="mgr-err"></div>
+      <button class="btn btn-green" onclick="mgrLogin()">Save &amp; Enter &#x2192;</button>
+      <button class="btn btn-gray"  onclick="showEmpLogin()">&#x2190; Back</button>
+    </div>
+  </div>
+
+  <!-- ══ HOME ═══════════════════════════════════════════════ -->
+  <div class="screen" id="screen-home">
+    <div class="home-box">
+      <p>What is the situation?</p>
       <button class="btn btn-emergency" onclick="emergency()">&#x1F6A8; Emergency</button>
-      <button class="btn btn-blue" onclick="show('cust1')">Customer Escalation</button>
-      <button class="btn btn-blue" onclick="show('staff1')">Staffing Issue</button>
-      <button class="btn btn-blue" onclick="show('driver1')">Drivers / Delivery</button>
-      <button class="btn btn-blue" onclick="show('cash1')">Cash / Variance</button>
-      <button class="btn btn-blue" onclick="show('ops1')">System / Store Issue</button>
+      <button class="btn btn-blue" onclick="nextQ('cust1')">Customer Escalation</button>
+      <button class="btn btn-blue" onclick="nextQ('staff1')">Staffing Issue</button>
+      <button class="btn btn-blue" onclick="nextQ('driver1')">Drivers / Delivery</button>
+      <button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
+      <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
       <hr>
-      <a id="recap-link" class="btn-recap" href="recap.html">&#x1F4CB; Daily Recap</a>
+      <a id="recap-link" class="btn btn-navy" href="recap.html">&#x1F4CB; Daily Recap &amp; Log</a>
     </div>
-
-    <!-- CUSTOMER FLOW -->
-    <div id="cust1" class="hidden">
-      <p>Customer demanding manager or escalating beyond employee?</p>
-      <button class="btn btn-yes" onclick="show('cust2')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Handled at employee level')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="cust2" class="hidden">
-      <p>Did you fully follow return/warranty policy without deviation?</p>
-      <button class="btn btn-yes" onclick="show('cust3')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Follow policy completely first')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="cust3" class="hidden">
-      <p>Did you offer ALL available solutions (exchange, credit, alternative part)?</p>
-      <button class="btn btn-yes" onclick="show('cust4')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Offer solutions before escalation')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="cust4" class="hidden">
-      <p>Customer still refusing resolution and impacting store environment?</p>
-      <button class="btn btn-yes" onclick="callManager('Unresolvable customer escalation')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Resolved without escalation')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-
-    <!-- STAFFING FLOW -->
-    <div id="staff1" class="hidden">
-      <p>Is there a call-off or staffing gap affecting coverage?</p>
-      <button class="btn btn-yes" onclick="show('staff2')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Coverage sufficient')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="staff2" class="hidden">
-      <p>Did you contact all available employees for coverage?</p>
-      <button class="btn btn-yes" onclick="show('staff3')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Attempt coverage first')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="staff3" class="hidden">
-      <p>Did you adjust roles (counter, driver, commercial) to maintain operations?</p>
-      <button class="btn btn-yes" onclick="show('staff4')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Reallocate team roles first')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="staff4" class="hidden">
-      <p>Is the store unable to operate or losing significant business?</p>
-      <button class="btn btn-yes" onclick="callManager('Staffing prevents operations')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Store still functional')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-
-    <!-- DRIVERS / DELIVERY -->
-    <div id="driver1" class="hidden">
-      <p>Driver unavailable or delivery disruption?</p>
-      <button class="btn btn-yes" onclick="show('driver2')">YES</button>
-      <button class="btn btn-no" onclick="noCall('No delivery issue')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="driver2" class="hidden">
-      <p>Can counter or other staff cover delivery temporarily?</p>
-      <button class="btn btn-yes" onclick="noCall('Reassign staff and continue')">YES</button>
-      <button class="btn btn-no" onclick="show('driver3')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="driver3" class="hidden">
-      <p>Is commercial business significantly impacted?</p>
-      <button class="btn btn-yes" onclick="callManager('Delivery failure impacting business')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Delay manageable')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-
-    <!-- CASH / VARIANCE -->
-    <div id="cash1" class="hidden">
-      <p>Register over/short detected?</p>
-      <button class="btn btn-yes" onclick="show('cash2')">YES</button>
-      <button class="btn btn-no" onclick="noCall('No issue')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="cash2" class="hidden">
-      <p>Recounted drawer, checked bags, safe, and deposits?</p>
-      <button class="btn btn-yes" onclick="show('cash3')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Verify all cash locations first')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="cash3" class="hidden">
-      <p>Variance still over $20 after full verification?</p>
-      <button class="btn btn-yes" onclick="callManager('Unresolved cash variance')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Log and monitor')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-
-    <!-- SYSTEM / STORE ISSUE -->
-    <div id="ops1" class="hidden">
-      <p>System, POS, or building issue affecting operations?</p>
-      <button class="btn btn-yes" onclick="show('ops2')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Minor issue, no action needed')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="ops2" class="hidden">
-      <p>Restarted system or attempted basic troubleshooting?</p>
-      <button class="btn btn-yes" onclick="show('ops3')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Restart and troubleshoot first')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="ops3" class="hidden">
-      <p>Contacted help desk and followed their guidance?</p>
-      <button class="btn btn-yes" onclick="show('ops4')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Contact help desk first')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-    <div id="ops4" class="hidden">
-      <p>Still unable to operate or actively losing sales?</p>
-      <button class="btn btn-yes" onclick="callManager('Operational failure after all steps')">YES</button>
-      <button class="btn btn-no" onclick="noCall('Issue resolved')">NO</button>
-      <button class="btn btn-reset" onclick="goHome()">Back</button>
-    </div>
-
-    <!-- RESULT -->
-    <div id="result" class="hidden">
-      <div id="resultText" class="result"></div>
-      <div id="why" class="why"></div>
-      <div id="ask" class="ask"></div>
-      <div id="expect" class="expect"></div>
-      <button class="btn btn-reset" onclick="goHome()">Home</button>
-    </div>
-
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  <!-- ══ QUESTION SCREEN ════════════════════════════════════ -->
+  <div class="screen" id="screen-q">
+    <div class="q-box" id="q-inner"></div>
+  </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
-      authDomain: "daily-recap-v1.firebaseapp.com",
-      projectId: "daily-recap-v1",
-      storageBucket: "daily-recap-v1.firebasestorage.app",
-      messagingSenderId: "476802421766",
-      appId: "1:476802421766:web:171eccca066feb711bdf87"
-    };
+  <!-- ══ RESULT SCREEN ══════════════════════════════════════ -->
+  <div class="screen" id="screen-result">
+    <div class="q-box">
+      <div id="resultText" class="result"></div>
+      <div id="why"    class="why"></div>
+      <div id="ask"    class="ask"></div>
+      <div id="expect" class="expect"></div>
+      <div id="actionBtn" style="margin-top:14px;"></div>
+      <button class="btn btn-gray" style="margin-top:12px;" onclick="goHome()">&#x2190; Home</button>
+    </div>
+  </div>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const errorBanner = document.getElementById("error-banner");
+</div>
 
-    let store = "", role = "", name = "";
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInAnonymously }
+                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    try { await signInAnonymously(auth); } catch(e) { showError("Firebase auth failed: " + e.message); }
+const cfg = {
+  apiKey:            "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
+  authDomain:        "daily-recap-v1.firebaseapp.com",
+  projectId:         "daily-recap-v1",
+  storageBucket:     "daily-recap-v1.firebasestorage.app",
+  messagingSenderId: "476802421766",
+  appId:             "1:476802421766:web:171eccca066feb711bdf87"
+};
 
-    function showError(msg) {
-      errorBanner.style.display = "block";
-      errorBanner.textContent = "\u26A0\uFE0F " + msg;
+const app  = initializeApp(cfg);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+
+let store = "", name = "", role = "", managerPhone = "", helpdeskPhone = "";
+let historyStack = [];
+
+await signInAnonymously(auth).catch(e => showBanner("Auth error: " + e.message));
+
+// ── URL params from QR scan ─────────────────────────────────
+const params  = new URLSearchParams(location.search);
+const qrStore = params.get("store");
+const qrName  = params.get("name");
+
+if (qrStore) document.getElementById("emp-store").value = qrStore;
+if (qrName)  document.getElementById("emp-name").value  = qrName;
+
+// ── Restore session (survives refresh) ──────────────────────
+const saved = loadSession();
+if (saved && saved.store && saved.name) {
+  ({ store, name, role } = saved);
+  managerPhone  = saved.managerPhone  || "";
+  helpdeskPhone = saved.helpdeskPhone || "";
+  enterApp();
+} else if (qrStore && qrName) {
+  // Auto-login via QR
+  autoLoginFromQR(qrStore, qrName);
+} else if (qrStore) {
+  setTimeout(() => document.getElementById("emp-name").focus(), 300);
+}
+
+// ══════════════════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════════════════
+
+async function autoLoginFromQR(s, n) {
+  try {
+    const snap = await getDoc(doc(db, "stores", s));
+    if (!snap.exists()) {
+      showErr("emp-err", "Store " + s + " not set up yet. Ask your manager.");
+      return;
     }
+    const d = snap.data();
+    store = s; name = n; role = "employee";
+    managerPhone  = d.managerPhone  || "";
+    helpdeskPhone = d.helpdeskPhone || "";
+    saveSession();
+    enterApp();
+  } catch(e) { showErr("emp-err", "Error: " + e.message); }
+}
 
-    function hideAll() {
-      document.querySelectorAll('.container > div').forEach(d => d.classList.add("hidden"));
+window.empLogin = async () => {
+  const s = val("emp-store"), n = val("emp-name");
+  if (!s) { showErr("emp-err", "Please enter your store number."); return; }
+  if (!n) { showErr("emp-err", "Please enter your name."); return; }
+  try {
+    const snap = await getDoc(doc(db, "stores", s));
+    if (!snap.exists()) {
+      showErr("emp-err", "Store " + s + " hasn't been set up yet. Ask your manager to use Manager Setup.");
+      return;
     }
+    const d = snap.data();
+    store = s; name = n; role = "employee";
+    managerPhone  = d.managerPhone  || "";
+    helpdeskPhone = d.helpdeskPhone || "";
+    saveSession();
+    enterApp();
+  } catch(e) { showErr("emp-err", "Error: " + e.message); }
+};
 
-    window.start = () => {
-      store = document.getElementById("store").value.trim();
-      name  = document.getElementById("name").value.trim();
-      role  = document.getElementById("roleSelect").value;
-      if (!store || !name) { showError("Please enter Store # and Name."); return; }
-      document.getElementById("storeDisplay").innerText = "Store: " + store + " | " + name;
-      // Pass store + name to recap.html via the link
-      const recapLink = document.getElementById("recap-link");
-      recapLink.href = `recap.html?store=${encodeURIComponent(store)}&name=${encodeURIComponent(name)}`;
-      hideAll();
-      document.getElementById("home").classList.remove("hidden");
-    };
+window.mgrLogin = async () => {
+  const s   = val("mgr-store");
+  const n   = val("mgr-name");
+  const ph  = val("mgr-phone");
+  const hd  = val("mgr-helpdesk");
+  const pin = val("mgr-pin");
+  if (!s || !n || !pin) { showErr("mgr-err", "Store number, name and PIN are required."); return; }
+  if (pin.length < 4)   { showErr("mgr-err", "PIN must be at least 4 characters."); return; }
+  try {
+    const ref  = doc(db, "stores", s);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      if (snap.data().pin !== pin) { showErr("mgr-err", "Incorrect PIN."); return; }
+      await setDoc(ref, { managerPhone: ph, helpdeskPhone: hd, managerName: n }, { merge: true });
+    } else {
+      await setDoc(ref, { pin, managerName: n, managerPhone: ph, helpdeskPhone: hd, created: serverTimestamp() });
+    }
+    store = s; name = n; role = "manager";
+    managerPhone  = ph;
+    helpdeskPhone = hd;
+    saveSession();
+    enterApp();
+  } catch(e) { showErr("mgr-err", "Error: " + e.message); }
+};
 
-    window.goHome = () => { hideAll(); document.getElementById("home").classList.remove("hidden"); };
-    window.show   = (id) => { hideAll(); document.getElementById(id).classList.remove("hidden"); };
+// ══════════════════════════════════════════════════════════
+// APP ENTRY
+// ══════════════════════════════════════════════════════════
 
-    window.callManager = (reason) => {
-      window.show("result");
-      document.getElementById("resultText").innerHTML = "&#x1F4DE; CALL MANAGER";
-      document.getElementById("resultText").className = "result call";
-      document.getElementById("why").innerHTML   = "<b>WHY:</b> " + reason;
-      document.getElementById("ask").innerHTML   = "<b>MANAGER WILL ASK:</b><br>&bull; What did you already try?<br>&bull; What policy applies?<br>&bull; What solution do you recommend?";
-      document.getElementById("expect").innerHTML = "<b>EXPECTED:</b> You attempted all steps before calling.";
-    };
+function enterApp() {
+  document.getElementById("header-info").innerHTML =
+    "Store " + store + "<br>" + name + (role === "manager" ? " &#x1F511;" : "");
+  document.getElementById("recap-link").href =
+    "recap.html?store=" + encodeURIComponent(store) +
+    "&name="            + encodeURIComponent(name)  +
+    "&role="            + encodeURIComponent(role);
+  goHome();
+}
 
-    window.noCall = (reason) => {
-      window.show("result");
-      document.getElementById("resultText").innerHTML = "&#x2705; DO NOT CALL";
-      document.getElementById("resultText").className = "result nocall";
-      document.getElementById("why").innerHTML   = "<b>WHY:</b> " + reason;
-      document.getElementById("ask").innerHTML   = "<b>MANAGER WILL ASK:</b> Why wasn't this handled in-store?";
-      document.getElementById("expect").innerHTML = "<b>EXPECTED:</b> Store-level ownership.";
-    };
+// ══════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════
 
-    window.emergency = () => {
-      window.show("result");
-      document.getElementById("resultText").innerHTML = "&#x1F6A8; CALL 911 THEN MANAGER";
-      document.getElementById("resultText").className = "result call";
-      document.getElementById("why").innerHTML   = "<b>WHY:</b> Safety risk present.";
-      document.getElementById("ask").innerHTML   = "<b>MANAGER WILL ASK:</b> What immediate danger exists? Who is affected?";
-      document.getElementById("expect").innerHTML = "<b>EXPECTED:</b> You secured safety and called emergency services first.";
-    };
-  </script>
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+window.showEmpLogin     = () => showScreen("screen-emp-login");
+window.showManagerLogin = () => showScreen("screen-mgr-login");
+window.goHome = () => { historyStack = []; showScreen("screen-home"); };
+
+window.nextQ = (id) => {
+  historyStack.push(id);
+  renderQ(id);
+  showScreen("screen-q");
+};
+
+function goBack() {
+  historyStack.pop();
+  if (!historyStack.length) { goHome(); return; }
+  renderQ(historyStack[historyStack.length - 1]);
+}
+window.goBack = goBack;
+
+// ══════════════════════════════════════════════════════════
+// QUESTION DATA
+// ══════════════════════════════════════════════════════════
+
+const Q = {
+  cust1:  { q:"Customer demanding manager or escalating beyond employee?",         yes:["cust2"],            no:[null,"Handled at employee level"] },
+  cust2:  { q:"Did you fully follow return/warranty policy without deviation?",    yes:["cust3"],            no:[null,"Follow policy completely first"] },
+  cust3:  { q:"Did you offer ALL available solutions (exchange, credit, part)?",   yes:["cust4"],            no:[null,"Offer all solutions before escalating"] },
+  cust4:  { q:"Customer still refusing resolution and disrupting the store?",      yes:["CALL","Unresolvable customer escalation"], no:[null,"Resolved without escalation"] },
+
+  staff1: { q:"Is there a call-off or staffing gap affecting coverage?",           yes:["staff2"],           no:[null,"Coverage sufficient"] },
+  staff2: { q:"Did you contact all available employees for coverage?",             yes:["staff3"],           no:[null,"Attempt all coverage options first"] },
+  staff3: { q:"Did you adjust roles (counter, driver, commercial) to maintain operations?", yes:["staff4"], no:[null,"Reallocate team roles first"] },
+  staff4: { q:"Is the store unable to operate or losing significant business?",    yes:["CALL","Staffing prevents operations"], no:[null,"Store still functional"] },
+
+  driver1:{ q:"Driver unavailable or delivery disruption?",                        yes:["driver2"],          no:[null,"No delivery issue"] },
+  driver2:{ q:"Can counter or other staff cover delivery temporarily?",            yes:[null,"Reassign staff and continue"], no:["driver3"] },
+  driver3:{ q:"Is commercial business significantly impacted?",                   yes:["CALL","Delivery failure impacting business"], no:[null,"Delay manageable — monitor"] },
+
+  cash1:  { q:"Register over/short detected?",                                     yes:["cash2"],            no:[null,"No variance — no action needed"] },
+  cash2:  { q:"Recounted drawer, checked all bags, safe, and deposits?",           yes:["cash3"],            no:[null,"Verify all cash locations first"] },
+  cash3:  { q:"Variance still over $20 after full verification?",                  yes:["CALL","Unresolved cash variance over $20"], no:[null,"Under threshold — log and monitor"] },
+
+  ops1:   { q:"System, POS, or building issue affecting operations?",              yes:["ops2"],             no:[null,"Minor issue — no escalation needed"] },
+  ops2:   { q:"Restarted system or attempted basic troubleshooting?",              yes:["ops3"],             no:[null,"Restart and troubleshoot first"] },
+  ops3:   { q:"Contacted help desk and followed their guidance?",                  yes:["ops4"],             no:[null,"Contact help desk first"] },
+  ops4:   { q:"Still unable to operate or actively losing sales?",                 yes:["CALL","Operational failure after all steps"], no:[null,"Issue resolved"] },
+};
+
+function renderQ(id) {
+  const q = Q[id];
+  if (!q) return;
+  const yH = q.yes[0] === "CALL" ? `callManager('${q.yes[1]}')` : q.yes[0] ? `nextQ('${q.yes[0]}')` : `noCall('${q.yes[1]}')`;
+  const nH = q.no[0] ? `nextQ('${q.no[0]}')` : `noCall('${q.no[1]}')`;
+  document.getElementById("q-inner").innerHTML = `
+    <p>${q.q}</p>
+    <button class="btn btn-green" onclick="${yH}">YES</button>
+    <button class="btn btn-red"   onclick="${nH}">NO</button>
+    <button class="btn btn-gray"  onclick="goBack()">&#x2190; Back</button>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════
+// RESULTS
+// ══════════════════════════════════════════════════════════
+
+window.callManager = (reason) => {
+  showScreen("screen-result");
+  document.getElementById("resultText").innerHTML = "&#x1F4DE; CALL MANAGER";
+  document.getElementById("resultText").className = "result call";
+  document.getElementById("why").innerHTML    = "<b>WHY:</b> " + reason;
+  document.getElementById("ask").innerHTML    = "<b>MANAGER WILL ASK:</b><br>&bull; What did you already try?<br>&bull; What policy applies?<br>&bull; What solution do you recommend?";
+  document.getElementById("expect").innerHTML = "<b>EXPECTED:</b> You attempted all steps before calling.";
+  const btn = document.getElementById("actionBtn");
+  btn.innerHTML = "";
+  if (managerPhone) {
+    const a = document.createElement("a");
+    a.href = "tel:" + managerPhone;
+    a.className = "btn btn-green";
+    a.innerHTML = "&#x1F4DE; Call Manager Now";
+    btn.appendChild(a);
+  }
+};
+
+window.noCall = (reason) => {
+  showScreen("screen-result");
+  document.getElementById("resultText").innerHTML = "&#x2705; DO NOT CALL";
+  document.getElementById("resultText").className = "result nocall";
+  document.getElementById("why").innerHTML    = "<b>WHY:</b> " + reason;
+  document.getElementById("ask").innerHTML    = "<b>MANAGER WILL ASK:</b> Why wasn't this handled in-store?";
+  document.getElementById("expect").innerHTML = "<b>EXPECTED:</b> Store-level ownership.";
+  document.getElementById("actionBtn").innerHTML = "";
+};
+
+window.emergency = () => {
+  showScreen("screen-result");
+  document.getElementById("resultText").innerHTML = "&#x1F6A8; CALL 911 THEN MANAGER";
+  document.getElementById("resultText").className = "result call";
+  document.getElementById("why").innerHTML    = "<b>WHY:</b> Safety risk present.";
+  document.getElementById("ask").innerHTML    = "<b>MANAGER WILL ASK:</b> What immediate danger exists? Who is affected?";
+  document.getElementById("expect").innerHTML = "<b>EXPECTED:</b> You secured safety and called 911 first.";
+  const btn = document.getElementById("actionBtn");
+  btn.innerHTML = `<a href="tel:911" class="btn btn-emergency">&#x1F6A8; Call 911</a>`;
+  if (managerPhone) {
+    btn.innerHTML += `<a href="tel:${managerPhone}" class="btn btn-green">&#x1F4DE; Then Call Manager</a>`;
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+// SESSION
+// ══════════════════════════════════════════════════════════
+
+function saveSession() {
+  localStorage.setItem("cc_v2_session", JSON.stringify({ store, name, role, managerPhone, helpdeskPhone }));
+}
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem("cc_v2_session")); } catch { return null; }
+}
+
+// ══════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════
+
+function val(id)          { return document.getElementById(id).value.trim(); }
+function showErr(id, msg) { const e = document.getElementById(id); e.textContent = msg; e.classList.add("show"); }
+function showBanner(msg)  { const b = document.getElementById("error-banner"); b.style.display = "block"; b.textContent = msg; }
+
+</script>
 </body>
 </html>
