@@ -280,7 +280,10 @@ let allEntries=[], unsubE=null, unsubM=null, unsubMM=null;
 await signInAnonymously(auth).catch(e=>console.error("Auth:",e));
 
 const p = new URLSearchParams(location.search);
-if (p.get("store")) { document.getElementById("e-store").value=p.get("store"); setTimeout(()=>document.getElementById("e-name").focus(),200); }
+if (p.get("store")) { document.getElementById("e-store").value=p.get("store"); }
+if (p.get("name"))  { document.getElementById("e-name").value=p.get("name"); }
+if (p.get("store") && p.get("name")) { empLogin(); }
+else if (p.get("store")) { setTimeout(()=>document.getElementById("e-name").focus(),200); }
 
 window.switchTab = t => {
   document.querySelectorAll(".login-tab").forEach((el,i)=>el.classList.toggle("active", t==="emp"?i===0:i===1));
