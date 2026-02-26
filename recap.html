@@ -104,11 +104,17 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .add-panel textarea:focus { outline: none; border-color: var(--forest-light); background: white; }
 .add-panel textarea::placeholder { color: var(--ink-faint); font-style: italic; }
 .add-controls { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
-.type-select {
-  padding: 8px 10px; border: 1.5px solid var(--ruled); border-radius: 8px;
-  font-family: 'Karla', sans-serif; font-size: 13px; background: var(--paper);
-  color: var(--ink); font-weight: 600; cursor: pointer; flex: 1;
+.type-pills { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
+.tpill {
+  padding: 8px 13px; border-radius: 20px; border: 1.5px solid var(--ruled);
+  font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; background: white; color: var(--ink-soft);
+  transition: all .15s; white-space: nowrap;
 }
+.tpill:hover { border-color: var(--forest-light); color: var(--forest); }
+.tpill.on[data-type="progress"] { background: var(--mint);       border-color: var(--forest-light); color: var(--forest); }
+.tpill.on[data-type="issue"]    { background: var(--red-pale);   border-color: var(--red);          color: var(--red); }
+.tpill.on[data-type="note"]     { background: var(--amber-pale); border-color: var(--amber);        color: var(--amber); }
 .btn-add { background: var(--forest); color: white; border: none; border-radius: 8px; padding: 9px 18px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: filter .15s; }
 .btn-add:hover { filter: brightness(1.1); }
 
@@ -254,12 +260,12 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <div class="add-label">New Entry</div>
     <textarea id="new-text" placeholder="Log a progress update, issue, or note..."></textarea>
     <div class="add-controls">
-      <select class="type-select" id="new-type">
-        <option value="progress">📈 Progress</option>
-        <option value="issue">⚠️ Issue</option>
-        <option value="note">📝 Note</option>
-      </select>
-      <button class="btn-add" onclick="addEntry()">Add Entry</button>
+      <div class="type-pills">
+        <button class="tpill on" data-type="progress" onclick="selectType(this)">📈 Progress</button>
+        <button class="tpill"    data-type="issue"    onclick="selectType(this)">⚠️ Issue</button>
+        <button class="tpill"    data-type="note"     onclick="selectType(this)">📝 Note</button>
+      </div>
+      <button class="btn-add" onclick="addEntry()">Add</button>
     </div>
   </div>
   <div class="filter-row">
@@ -516,9 +522,15 @@ window.logoutMgr = () => {
 };
 
 // ── ENTRIES ───────────────────────────────────────────────────
+window.selectType = (btn) => {
+  document.querySelectorAll(".tpill").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on");
+};
+
 window.addEntry = async () => {
-  const txt = v("new-text"); if (!txt) return;
-  const type = el("new-type").value;
+  const txt  = v("new-text"); if (!txt) return;
+  const pill = document.querySelector(".tpill.on");
+  const type = pill ? pill.dataset.type : "progress";
   try {
     await addDoc(collection(db,"entries"), {
       store, author: name, text: txt, type,
