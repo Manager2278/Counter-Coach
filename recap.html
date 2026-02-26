@@ -409,7 +409,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, onSnapshot, deleteDoc,
-  query, where, orderBy, updateDoc, doc, getDoc, serverTimestamp, writeBatch
+  query, where, updateDoc, doc, getDoc, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
@@ -742,10 +742,10 @@ window.setFilter = (f, btn) => {
 function listenEntries() {
   if (unsubEntries) unsubEntries();
   console.log("listenEntries called, store =", store);
-  const q = query(collection(db,"entries"), where("store","==",store), orderBy("time","desc"));
+  const q = query(collection(db,"entries"), where("store","==",store));
   unsubEntries = onSnapshot(q, snap => {
     console.log("snapshot received, docs:", snap.docs.length);
-    allEntries = snap.docs.map(d => ({id:d.id,...d.data()}));
+    allEntries = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time);
     renderEmpEntries();
     updateStats();
   }, e => console.error("entries error:", e));
@@ -753,9 +753,9 @@ function listenEntries() {
 
 function listenMgrEntries() {
   if (unsubMgrEntries) unsubMgrEntries();
-  const q = query(collection(db,"entries"), where("store","==",store), orderBy("time","desc"));
+  const q = query(collection(db,"entries"), where("store","==",store));
   unsubMgrEntries = onSnapshot(q, snap => {
-    allEntriesMgr = snap.docs.map(d => ({id:d.id,...d.data()}));
+    allEntriesMgr = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time);
     const doneCount = allEntriesMgr.filter(e => e.status === "complete").length;
     el("ms-open").textContent  = allEntriesMgr.filter(e => e.status === "open").length;
     el("ms-done").textContent  = doneCount;
@@ -848,17 +848,17 @@ window.sendMsg = async () => {
 function listenMyMsgs() {
   if (unsubMsgs) unsubMsgs();
   const q = query(collection(db,"messages"),
-    where("store","==",store), where("from","==",name), orderBy("time","desc"));
+    where("store","==",store), where("from","==",name));
   unsubMsgs = onSnapshot(q, snap => {
-    renderMsgs(snap.docs.map(d => ({id:d.id,...d.data()})), "msg-list", false);
+    renderMsgs(snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time), "msg-list", false);
   }, e => console.error("msgs:", e));
 }
 
 function listenMgrInbox() {
   if (unsubMgrMsgs) unsubMgrMsgs();
-  const q = query(collection(db,"messages"), where("store","==",store), orderBy("time","desc"));
+  const q = query(collection(db,"messages"), where("store","==",store));
   unsubMgrMsgs = onSnapshot(q, snap => {
-    const msgs   = snap.docs.map(d => ({id:d.id,...d.data()}));
+    const msgs   = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time);
     const unread = msgs.filter(m => !m.read).length;
     // Nav dot
     el("mgr-dot").classList.toggle("show", unread > 0 && mgrLoggedIn);
