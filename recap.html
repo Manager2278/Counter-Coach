@@ -700,12 +700,14 @@ window.setFilter = (f, btn) => {
 
 function listenEntries() {
   if (unsubEntries) unsubEntries();
+  console.log("listenEntries called, store =", store);
   const q = query(collection(db,"entries"), where("store","==",store), orderBy("time","desc"));
   unsubEntries = onSnapshot(q, snap => {
+    console.log("snapshot received, docs:", snap.docs.length);
     allEntries = snap.docs.map(d => ({id:d.id,...d.data()}));
     renderEmpEntries();
     updateStats();
-  }, e => console.error("entries:", e));
+  }, e => console.error("entries error:", e));
 }
 
 function listenMgrEntries() {
