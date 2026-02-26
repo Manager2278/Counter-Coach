@@ -387,37 +387,79 @@ const app  = initializeApp(cfg);
 const db   = getFirestore(app);
 const auth = getAuth(app);
 
+// ── HELPERS (defined first so everything below can use them) ──
+function el(id)           { return document.getElementById(id); }
+function v(id)            { return el(id).value.trim(); }
+function esc(s)           { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function showErr(id, msg) { const e=el(id); e.textContent=msg; e.classList.add("show"); }
+
+// ── SESSION ───────────────────────────────────────────────────
+function saveSession() {
+  localStorage.setItem("cc_recap_session", JSON.stringify({ store, name, role }));
+}
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem("cc_recap_session")); } catch { return null; }
+}
+function loadIndexSession() {
+  try { return JSON.parse(localStorage.getItem("cc_v2_session")); } catch { return null; }
+}
+
 let store = "", name = "", role = "employee", filterVal = "all";
 let allEntries = [], unsubEntries = null, unsubMsgs = null, unsubMgrMsgs = null;
 
-await signInAnonymously(auth).catch(e => console.error("Auth:", e));
-
-// ── URL params (coming from index.html QR / recap link) ──────
+// ── URL params ────────────────────────────────────────────────
 const p = new URLSearchParams(location.search);
 if (p.get("store")) { el("e-store").value = p.get("store"); el("m-store").value = p.get("store"); }
 if (p.get("name"))  { el("e-name").value  = p.get("name"); }
 
-// ── Restore session ──────────────────────────────────────────
-const saved = loadSession();
-if (saved && saved.store && saved.name) {
-  ({ store, name, role } = saved);
-  enterApp();
-} else if (p.get("role") === "manager" && p.get("store")) {
-  // Came from index.html as manager — skip login, go straight in
-  // But we still need to verify they are a manager (check localStorage from index.html)
-  const idxSession = loadIndexSession();
-  if (idxSession && idxSession.role === "manager" && idxSession.store === p.get("store")) {
-    store = idxSession.store; name = idxSession.name; role = "manager";
-    saveSession(); enterApp();
-  } else if (p.get("store") && p.get("name")) {
-    store = p.get("store"); name = p.get("name");
-    role  = p.get("role") || "employee";
-    saveSession(); enterApp();
+// ══════════════════════════════════════════════════════════
+// NAVIGATION  (defined before enterApp so it can call goScreen)
+// ══════════════════════════════════════════════════════════
+
+function goScreen(s) {
+  document.querySelectorAll(".screen").forEach(x => x.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(x => x.classList.remove("on"));
+  el("screen-"+s).classList.add("active");
+  const nb = el("nav-"+s); if (nb) nb.classList.add("on");
+}
+window.goScreen = goScreen;
+
+window.goBack = () => { window.location.href = "index.html"; };
+
+window.setMgrTab = (tab, btn) => {
+  document.querySelectorAll(".mgr-tab").forEach(b => b.classList.remove("on"));
+  document.querySelectorAll(".mgr-tab-pane").forEach(p => p.classList.remove("on"));
+  btn.classList.add("on");
+  el("mgr-pane-"+tab).classList.add("on");
+};
+
+// ══════════════════════════════════════════════════════════
+// ENTER APP
+// ══════════════════════════════════════════════════════════
+
+function enterApp() {
+  el("tb-store").textContent = "Store " + store;
+  el("tb-store").classList.remove("hidden");
+  el("tb-user").textContent  = name + (role==="manager" ? " 🔑" : "");
+  el("tb-user").classList.remove("hidden");
+  el("bottom-nav").classList.add("show");
+
+  if (role === "manager") {
+    el("nav-mgr").classList.remove("hidden");
+    el("qr-store-lbl").textContent   = store;
+    el("mgr-store-lbl2").textContent = store;
+    el("mgr-store-sub").textContent  = "Store " + store;
+    buildQR();
+    listenMgrInbox();
+    listenMgrEntries();
+    goScreen("mgr");
+  } else {
+    goScreen("log");
   }
-} else if (p.get("store") && p.get("name")) {
-  store = p.get("store"); name = p.get("name");
-  role  = p.get("role") || "employee";
-  saveSession(); enterApp();
+
+  el("log-date").textContent = new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+  listenEntries();
+  if (role === "employee") listenMyMsgs();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -451,55 +493,32 @@ window.mgrLogin = async () => {
 };
 
 // ══════════════════════════════════════════════════════════
-// ENTER APP
+// SIGN IN + RESTORE SESSION
 // ══════════════════════════════════════════════════════════
 
-function enterApp() {
-  el("tb-store").textContent = "Store " + store;
-  el("tb-store").classList.remove("hidden");
-  el("tb-user").textContent  = name + (role==="manager" ? " 🔑" : "");
-  el("tb-user").classList.remove("hidden");
-  el("bottom-nav").classList.add("show");
-
-  if (role === "manager") {
-    el("nav-mgr").classList.remove("hidden");
-    el("qr-store-lbl").textContent  = store;
-    el("mgr-store-lbl2").textContent = store;
-    el("mgr-store-sub").textContent = "Store " + store;
-    buildQR();
-    listenMgrInbox();
-    listenMgrEntries();
-    goScreen("mgr"); // managers land on manager panel
-  } else {
-    goScreen("log"); // employees land on logbook
-  }
-
-  el("log-date").textContent = new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
-  listenEntries();
-  if (role === "employee") listenMyMsgs();
-}
-
-// ══════════════════════════════════════════════════════════
-// NAVIGATION
-// ══════════════════════════════════════════════════════════
-
-window.goScreen = s => {
-  document.querySelectorAll(".screen").forEach(x => x.classList.remove("active"));
-  document.querySelectorAll(".nav-btn").forEach(x => x.classList.remove("on"));
-  el("screen-"+s).classList.add("active");
-  const nb = el("nav-"+s); if (nb) nb.classList.add("on");
-};
-
-window.goBack = () => {
-  window.location.href = "index.html";
-};
-
-window.setMgrTab = (tab, btn) => {
-  document.querySelectorAll(".mgr-tab").forEach(b => b.classList.remove("on"));
-  document.querySelectorAll(".mgr-tab-pane").forEach(p => p.classList.remove("on"));
-  btn.classList.add("on");
-  el("mgr-pane-"+tab).classList.add("on");
-};
+signInAnonymously(auth)
+  .catch(e => console.error("Auth:", e))
+  .finally(() => {
+    const saved = loadSession();
+    if (saved && saved.store && saved.name) {
+      ({ store, name, role } = saved);
+      enterApp();
+    } else if (p.get("role") === "manager" && p.get("store")) {
+      const idxSession = loadIndexSession();
+      if (idxSession && idxSession.role === "manager" && idxSession.store === p.get("store")) {
+        store = idxSession.store; name = idxSession.name; role = "manager";
+        saveSession(); enterApp();
+      } else if (p.get("store") && p.get("name")) {
+        store = p.get("store"); name = p.get("name");
+        role  = p.get("role") || "employee";
+        saveSession(); enterApp();
+      }
+    } else if (p.get("store") && p.get("name")) {
+      store = p.get("store"); name = p.get("name");
+      role  = p.get("role") || "employee";
+      saveSession(); enterApp();
+    }
+  });
 
 // ══════════════════════════════════════════════════════════
 // ENTRIES (Firestore: "entries" collection)
@@ -567,7 +586,6 @@ function entryCard(e, isMgr) {
   const ts = t.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}) + " · " +
              t.toLocaleDateString("en-US",{month:"short",day:"numeric"});
   const done = e.status==="complete";
-  // Only allow done toggle if manager OR it's your own entry
   const canToggle = isMgr || e.author === name;
   return `<div class="entry-card ${done?"done":""}" data-type="${esc(e.type)}">
     <div class="entry-top">
@@ -657,29 +675,6 @@ window.logoutMgr = () => {
   localStorage.removeItem("cc_recap_session");
   location.reload();
 };
-
-// ══════════════════════════════════════════════════════════
-// SESSION
-// ══════════════════════════════════════════════════════════
-
-function saveSession() {
-  localStorage.setItem("cc_recap_session", JSON.stringify({ store, name, role }));
-}
-function loadSession() {
-  try { return JSON.parse(localStorage.getItem("cc_recap_session")); } catch { return null; }
-}
-function loadIndexSession() {
-  try { return JSON.parse(localStorage.getItem("cc_v2_session")); } catch { return null; }
-}
-
-// ══════════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════════
-
-function el(id)           { return document.getElementById(id); }
-function v(id)            { return el(id).value.trim(); }
-function esc(s)           { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-function showErr(id, msg) { const e=el(id); e.textContent=msg; e.classList.add("show"); }
 
 </script>
 </body>
