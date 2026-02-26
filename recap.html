@@ -118,7 +118,34 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .btn-add { background: var(--forest); color: white; border: none; border-radius: 8px; padding: 9px 18px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: filter .15s; }
 .btn-add:hover { filter: brightness(1.1); }
 
-/* ── FILTERS ─────────────────────────────── */
+/* ── PHOTO ATTACH ────────────────────────── */
+.photo-attach { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.btn-photo { display: inline-block; padding: 7px 13px; border: 1.5px dashed var(--forest-light); border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--forest); cursor: pointer; background: var(--paper); transition: all .15s; font-family: 'Karla', sans-serif; }
+.btn-photo:hover { background: var(--mint); border-style: solid; }
+#photo-input { display: none; }
+#photo-preview-wrap { position: relative; display: inline-flex; }
+#photo-preview { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--ruled); display: block; }
+.btn-remove-photo { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--red); color: white; border: none; font-size: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+
+/* Upload progress */
+.upload-bar-wrap { width: 100%; height: 4px; background: var(--ruled); border-radius: 2px; margin-top: 8px; display: none; }
+.upload-bar-wrap.show { display: block; }
+.upload-bar { height: 4px; background: var(--forest-light); border-radius: 2px; width: 0%; transition: width .2s; }
+
+/* Photo on entry cards */
+.entry-photo { margin-top: 10px; }
+.entry-photo img { width: 100%; max-width: 320px; border-radius: 8px; border: 1.5px solid var(--ruled); cursor: pointer; display: block; transition: opacity .15s; }
+.entry-photo img:hover { opacity: 0.9; }
+
+.mgr-photo-attach { margin-top: 8px; }
+.btn-photo-sm { display: inline-block; padding: 5px 10px; border: 1.5px dashed var(--forest-light); border-radius: 6px; font-size: 11px; font-weight: 700; color: var(--forest); cursor: pointer; background: var(--paper); transition: all .15s; font-family: 'Karla', sans-serif; }
+.btn-photo-sm:hover { background: var(--mint); border-style: solid; }
+
+/* ── Lightbox */
+#lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 1000; align-items: center; justify-content: center; }
+#lightbox.show { display: flex; }
+#lightbox img { max-width: 94vw; max-height: 88vh; border-radius: 10px; object-fit: contain; }
+#lightbox-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; color: white; font-size: 22px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .filter-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
 .fpill { padding: 5px 13px; border-radius: 20px; border: 1.5px solid var(--ruled); font-size: 11px; font-weight: 700; cursor: pointer; background: white; color: var(--ink-soft); transition: all .15s; text-transform: uppercase; letter-spacing: 0.5px; }
 .fpill.on { background: var(--forest); color: white; border-color: var(--forest); }
@@ -267,6 +294,15 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
       </div>
       <button class="btn-add" onclick="addEntry()">Add</button>
     </div>
+    <div class="photo-attach">
+      <label class="btn-photo" for="photo-input">📷 Attach Photo</label>
+      <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="previewPhoto(this)">
+      <div id="photo-preview-wrap" class="hidden">
+        <img id="photo-preview" src="" alt="preview">
+        <button class="btn-remove-photo" onclick="removePhoto()">✕</button>
+      </div>
+    </div>
+    <div class="upload-bar-wrap"><div class="upload-bar"></div></div>
   </div>
   <div class="filter-row">
     <button class="fpill on" onclick="setFilter('all',this)">All</button>
@@ -341,6 +377,12 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   </div>
 </div>
 
+<!-- ═══════════════════ LIGHTBOX ══════════════════ -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
 <!-- ═══════════════════ BOTTOM NAV ══════════════════ -->
 <nav class="bottom-nav" id="bottom-nav">
   <button class="nav-btn on" id="nav-log" onclick="navTo('log')">
@@ -363,6 +405,7 @@ import {
   query, where, orderBy, updateDoc, doc, getDoc, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const cfg = {
   apiKey:            "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
@@ -373,9 +416,10 @@ const cfg = {
   appId:             "1:476802421766:web:171eccca066feb711bdf87"
 };
 
-const app  = initializeApp(cfg);
-const db   = getFirestore(app);
-const auth = getAuth(app);
+const app     = initializeApp(cfg);
+const db      = getFirestore(app);
+const auth    = getAuth(app);
+const storage = getStorage(app);
 
 // ── HELPERS ───────────────────────────────────────────────────
 function el(id)  { return document.getElementById(id); }
@@ -392,6 +436,7 @@ let store = "", name = "", filterVal = "all";
 let mgrLoggedIn = false, storePin = "";
 let allEntries = [], allEntriesMgr = [];
 let unsubEntries = null, unsubMgrEntries = null, unsubMsgs = null, unsubMgrMsgs = null;
+let pendingPhotoFile = null;
 
 // ── SESSION ───────────────────────────────────────────────────
 function loadCCSession()  { try { return JSON.parse(localStorage.getItem("cc_v2_session")); }  catch { return null; } }
@@ -521,23 +566,108 @@ window.logoutMgr = () => {
   goScreen("log");
 };
 
+// Manager attach photo to existing entry
+window.attachPhotoToEntry = async (entryId, input) => {
+  const file = input.files[0]; if (!file) return;
+  input.disabled = true;
+  const label = input.previousElementSibling;
+  label.textContent = "Uploading…";
+  try {
+    const url = await uploadPhoto(file, entryId);
+    await updateDoc(doc(db,"entries",entryId), { photoURL: url });
+  } catch(e) {
+    alert("Upload error: " + e.message);
+    label.textContent = "📷 Add Photo";
+    input.disabled = false;
+  }
+};
+
+// ── LIGHTBOX ──────────────────────────────────────────────────
+window.openLightbox = (url) => {
+  el("lightbox-img").src = url;
+  el("lightbox").classList.add("show");
+  document.body.style.overflow = "hidden";
+};
+window.closeLightbox = () => {
+  el("lightbox").classList.remove("show");
+  document.body.style.overflow = "";
+};
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeLightbox(); });
+
 // ── ENTRIES ───────────────────────────────────────────────────
 window.selectType = (btn) => {
   document.querySelectorAll(".tpill").forEach(b => b.classList.remove("on"));
   btn.classList.add("on");
 };
 
+window.previewPhoto = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  pendingPhotoFile = file;
+  const url = URL.createObjectURL(file);
+  el("photo-preview").src = url;
+  el("photo-preview-wrap").classList.remove("hidden");
+};
+
+window.removePhoto = () => {
+  pendingPhotoFile = null;
+  el("photo-input").value = "";
+  el("photo-preview").src = "";
+  el("photo-preview-wrap").classList.add("hidden");
+};
+
+async function uploadPhoto(file, entryId) {
+  const ext  = file.name.split(".").pop();
+  const path = `entries/${store}/${entryId}.${ext}`;
+  const sRef = ref(storage, path);
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(sRef, file);
+    task.on("state_changed",
+      snap => {
+        const pct = (snap.bytesTransferred / snap.totalBytes) * 100;
+        const bar = document.querySelector(".upload-bar");
+        if (bar) bar.style.width = pct + "%";
+      },
+      reject,
+      async () => { resolve(await getDownloadURL(task.snapshot.ref)); }
+    );
+  });
+}
+
 window.addEntry = async () => {
   const txt  = v("new-text"); if (!txt) return;
   const pill = document.querySelector(".tpill.on");
   const type = pill ? pill.dataset.type : "progress";
+  const btn  = document.querySelector(".btn-add");
+  btn.disabled = true; btn.textContent = "Saving…";
+
+  // Show upload bar if photo
+  const barWrap = document.querySelector(".upload-bar-wrap");
+  if (pendingPhotoFile) { barWrap.classList.add("show"); }
+
   try {
-    await addDoc(collection(db,"entries"), {
+    // Create entry first to get the ID
+    const docRef = await addDoc(collection(db,"entries"), {
       store, author: name, text: txt, type,
-      status: "open", time: Date.now(), ts: serverTimestamp()
+      status: "open", time: Date.now(), ts: serverTimestamp(),
+      photoURL: null
     });
+
+    // Upload photo if attached
+    if (pendingPhotoFile) {
+      const url = await uploadPhoto(pendingPhotoFile, docRef.id);
+      await updateDoc(docRef, { photoURL: url });
+    }
+
     el("new-text").value = "";
-  } catch(e) { alert("Save error: " + e.message); }
+    removePhoto();
+  } catch(e) {
+    alert("Save error: " + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Add";
+    barWrap.classList.remove("show");
+    document.querySelector(".upload-bar").style.width = "0%";
+  }
 };
 
 // Any employee can toggle done/undone — does NOT delete, just marks
@@ -611,11 +741,15 @@ function empEntryCard(e) {
   const emoji  = {progress:"📈",issue:"⚠️",note:"📝"};
   const bClass = {progress:"badge-progress",issue:"badge-issue",note:"badge-note"};
   const done   = e.status === "complete";
+  const photo  = e.photoURL
+    ? `<div class="entry-photo"><img src="${esc(e.photoURL)}" loading="lazy" onclick="openLightbox('${esc(e.photoURL)}')" alt="photo"></div>`
+    : "";
   return `<div class="entry-card ${done?"done":""}" data-type="${esc(e.type)}">
     <div class="entry-top">
       <div class="entry-text">${esc(e.text)}</div>
       <span class="badge ${bClass[e.type]||"badge-note"}">${emoji[e.type]||"📝"} ${e.type}</span>
     </div>
+    ${photo}
     <div class="entry-footer">
       <div class="entry-meta"><span class="by">${esc(e.author)}</span> — ${ts(e.time)}</div>
       <button class="btn-done ${done?"is-done":""}" onclick="toggleDone('${e.id}','${e.status}')">
@@ -629,11 +763,15 @@ function mgrEntryCard(e) {
   const emoji  = {progress:"📈",issue:"⚠️",note:"📝"};
   const bClass = {progress:"badge-progress",issue:"badge-issue",note:"badge-note"};
   const done   = e.status === "complete";
+  const photo  = e.photoURL
+    ? `<div class="entry-photo"><img src="${esc(e.photoURL)}" loading="lazy" onclick="openLightbox('${esc(e.photoURL)}')" alt="photo"></div>`
+    : `<div class="mgr-photo-attach"><label class="btn-photo-sm" for="mgr-photo-${e.id}">📷 Add Photo</label><input type="file" id="mgr-photo-${e.id}" accept="image/*" capture="environment" style="display:none" onchange="attachPhotoToEntry('${e.id}',this)"></div>`;
   return `<div class="entry-card ${done?"pending-clear":""}" data-type="${esc(e.type)}">
     <div class="entry-top">
       <div class="entry-text">${esc(e.text)}</div>
       <span class="badge ${bClass[e.type]||"badge-note"}">${emoji[e.type]||"📝"} ${e.type}</span>
     </div>
+    ${photo}
     <div class="entry-footer">
       <div class="entry-meta"><span class="by">${esc(e.author)}</span> — ${ts(e.time)}</div>
       <div class="entry-actions">
