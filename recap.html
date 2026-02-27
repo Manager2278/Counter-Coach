@@ -150,6 +150,11 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .fpill { padding: 5px 13px; border-radius: 20px; border: 1.5px solid var(--ruled); font-size: 11px; font-weight: 700; cursor: pointer; background: white; color: var(--ink-soft); transition: all .15s; text-transform: uppercase; letter-spacing: 0.5px; }
 .fpill.on { background: var(--forest); color: white; border-color: var(--forest); }
 
+/* ── UNREAD MSG NOTIFY BAR ───────────────── */
+.msg-notify-bar { background: var(--purple-pale); border: 1.5px solid #c0a0e0; border-radius: 10px; padding: 11px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.msg-notify-bar p { font-size: 13px; color: var(--purple); font-weight: 600; }
+.btn-view-msgs { padding: 6px 14px; background: var(--purple); color: white; border: none; border-radius: 7px; font-family: 'Karla', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
 /* ── ENTRY CARDS ─────────────────────────── */
 .entry-card { background: white; border: 1.5px solid var(--ruled); border-left: 4px solid var(--ruled); border-radius: 10px; padding: 13px 15px; margin-bottom: 8px; animation: slideIn .2s ease; }
 @keyframes slideIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
@@ -289,6 +294,10 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <div class="stat-box"><div class="stat-num s-open"  id="s-open">0</div><div class="stat-lbl">Open</div></div>
     <div class="stat-box"><div class="stat-num s-done"  id="s-done">0</div><div class="stat-lbl">Done</div></div>
     <div class="stat-box"><div class="stat-num s-total" id="s-total">0</div><div class="stat-lbl">Total</div></div>
+  </div>
+  <div id="msg-notify-bar" class="msg-notify-bar hidden">
+    <p>🔒 <span id="msg-notify-count">0</span> unread private message(s) from employees</p>
+    <button class="btn-view-msgs" onclick="navTo('mgr')">View in Inbox →</button>
   </div>
   <div class="add-panel">
     <div class="add-label">New Entry</div>
@@ -804,7 +813,7 @@ function empEntryCard(e) {
   const done   = e.status === "complete";
   const photo  = e.photoURL
     ? `<div class="entry-photo"><img src="${esc(e.photoURL)}" loading="lazy" onclick="openLightbox('${esc(e.photoURL)}')" alt="photo"></div>`
-    : "";
+    : `<div class="mgr-photo-attach"><label class="btn-photo-sm" for="emp-photo-${e.id}">📷 Add Photo</label><input type="file" id="emp-photo-${e.id}" accept="image/*" capture="environment" style="display:none" onchange="attachPhotoToEntry('${e.id}',this)"></div>`;
   return `<div class="entry-card ${done?"done":""}" data-type="${esc(e.type)}">
     <div class="entry-top">
       <div class="entry-text">${esc(e.text)}</div>
@@ -886,6 +895,10 @@ function listenMgrInbox() {
     const cnt = el("inbox-cnt");
     if (unread > 0) { cnt.textContent = unread; cnt.classList.remove("hidden"); }
     else { cnt.classList.add("hidden"); }
+    // Show/hide logbook notify bar for manager
+    const bar = el("msg-notify-bar");
+    if (unread > 0) { el("msg-notify-count").textContent = unread; bar.classList.remove("hidden"); }
+    else { bar.classList.add("hidden"); }
     renderMsgs(msgs, "mgr-inbox-list", true);
     // Mark read once manager is viewing
     msgs.filter(m => !m.read).forEach(m =>
