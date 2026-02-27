@@ -574,6 +574,7 @@ window.setMgrTab = (tab, btn) => {
   document.querySelectorAll(".mgr-tab-pane").forEach(p => p.classList.remove("on"));
   btn.classList.add("on");
   el("mgr-pane-"+tab).classList.add("on");
+  if (tab === "inbox") markMsgsRead(_lastInboxMsgs);
 };
 
 // ── MANAGER LOGIN (banner) ─────────────────────────────────────
@@ -900,11 +901,17 @@ function listenMgrInbox() {
     if (unread > 0) { el("msg-notify-count").textContent = unread; bar.classList.remove("hidden"); }
     else { bar.classList.add("hidden"); }
     renderMsgs(msgs, "mgr-inbox-list", true);
-    // Mark read once manager is viewing
-    msgs.filter(m => !m.read).forEach(m =>
-      updateDoc(doc(db,"messages",m.id),{read:true}).catch(()=>{})
-    );
+    // Auto-mark read only if inbox pane is currently visible
+    if (el("mgr-pane-inbox").classList.contains("on")) markMsgsRead(msgs);
   }, e => console.error("mgr-msgs:", e));
+}
+
+let _lastInboxMsgs = [];
+function markMsgsRead(msgs) {
+  _lastInboxMsgs = msgs;
+  msgs.filter(m => !m.read).forEach(m =>
+    updateDoc(doc(db,"messages",m.id),{read:true}).catch(()=>{})
+  );
 }
 
 function renderMsgs(msgs, targetId, isMgr) {
