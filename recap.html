@@ -454,6 +454,7 @@ let mgrLoggedIn = false, storePin = "";
 let allEntries = [], allEntriesMgr = [], myMsgs = [];
 let unsubEntries = null, unsubMgrEntries = null, unsubMsgs = null, unsubMgrMsgs = null;
 let pendingPhotoFile = null;
+let mgrViewingInbox = false;
 
 // ── SESSION ───────────────────────────────────────────────────
 function saveSession()    { localStorage.setItem("cc_v2_session", JSON.stringify({ store, name, role: "employee", managerPhone: "", helpdeskPhone: "" })); }
@@ -549,6 +550,12 @@ function goScreen(s) {
   document.querySelectorAll(".screen").forEach(x => x.classList.remove("active"));
   document.querySelectorAll(".nav-btn").forEach(x => x.classList.remove("on"));
   el("mgr-banner").classList.remove("show");
+  if (s === "mgr") {
+    mgrViewingInbox = true;
+    markMsgsRead(_lastInboxMsgs);
+  } else {
+    mgrViewingInbox = false;
+  }
   if (!s) return;
   const sc = el("screen-"+s); if (sc) sc.classList.add("active");
   const nb = el("nav-"+s);    if (nb) nb.classList.add("on");
@@ -574,6 +581,7 @@ window.setMgrTab = (tab, btn) => {
   document.querySelectorAll(".mgr-tab-pane").forEach(p => p.classList.remove("on"));
   btn.classList.add("on");
   el("mgr-pane-"+tab).classList.add("on");
+  mgrViewingInbox = (tab === "inbox");
   if (tab === "inbox") markMsgsRead(_lastInboxMsgs);
 };
 
@@ -901,14 +909,14 @@ function listenMgrInbox() {
     if (unread > 0) { el("msg-notify-count").textContent = unread; bar.classList.remove("hidden"); }
     else { bar.classList.add("hidden"); }
     renderMsgs(msgs, "mgr-inbox-list", true);
-    // Auto-mark read only if manager is actively viewing the inbox tab
-    if (el("screen-mgr").classList.contains("active") && el("mgr-pane-inbox").classList.contains("on")) markMsgsRead(msgs);
+    _lastInboxMsgs = msgs;
+    // Auto-mark read only if manager explicitly has the inbox tab open
+    if (mgrViewingInbox) markMsgsRead(msgs);
   }, e => console.error("mgr-msgs:", e));
 }
 
 let _lastInboxMsgs = [];
 function markMsgsRead(msgs) {
-  _lastInboxMsgs = msgs;
   msgs.filter(m => !m.read).forEach(m =>
     updateDoc(doc(db,"messages",m.id),{read:true}).catch(()=>{})
   );
