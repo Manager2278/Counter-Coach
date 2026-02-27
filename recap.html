@@ -134,7 +134,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 
 /* Photo on entry cards */
 .entry-photo { margin-top: 10px; }
-.entry-photo img { width: 100%; max-width: 320px; border-radius: 8px; border: 1.5px solid var(--ruled); cursor: pointer; display: block; transition: opacity .15s; }
+.entry-photo img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--ruled); cursor: pointer; display: block; transition: opacity .15s; }
 .entry-photo img:hover { opacity: 0.9; }
 
 .mgr-photo-attach { margin-top: 8px; }
@@ -149,21 +149,6 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .filter-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
 .fpill { padding: 5px 13px; border-radius: 20px; border: 1.5px solid var(--ruled); font-size: 11px; font-weight: 700; cursor: pointer; background: white; color: var(--ink-soft); transition: all .15s; text-transform: uppercase; letter-spacing: 0.5px; }
 .fpill.on { background: var(--forest); color: white; border-color: var(--forest); }
-
-/* ── SECTION GROUPS ──────────────────────────── */
-.section-group { margin-bottom: 22px; }
-.section-group-head {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 1.5px; padding: 7px 12px; border-radius: 8px;
-  margin-bottom: 10px; border: 1.5px solid var(--ruled);
-  background: var(--paper); color: var(--ink-faint);
-  display: flex; align-items: center; gap: 6px;
-}
-.section-group-head.grp-progress { color: var(--forest);  background: var(--mint);        border-color: var(--forest-light); }
-.section-group-head.grp-issue    { color: var(--red);     background: var(--red-pale);    border-color: var(--red); }
-.section-group-head.grp-note     { color: var(--amber);   background: var(--amber-pale);  border-color: var(--amber); }
-.section-group-head.grp-msg      { color: var(--purple);  background: var(--purple-pale); border-color: #c0a0e0; }
-.section-group-head .grp-count   { font-size: 10px; font-weight: 700; background: rgba(0,0,0,0.12); padding: 1px 6px; border-radius: 10px; margin-left: auto; }
 
 /* ── ENTRY CARDS ─────────────────────────── */
 .entry-card { background: white; border: 1.5px solid var(--ruled); border-left: 4px solid var(--ruled); border-radius: 10px; padding: 13px 15px; margin-bottom: 8px; animation: slideIn .2s ease; }
@@ -327,12 +312,12 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <div class="upload-bar-wrap"><div class="upload-bar"></div></div>
   </div>
   <div class="filter-row">
-    <button class="fpill on" onclick="setFilter('all',this)">All</button>
-    <button class="fpill"    onclick="setFilter('open',this)">Open</button>
-    <button class="fpill"    onclick="setFilter('done',this)">Done</button>
-    <button class="fpill"    onclick="setFilter('progress',this)">Progress</button>
-    <button class="fpill"    onclick="setFilter('issue',this)">Issues</button>
-    <button class="fpill"    onclick="setFilter('note',this)">Notes</button>
+    <button class="fpill on" data-filter="all"      data-label="All"      onclick="setFilter('all',this)">All</button>
+    <button class="fpill"    data-filter="open"     data-label="Open"     onclick="setFilter('open',this)">Open</button>
+    <button class="fpill"    data-filter="done"     data-label="Done"     onclick="setFilter('done',this)">Done</button>
+    <button class="fpill"    data-filter="progress" data-label="Progress" onclick="setFilter('progress',this)">Progress</button>
+    <button class="fpill"    data-filter="issue"    data-label="Issues"   onclick="setFilter('issue',this)">Issues</button>
+    <button class="fpill"    data-filter="note"     data-label="Notes"    onclick="setFilter('note',this)">Notes</button>
   </div>
   <div id="entries-list"></div>
 </div>
@@ -785,37 +770,30 @@ function listenMgrEntries() {
   }, e => console.error("mgr-entries:", e));
 }
 
+function updatePillCounts() {
+  const total    = allEntries.length;
+  const open     = allEntries.filter(e => e.status === "open").length;
+  const done     = allEntries.filter(e => e.status === "complete").length;
+  const progress = allEntries.filter(e => e.type === "progress").length;
+  const issues   = allEntries.filter(e => e.type === "issue").length;
+  const notes    = allEntries.filter(e => e.type === "note").length;
+  const counts   = { all: total, open, done, progress: progress, issue: issues, note: notes };
+  document.querySelectorAll(".fpill[data-filter]").forEach(btn => {
+    const key = btn.dataset.filter;
+    const n   = counts[key];
+    btn.textContent = btn.dataset.label + (n != null && n > 0 ? ` ${n}` : "");
+  });
+}
+
 function renderEmpEntries() {
-  const container = el("entries-list");
-
-  if (filterVal === "all") {
-    const progress = allEntries.filter(e => e.type === "progress");
-    const issues   = allEntries.filter(e => e.type === "issue");
-    const notes    = allEntries.filter(e => e.type === "note");
-
-    const mkSection = (cls, label, cards) =>
-      cards.length ? `<div class="section-group">
-        <div class="section-group-head ${cls}">${label}<span class="grp-count">${cards.length}</span></div>
-        ${cards}
-      </div>` : "";
-
-    const html =
-      mkSection("grp-progress", "📈 Progress",         progress.map(e => empEntryCard(e)).join("")) +
-      mkSection("grp-issue",    "⚠️ Issues",            issues.map(e => empEntryCard(e)).join("")) +
-      mkSection("grp-note",     "📝 Notes",             notes.map(e => empEntryCard(e)).join("")) +
-      mkSection("grp-msg",      "🔒 Manager Messages",  myMsgs.map(m => msgCardInline(m)).join(""));
-
-    container.innerHTML = html || '<div class="empty"><div class="ei">📋</div><p>No entries here yet.</p></div>';
-    return;
-  }
-
+  updatePillCounts();
   let rows = allEntries;
   if      (filterVal === "open")     rows = allEntries.filter(e => e.status === "open");
   else if (filterVal === "done")     rows = allEntries.filter(e => e.status === "complete");
   else if (filterVal === "issue")    rows = allEntries.filter(e => e.type === "issue");
   else if (filterVal === "progress") rows = allEntries.filter(e => e.type === "progress");
   else if (filterVal === "note")     rows = allEntries.filter(e => e.type === "note");
-  container.innerHTML = rows.length
+  el("entries-list").innerHTML = rows.length
     ? rows.map(e => empEntryCard(e)).join("")
     : '<div class="empty"><div class="ei">📋</div><p>No entries here yet.</p></div>';
 }
