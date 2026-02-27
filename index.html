@@ -290,7 +290,7 @@ async function checkStoreExists(s) {
       el("reg-code-wrap").classList.remove("show");
     } else {
       el("store-status-badge").innerHTML = '<span class="store-status new">&#x2795; New store — registration code required</span>';
-      el("setup-desc").textContent = "New store. Enter the registration code from your district manager to create it.";
+      el("setup-desc").textContent = "New store. Enter the registration code from SM 2278 Justin to create it.";
       el("reg-code-wrap").classList.add("show");
       setTimeout(() => el("mgr-regcode").focus(), 50);
     }
@@ -367,7 +367,7 @@ window.mgrLogin = async () => {
     } else {
       // NEW STORE — require valid registration code first
       if (!reg) { showErr("mgr-err", "A registration code is required to create a new store."); return; }
-      if (!validRegCode(reg)) { showErr("mgr-err", "Invalid registration code. Contact your district manager."); return; }
+      if (!validRegCode(reg)) { showErr("mgr-err", "Invalid registration code. Contact SM 2278 Justin."); return; }
       await setDoc(storeRef, { pin, managerName: n, managerPhone: ph, helpdeskPhone: hd, created: serverTimestamp() });
     }
 
