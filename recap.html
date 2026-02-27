@@ -901,8 +901,8 @@ function listenMgrInbox() {
     if (unread > 0) { el("msg-notify-count").textContent = unread; bar.classList.remove("hidden"); }
     else { bar.classList.add("hidden"); }
     renderMsgs(msgs, "mgr-inbox-list", true);
-    // Auto-mark read only if inbox pane is currently visible
-    if (el("mgr-pane-inbox").classList.contains("on")) markMsgsRead(msgs);
+    // Auto-mark read only if manager is actively viewing the inbox tab
+    if (el("screen-mgr").classList.contains("active") && el("mgr-pane-inbox").classList.contains("on")) markMsgsRead(msgs);
   }, e => console.error("mgr-msgs:", e));
 }
 
