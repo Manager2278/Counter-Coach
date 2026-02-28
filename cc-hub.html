@@ -270,7 +270,7 @@ const cfg = {
 const app  = initializeApp(cfg);
 const db   = getFirestore(app);
 const auth = getAuth(app);
-signInAnonymously(auth).catch(e => console.error("Auth:", e));
+const authReady = signInAnonymously(auth).catch(e => console.error("Auth:", e));
 
 // ── HELPERS ───────────────────────────────────────────────────
 function el(id) { return document.getElementById(id); }
@@ -319,6 +319,7 @@ let unsubStores    = null;
 
 // ── ADMIN AUTH ────────────────────────────────────────────────
 (async function checkSetup() {
+  await authReady; // ensure anonymous auth is complete before reading Firestore
   try {
     const snap = await getDoc(doc(db, "admin", "config"));
     if (!snap.exists() || !snap.data().masterPwdHash) {
@@ -327,21 +328,8 @@ let unsubStores    = null;
       el("normal-login").style.display    = "none";
     }
   } catch(e) {
-    // If we can't read the doc (e.g. permission denied before auth resolves),
-    // wait briefly for anonymous auth to settle then retry once.
-    console.warn("Admin setup check failed, retrying after auth…", e);
-    await new Promise(r => setTimeout(r, 1500));
-    try {
-      const snap2 = await getDoc(doc(db, "admin", "config"));
-      if (!snap2.exists() || !snap2.data().masterPwdHash) {
-        el("login-sub").textContent = "First run — create your admin password.";
-        el("first-run-setup").style.display = "block";
-        el("normal-login").style.display    = "none";
-      }
-    } catch(e2) {
-      el("login-sub").textContent = "Could not reach database. Check connection.";
-      console.error("Admin setup check (retry):", e2);
-    }
+    el("login-sub").textContent = "Could not reach database. Check connection.";
+    console.error("Admin setup check:", e);
   }
 })();
 
