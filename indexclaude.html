@@ -162,7 +162,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const cfg = {
@@ -177,11 +177,17 @@ const app = initializeApp(cfg);
 const db  = getFirestore(app);
 const auth = getAuth(app);
 
-// Registration code — obfuscated. Change this to update the code.
-// Encoded as base64: "CC-SETUP-2278" -> "Q0MtU0VUVVAtMjI3OA=="
-const REG_CODE_B64 = "Q0MtU0VUVVAtMjI3OA==";
-function validRegCode(input) {
-  try { return atob(REG_CODE_B64) === input.trim(); } catch { return false; }
+// Registration codes are managed in Firestore via admin.html
+async function validateRegCode(input, storeNum) {
+  const code = input.trim();
+  if (!code) return { valid: false, reason: "No code entered." };
+  const snap = await getDoc(doc(db, "reg_codes", code));
+  if (!snap.exists())          return { valid: false, reason: "Invalid registration code." };
+  const d = snap.data();
+  if (d.used)                  return { valid: false, reason: "This code has already been used." };
+  if (d.expires && d.expires.toDate() < new Date()) return { valid: false, reason: "This code has expired." };
+  if (d.storeNumber && d.storeNumber !== storeNum)  return { valid: false, reason: "This code is not valid for store " + storeNum + "." };
+  return { valid: true };
 }
 
 let store = "", name = "", role = "employee", managerPhone = "", helpdeskPhone = "";
@@ -367,8 +373,11 @@ window.mgrLogin = async () => {
     } else {
       // NEW STORE — require valid registration code first
       if (!reg) { showErr("mgr-err", "A registration code is required to create a new store."); return; }
-      if (!validRegCode(reg)) { showErr("mgr-err", "Invalid registration code. Contact SM 2278 Justin."); return; }
+      const check = await validateRegCode(reg, s);
+      if (!check.valid) { showErr("mgr-err", check.reason + " Contact your district admin."); return; }
       await setDoc(storeRef, { pin, managerName: n, managerPhone: ph, helpdeskPhone: hd, created: serverTimestamp() });
+      // Mark the code as used so it can't be reused
+      await updateDoc(doc(db, "reg_codes", reg.trim()), { used: true, usedAt: serverTimestamp(), usedByStore: s });
     }
 
     store = s; name = n; role = "manager";
