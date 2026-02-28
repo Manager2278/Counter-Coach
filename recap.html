@@ -484,7 +484,7 @@ async function loadBroadcast() {
 
 // ── INIT ──────────────────────────────────────────────────────
 signInAnonymously(auth)
-  .then(() => loadBroadcast())
+  .then(() => { loadBroadcast(); }) // fire-and-forget — don't block init
   .catch(e => console.error("Auth:", e))
   .finally(init);
 
