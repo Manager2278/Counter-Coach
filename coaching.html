@@ -54,6 +54,10 @@ input, textarea, select {
   gap: 10px;
 }
 
+.checkbox-group label {
+  font-size: 14px;
+}
+
 button {
   width: 100%;
   padding: 15px;
@@ -102,6 +106,31 @@ Employee Coaching Form
 </div>
 
 <div class="card">
+<h3>Type of Coaching</h3>
+<select id="type">
+<option>Verbal Coaching</option>
+<option>Written Warning</option>
+<option>Final Warning</option>
+<option>Policy Violation</option>
+<option>Performance Improvement</option>
+</select>
+</div>
+
+<div class="card">
+<h3>Reason for Coaching</h3>
+<div class="checkbox-group">
+<label><input type="checkbox" value="Customer Service"> Customer Service</label>
+<label><input type="checkbox" value="Parts Lookup Error"> Parts Lookup Error</label>
+<label><input type="checkbox" value="Core Charge Violation"> Core Charge Violation</label>
+<label><input type="checkbox" value="Warranty Violation"> Warranty Violation</label>
+<label><input type="checkbox" value="Procedures"> Procedures</label>
+<label><input type="checkbox" value="Attendance"> Attendance</label>
+<label><input type="checkbox" value="Cash Handling"> Cash Handling</label>
+<label><input type="checkbox" value="Conduct"> Conduct</label>
+</div>
+</div>
+
+<div class="card">
 <h3>Incident Description</h3>
 <textarea id="incident"></textarea>
 </div>
@@ -112,8 +141,33 @@ Employee Coaching Form
 </div>
 
 <div class="card">
+<h3>Impact</h3>
+<div class="checkbox-group">
+<label><input type="checkbox" value="Loss of Sale"> Loss of Sale</label>
+<label><input type="checkbox" value="Financial Loss"> Financial Loss</label>
+<label><input type="checkbox" value="Customer Issue"> Customer Issue</label>
+<label><input type="checkbox" value="Policy Risk"> Policy Risk</label>
+<label><input type="checkbox" value="Safety"> Safety</label>
+</div>
+</div>
+
+<div class="card">
 <h3>Corrective Action</h3>
 <textarea id="action"></textarea>
+</div>
+
+<div class="card">
+<h3>Follow-Up</h3>
+<select id="followup">
+<option>Immediate</option>
+<option>7 Days</option>
+<option>30 Days</option>
+</select>
+</div>
+
+<div class="card">
+<h3>Employee Comments</h3>
+<textarea id="comments"></textarea>
 </div>
 
 <div class="card">
@@ -137,6 +191,11 @@ Employee Coaching Form
 </div>
 
 <script>
+function getCheckedValues(container){
+  return Array.from(container.querySelectorAll("input:checked"))
+    .map(cb => cb.value);
+}
+
 function SignaturePad(canvas) {
   this.canvas = canvas;
   this.ctx = canvas.getContext("2d");
@@ -161,7 +220,6 @@ function SignaturePad(canvas) {
   canvas.addEventListener("mouseup", () => this.drawing = false);
   canvas.addEventListener("mouseleave", () => this.drawing = false);
 
-  // Touch support
   canvas.addEventListener("touchstart", e => {
     e.preventDefault();
     const touch = e.touches[0];
@@ -194,23 +252,29 @@ function SignaturePad(canvas) {
 const empSigPad = new SignaturePad(document.getElementById("empSig"));
 const mgrSigPad = new SignaturePad(document.getElementById("mgrSig"));
 
-function clearPad(pad){
-  pad.clear();
-}
-
 function submitForm(){
+  const reason = getCheckedValues(document.querySelector(".card:nth-of-type(3)"));
+  const impact = getCheckedValues(document.querySelector(".card:nth-of-type(6)"));
+
   const data = {
-    employee: document.getElementById("empName").value,
-    manager: document.getElementById("manager").value,
-    incident: document.getElementById("incident").value,
-    expected: document.getElementById("expected").value,
-    action: document.getElementById("action").value,
+    employee: empName.value,
+    type: type.value,
+    reason,
+    impact,
+    incident: incident.value,
+    expected: expected.value,
+    action: action.value,
+    comments: comments.value,
     empSignature: empSigPad.getData(),
     mgrSignature: mgrSigPad.getData()
   };
 
-  console.log("Form Data:", data);
-  alert("Coaching submitted with signatures ✔️");
+  console.log(data);
+  alert("Coaching submitted with full data ✔️");
+}
+
+function clearPad(pad){
+  pad.clear();
 }
 </script>
 
