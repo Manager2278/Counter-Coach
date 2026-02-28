@@ -221,7 +221,7 @@ async function loadBroadcast() {
 
 // ── INIT
 signInAnonymously(auth)
-  .then(() => loadBroadcast())
+  .then(() => { loadBroadcast(); }) // fire-and-forget — don't stall auth chain
   .catch(e => showBanner("Auth error: " + e.message));
 const params  = new URLSearchParams(location.search);
 const qrStore = params.get("store");
