@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Employee Coaching - O'Reilly Style</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+  margin: 0;
+}
+
+.header {
+  background: #006400;
+  color: white;
+  padding: 15px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.container {
+  padding: 15px;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+h3 {
+  margin-top: 0;
+  color: #006400;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.checkbox-group label {
+  font-size: 14px;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  background: #FFD700;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #e6c200;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+Employee Coaching Form
+</div>
+
+<div class="container">
+
+<div class="card">
+<h3>Employee Info</h3>
+<input placeholder="Employee Name">
+<input placeholder="Employee ID">
+<input placeholder="Store Number">
+<input placeholder="Manager Name">
+<input type="date">
+</div>
+
+<div class="card">
+<h3>Type of Coaching</h3>
+<select>
+<option>Verbal Coaching</option>
+<option>Written Warning</option>
+<option>Final Warning</option>
+<option>Policy Violation</option>
+<option>Performance Improvement</option>
+</select>
+</div>
+
+<div class="card">
+<h3>Reason for Coaching</h3>
+<div class="checkbox-group">
+<label><input type="checkbox"> Customer Service</label>
+<label><input type="checkbox"> Parts Lookup Error</label>
+<label><input type="checkbox"> Core Charge Violation</label>
+<label><input type="checkbox"> Warranty Violation</label>
+<label><input type="checkbox"> Procedures</label>
+<label><input type="checkbox"> Attendance</label>
+<label><input type="checkbox"> Cash Handling</label>
+<label><input type="checkbox"> Conduct</label>
+</div>
+</div>
+
+<div class="card">
+<h3>Incident Description</h3>
+<textarea rows="4" placeholder="What happened?"></textarea>
+</div>
+
+<div class="card">
+<h3>Expected Standard</h3>
+<textarea rows="3" placeholder="What should have happened?"></textarea>
+</div>
+
+<div class="card">
+<h3>Impact</h3>
+<div class="checkbox-group">
+<label><input type="checkbox"> Loss of Sale</label>
+<label><input type="checkbox"> Financial Loss</label>
+<label><input type="checkbox"> Customer Issue</label>
+<label><input type="checkbox"> Policy Risk</label>
+<label><input type="checkbox"> Safety</label>
+</div>
+</div>
+
+<div class="card">
+<h3>Corrective Action</h3>
+<textarea rows="3"></textarea>
+</div>
+
+<div class="card">
+<h3>Follow-Up</h3>
+<select>
+<option>Immediate</option>
+<option>7 Days</option>
+<option>30 Days</option>
+</select>
+</div>
+
+<div class="card">
+<h3>Employee Comments</h3>
+<textarea rows="3"></textarea>
+</div>
+
+<button onclick="submitForm()">Submit Coaching</button>
+
+</div>
+
+<script>
+function submitForm(){
+  alert("Coaching form submitted (you can connect this to Firebase next)");
+}
+</script>
+
+</body>
+</html>
