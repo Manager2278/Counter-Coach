@@ -43,9 +43,29 @@ service cloud.firestore {
     }
 
     // ── ADMIN ─────────────────────────────────────────────────
-    // Covers admin/config, admin/broadcast, and any future admin docs.
+    // Covers admin/config, admin/broadcast, admin/appConfig, etc.
     // Master password hash + PIN are the app-level guards.
     match /admin/{adminDoc} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── FEEDBACK ─────────────────────────────────────────────
+    // Managers submit feedback; admin views/updates/deletes.
+    match /feedback/{feedbackId} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasAll(['store','from','type','text','time','status'])
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 3000
+                    && request.resource.data.type in ['bug','idea','other'];
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // ── AUDIT LOG ────────────────────────────────────────────
+    // Written by admin hub on key actions; read by admin only.
+    match /audit_log/{logId} {
       allow read, write: if request.auth != null;
     }
 

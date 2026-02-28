@@ -253,6 +253,10 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .empty .ei { font-size: 32px; margin-bottom: 8px; }
 .empty p { font-size: 13px; font-family: 'Courier Prime', monospace; }
 
+/* ── FEEDBACK TYPE PILLS ─────────────────── */
+.fb-type-pill { padding: 7px 14px; border: 1.5px solid var(--ruled); border-radius: 8px; background: transparent; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--ink-faint); transition: all 0.15s; }
+.fb-type-pill.on { background: var(--forest); color: white; border-color: var(--forest); }
+
 .hidden { display: none !important; }
 #broadcast-banner { display: none; background: #1c3a2a; color: white; padding: 10px 16px; font-size: 13px; line-height: 1.5; }
 #broadcast-banner.show { display: block; }
@@ -374,6 +378,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <button class="mgr-tab on" onclick="setMgrTab('inbox',this)">📬 Inbox <span class="inbox-cnt hidden" id="inbox-cnt"></span></button>
     <button class="mgr-tab"    onclick="setMgrTab('all-log',this)">📋 All Entries</button>
     <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 QR Code</button>
+    <button class="mgr-tab"    onclick="setMgrTab('feedback',this)" id="mgr-tab-feedback-btn">📣 Feedback</button>
   </div>
 
   <!-- INBOX -->
@@ -404,6 +409,24 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
       <div id="qr-canvas"></div>
       <p>Employees scan this to go directly to Store <strong id="qr-store-lbl"></strong>.<br>They just enter their name — store is pre-filled.</p>
       <button class="btn-outline" onclick="copyLink()">📋 Copy Login Link</button>
+    </div>
+  </div>
+
+  <!-- FEEDBACK -->
+  <div class="mgr-tab-pane" id="mgr-pane-feedback">
+    <div class="section-head">Submit Feedback to Admin</div>
+    <div class="compose-box" style="border-top-color: var(--forest); border-color: #b0d4b8;">
+      <div class="compose-title" style="color:var(--forest);">📣 Report an Issue or Share an Idea</div>
+      <p style="font-size:12px;color:var(--ink-faint);margin-bottom:10px;line-height:1.4;">Help us improve Counter Coach. Your feedback goes directly to the admin team.</p>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="fb-type-pill on" data-type="idea"  onclick="setFbType(this,'idea')">💡 Idea</button>
+        <button class="fb-type-pill"    data-type="bug"   onclick="setFbType(this,'bug')">🐛 Bug Report</button>
+        <button class="fb-type-pill"    data-type="other" onclick="setFbType(this,'other')">💬 Other</button>
+      </div>
+      <textarea id="fb-text" placeholder="Describe the issue or your idea in detail…" style="min-height:90px;"></textarea>
+      <div id="fb-ok"  style="display:none;font-size:13px;color:#2e7d32;font-weight:700;margin-top:6px;">✅ Feedback sent — thank you!</div>
+      <div id="fb-err" style="display:none;font-size:13px;color:var(--red);margin-top:6px;"></div>
+      <button class="btn-send" style="background:var(--forest);" onclick="sendFeedback()">Send Feedback</button>
     </div>
   </div>
 </div>
@@ -1068,6 +1091,55 @@ window.copyLink = () => {
   const link = `${location.origin}${location.pathname}?store=${encodeURIComponent(store)}`;
   navigator.clipboard.writeText(link).then(()=>alert("Link copied!")).catch(()=>prompt("Copy this link:",link));
 };
+
+// ── MANAGER FEEDBACK ──────────────────────────────────────────
+let selectedFbType = "idea";
+
+window.setFbType = (btn, type) => {
+  document.querySelectorAll(".fb-type-pill").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on");
+  selectedFbType = type;
+};
+
+window.sendFeedback = async () => {
+  const text = el("fb-text").value.trim();
+  const okEl  = el("fb-ok");
+  const errEl = el("fb-err");
+  okEl.style.display  = "none";
+  errEl.style.display = "none";
+  if (!text) { errEl.textContent = "Please describe your feedback before sending."; errEl.style.display = "block"; return; }
+  if (!mgrLoggedIn) { errEl.textContent = "You must be logged in as a manager to submit feedback."; errEl.style.display = "block"; return; }
+  try {
+    await addDoc(collection(db, "feedback"), {
+      store:  store,
+      from:   name,
+      type:   selectedFbType,
+      text:   text,
+      time:   serverTimestamp(),
+      status: "open",
+      read:   false
+    });
+    el("fb-text").value = "";
+    okEl.style.display = "block";
+    setTimeout(() => { okEl.style.display = "none"; }, 4000);
+  } catch(e) { errEl.textContent = "Send error: " + e.message; errEl.style.display = "block"; }
+};
+
+// ── APP CONFIG CHECK (feature flags) ──────────────────────────
+async function checkAppConfig() {
+  try {
+    const snap = await getDoc(doc(db, "admin", "appConfig"));
+    if (!snap.exists()) return;
+    const data = snap.data();
+    // Hide feedback tab if admin has disabled it
+    if (data.feedbackEnabled === false) {
+      const btn = el("mgr-tab-feedback-btn");
+      if (btn) btn.style.display = "none";
+    }
+  } catch(e) { /* non-fatal — show tab by default */ }
+}
+
+checkAppConfig();
 
 </script>
 </body>
