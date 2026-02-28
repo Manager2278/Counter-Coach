@@ -57,6 +57,9 @@
     .ask { margin-top: 10px; font-size: 14px; line-height: 1.5; }
     .expect { color: #1b5e20; margin-top: 12px; font-weight: bold; font-style: italic; font-size: 15px; line-height: 1.5; }
     #error-banner { display: none; background: #ffcccc; color: #900; padding: 10px 14px; border-radius: 8px; margin: 12px 16px; font-size: 13px; }
+    #broadcast-banner { display: none; background: #1b5e20; color: white; padding: 10px 16px; font-size: 13px; line-height: 1.5; }
+    #broadcast-banner.show { display: block; }
+    #broadcast-banner strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
     /* ── REG CODE FIELD — hidden by default, shown only for new stores */
     .reg-code-wrap { display: none; background: #fff8e1; border: 1.5px solid #ffe082; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
     .reg-code-wrap.show { display: block; }
@@ -75,6 +78,9 @@
       <button class="btn-mgr-setup" onclick="showManagerSetup()">&#x1F511; Manager</button>
     </div>
   </div>
+
+  <!-- Broadcast banner -->
+  <div id="broadcast-banner"></div>
 
   <!-- Name prompt banner -->
   <div id="name-banner">
@@ -200,8 +206,23 @@ function loadSession() {
   try { return JSON.parse(localStorage.getItem("cc_v2_session")); } catch { return null; }
 }
 
+// ── BROADCAST BANNER
+async function loadBroadcast() {
+  try {
+    const snap = await getDoc(doc(db, "admin", "broadcast"));
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (!data.active || !data.message) return;
+    const banner = document.getElementById("broadcast-banner");
+    banner.innerHTML = (data.title ? `<strong>📢 ${data.title}</strong>` : "<strong>📢 Notice</strong>") + data.message;
+    banner.classList.add("show");
+  } catch(e) { /* silent — broadcast is non-critical */ }
+}
+
 // ── INIT
-signInAnonymously(auth).catch(e => showBanner("Auth error: " + e.message));
+signInAnonymously(auth)
+  .then(() => loadBroadcast())
+  .catch(e => showBanner("Auth error: " + e.message));
 const params  = new URLSearchParams(location.search);
 const qrStore = params.get("store");
 const qrName  = params.get("name");
