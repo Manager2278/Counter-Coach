@@ -149,7 +149,11 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 #lightbox-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; color: white; font-size: 22px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .filter-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
 .fpill { padding: 5px 13px; border-radius: 20px; border: 1.5px solid var(--ruled); font-size: 11px; font-weight: 700; cursor: pointer; background: white; color: var(--ink-soft); transition: all .15s; text-transform: uppercase; letter-spacing: 0.5px; }
-.fpill.on { background: var(--forest); color: white; border-color: var(--forest); }
+.fpill.on { background: var(--forest); color: white; border-color: var(--forest); box-shadow: 0 0 4px 2px rgba(28,58,42,0.25); }
+.fpill.on[data-filter="open"]     { background: var(--red);          border-color: var(--red);          box-shadow: 0 0 4px 2px rgba(184,50,50,0.28); }
+.fpill.on[data-filter="progress"] { background: var(--forest-light); border-color: var(--forest-light); box-shadow: 0 0 4px 2px rgba(74,140,96,0.3); }
+.fpill.on[data-filter="issue"]    { background: var(--red);          border-color: var(--red);          box-shadow: 0 0 4px 2px rgba(184,50,50,0.28); }
+.fpill.on[data-filter="note"]     { background: var(--amber);        border-color: var(--amber);        box-shadow: 0 0 4px 2px rgba(196,92,0,0.28); }
 
 /* ── UNREAD MSG NOTIFY BAR ───────────────── */
 .msg-notify-bar { background: var(--purple-pale); border: 1.5px solid #c0a0e0; border-radius: 10px; padding: 11px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
@@ -334,7 +338,6 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   <div class="filter-row">
     <button class="fpill on" data-filter="all"      data-label="All"      onclick="setFilter('all',this)">All</button>
     <button class="fpill"    data-filter="open"     data-label="Open"     onclick="setFilter('open',this)">Open</button>
-    <button class="fpill"    data-filter="done"     data-label="Done"     onclick="setFilter('done',this)">Done</button>
     <button class="fpill"    data-filter="progress" data-label="Progress" onclick="setFilter('progress',this)">Progress</button>
     <button class="fpill"    data-filter="issue"    data-label="Issues"   onclick="setFilter('issue',this)">Issues</button>
     <button class="fpill"    data-filter="note"     data-label="Notes"    onclick="setFilter('note',this)">Notes</button>
@@ -546,9 +549,13 @@ window.noSessionLogin = () => {
   el(id).addEventListener("keydown", e => { if (e.key === "Enter") noSessionLogin(); });
 });
 
-function bootApp() {
+async function bootApp() {
   const ms = loadMgrSession();
   if (ms && ms.store === store && ms.on) mgrLoggedIn = true;
+
+  // Await store data so repliesEnabled is ready before activateMgrPanel
+  // calls listenMgrInbox → renderMsgs on its first run.
+  await loadStorePin();
 
   el("tb-store").textContent = "Store " + store;
   el("tb-store").classList.remove("hidden");
@@ -563,7 +570,6 @@ function bootApp() {
   goScreen("log");
   listenEntries();
   listenMyMsgs();
-  loadStorePin();
 }
 
 async function loadStorePin() {
@@ -852,11 +858,10 @@ function listenMgrEntries() {
 function updatePillCounts() {
   const total    = allEntries.length;
   const open     = allEntries.filter(e => e.status === "open").length;
-  const done     = allEntries.filter(e => e.status === "complete").length;
   const progress = allEntries.filter(e => e.type === "progress").length;
   const issues   = allEntries.filter(e => e.type === "issue").length;
   const notes    = allEntries.filter(e => e.type === "note").length;
-  const counts   = { all: total, open, done, progress: progress, issue: issues, note: notes };
+  const counts   = { all: total, open, progress: progress, issue: issues, note: notes };
   document.querySelectorAll(".fpill[data-filter]").forEach(btn => {
     const key = btn.dataset.filter;
     const n   = counts[key];
