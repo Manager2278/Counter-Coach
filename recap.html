@@ -546,9 +546,13 @@ window.noSessionLogin = () => {
   el(id).addEventListener("keydown", e => { if (e.key === "Enter") noSessionLogin(); });
 });
 
-function bootApp() {
+async function bootApp() {
   const ms = loadMgrSession();
   if (ms && ms.store === store && ms.on) mgrLoggedIn = true;
+
+  // Await store data so repliesEnabled is ready before activateMgrPanel
+  // calls listenMgrInbox → renderMsgs on its first run.
+  await loadStorePin();
 
   el("tb-store").textContent = "Store " + store;
   el("tb-store").classList.remove("hidden");
@@ -563,7 +567,6 @@ function bootApp() {
   goScreen("log");
   listenEntries();
   listenMyMsgs();
-  loadStorePin();
 }
 
 async function loadStorePin() {
