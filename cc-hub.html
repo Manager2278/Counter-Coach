@@ -270,7 +270,7 @@ const cfg = {
 const app  = initializeApp(cfg);
 const db   = getFirestore(app);
 const auth = getAuth(app);
-signInAnonymously(auth).catch(e => console.error("Auth:", e));
+const authReady = signInAnonymously(auth).catch(e => console.error("Auth:", e));
 
 // ── HELPERS ───────────────────────────────────────────────────
 function el(id) { return document.getElementById(id); }
@@ -319,6 +319,7 @@ let unsubStores    = null;
 
 // ── ADMIN AUTH ────────────────────────────────────────────────
 (async function checkSetup() {
+  await authReady; // ensure anonymous auth is complete before reading Firestore
   try {
     const snap = await getDoc(doc(db, "admin", "config"));
     if (!snap.exists() || !snap.data().masterPwdHash) {
@@ -326,7 +327,10 @@ let unsubStores    = null;
       el("first-run-setup").style.display = "block";
       el("normal-login").style.display    = "none";
     }
-  } catch(e) { console.error("Admin setup check:", e); }
+  } catch(e) {
+    el("login-sub").textContent = "Could not reach database. Check connection.";
+    console.error("Admin setup check:", e);
+  }
 })();
 
 window.createAdminPwd = async function() {
