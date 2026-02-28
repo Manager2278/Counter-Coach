@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Counter Coach — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;600;700&family=Courier+Prime:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --forest:    #2d5a27;
+      --mint:      #e8f5e9;
+      --sage:      #7fb891;
+      --paper:     #fffdf8;
+      --card:      #ffffff;
+      --ink:       #1a2a1a;
+      --ink-faint: #8a9a8a;
+      --ruled:     #e0ebe0;
+      --red:       #c62828;
+      --amber:     #f59e0b;
+      --shadow:    rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Karla', sans-serif; background: var(--mint); min-height: 100vh; color: var(--ink); }
+
+    /* ── TOPBAR */
+    .topbar { background: var(--forest); color: white; padding: 0 16px; height: 52px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px var(--shadow); }
+    .topbar-title { font-family: 'Courier Prime', monospace; font-size: 16px; font-weight: 700; }
+    .topbar-badge { font-size: 11px; background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 10px; }
+    .btn-logout { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.75); background: none; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+    .btn-logout:hover { color: white; border-color: rgba(255,255,255,0.7); }
+
+    /* ── LOGIN */
+    .login-wrap { max-width: 380px; margin: 60px auto 0; padding: 0 16px; }
+    .login-card { background: var(--card); border-radius: 16px; padding: 32px 28px; box-shadow: 0 4px 24px var(--shadow); text-align: center; }
+    .login-icon { font-size: 40px; margin-bottom: 12px; }
+    .login-title { font-family: 'Courier Prime', monospace; font-size: 20px; color: var(--forest); font-weight: 700; margin-bottom: 6px; }
+    .login-sub { font-size: 13px; color: var(--ink-faint); margin-bottom: 24px; }
+    .setup-note { font-size: 13px; color: var(--ink-faint); margin-bottom: 14px; line-height: 1.5; text-align: left; }
+
+    /* ── FORM */
+    input[type=text], input[type=password], input[type=tel] {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--ruled); border-radius: 8px;
+      font-family: 'Karla', sans-serif; font-size: 15px; background: var(--paper); color: var(--ink);
+      margin-bottom: 12px; transition: border-color 0.2s;
+    }
+    input:focus { outline: none; border-color: var(--sage); background: white; }
+    .field-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--ink-faint); display: block; margin-bottom: 4px; text-align: left; }
+
+    /* ── BUTTONS */
+    .btn { display: block; width: 100%; padding: 12px; font-family: 'Karla', sans-serif; font-weight: 700; font-size: 15px; border: none; border-radius: 10px; cursor: pointer; transition: filter 0.15s, transform 0.1s; }
+    .btn:active { transform: scale(0.98); }
+    .btn-green { background: var(--forest); color: white; }
+    .btn-green:hover { filter: brightness(1.12); }
+    .btn-red   { background: var(--red); color: white; }
+    .btn-red:hover { filter: brightness(1.1); }
+    .btn-sm { display: inline-block; width: auto; padding: 6px 14px; font-size: 13px; border-radius: 7px; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--ruled); color: var(--ink); }
+    .btn-outline:hover { border-color: var(--sage); }
+
+    /* ── ALERTS */
+    .err-box { background: #ffebee; border: 1px solid #ffcdd2; color: var(--red); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: none; text-align: left; }
+    .err-box.show { display: block; }
+    .ok-box  { background: #e8f5e9; border: 1px solid #c8e6c9; color: #2e7d32; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: none; text-align: left; }
+    .ok-box.show { display: block; }
+
+    /* ── MAIN APP */
+    #login-screen.hidden { display: none; }
+    #admin-app { display: none; }
+    #admin-app.show { display: block; }
+    .wrap { max-width: 540px; margin: 0 auto; padding: 16px 16px 60px; }
+
+    /* ── STATS ROW */
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .stat-card { background: var(--card); border-radius: 12px; padding: 14px 10px; text-align: center; box-shadow: 0 2px 8px var(--shadow); }
+    .stat-num  { font-family: 'Courier Prime', monospace; font-size: 26px; font-weight: 700; color: var(--forest); }
+    .stat-label { font-size: 11px; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    /* ── TABS */
+    .tabs { display: flex; gap: 4px; background: white; padding: 6px; border-radius: 12px; box-shadow: 0 2px 8px var(--shadow); margin-bottom: 16px; }
+    .tab-btn { flex: 1; padding: 9px 4px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; border: none; border-radius: 8px; cursor: pointer; background: transparent; color: var(--ink-faint); transition: all 0.15s; }
+    .tab-btn.on { background: var(--forest); color: white; }
+    .tab-pane { display: none; }
+    .tab-pane.on { display: block; }
+
+    /* ── CARDS */
+    .card { background: var(--card); border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px var(--shadow); margin-bottom: 14px; }
+    .card-title { font-family: 'Courier Prime', monospace; font-size: 15px; font-weight: 700; color: var(--forest); margin-bottom: 14px; }
+
+    /* ── EXPIRY PILLS */
+    .pill-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .epill { flex: 1; padding: 9px 4px; border: 1.5px solid var(--ruled); border-radius: 8px; background: transparent; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center; color: var(--ink-faint); transition: all 0.15s; }
+    .epill.on { background: var(--forest); color: white; border-color: var(--forest); }
+
+    /* ── GENERATED CODE DISPLAY */
+    .code-display { background: var(--forest); color: white; font-family: 'Courier Prime', monospace; font-size: 26px; font-weight: 700; text-align: center; padding: 18px; border-radius: 10px; letter-spacing: 3px; margin: 14px 0 8px; display: none; }
+    .code-display.show { display: block; }
+    .copy-row { display: none; text-align: center; margin-bottom: 10px; }
+
+    /* ── CODE LIST */
+    .code-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--ruled); gap: 8px; flex-wrap: wrap; }
+    .code-item:last-child { border-bottom: none; }
+    .code-mono { font-family: 'Courier Prime', monospace; font-size: 15px; font-weight: 700; color: var(--forest); }
+    .code-meta { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+    .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+    .badge-green { background: #e8f5e9; color: #2e7d32; }
+    .badge-red   { background: #ffebee; color: var(--red); }
+    .badge-amber { background: #fff8e1; color: #7a5800; }
+
+    /* ── STORE LIST */
+    .store-item { padding: 12px 0; border-bottom: 1px solid var(--ruled); }
+    .store-item:last-child { border-bottom: none; }
+    .store-num    { font-family: 'Courier Prime', monospace; font-size: 16px; font-weight: 700; color: var(--forest); }
+    .store-detail { font-size: 13px; color: var(--ink-faint); margin-top: 3px; line-height: 1.6; }
+    .store-actions { margin-top: 8px; display: flex; gap: 8px; }
+
+    .empty { text-align: center; padding: 30px 0; color: var(--ink-faint); font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">⚙️ CC Admin</div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span class="topbar-badge" id="topbar-badge" style="display:none;">ADMIN</span>
+    <button class="btn-logout" id="btn-logout" onclick="adminLogout()" style="display:none;">Logout</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ LOGIN ═══════════════════ -->
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-icon">🔐</div>
+      <div class="login-title">Counter Coach Admin</div>
+      <div class="login-sub" id="login-sub">Enter master password to continue</div>
+
+      <!-- First-run setup (shown if no admin config exists) -->
+      <div id="first-run-setup" style="display:none;">
+        <p class="setup-note">No admin account found. Create a master password to get started.</p>
+        <label class="field-label">Create Master Password</label>
+        <input type="password" id="setup-pwd1" placeholder="Choose a password (6+ chars)" autocomplete="new-password">
+        <label class="field-label">Confirm Password</label>
+        <input type="password" id="setup-pwd2" placeholder="Confirm password" autocomplete="new-password"
+          onkeydown="if(event.key==='Enter') createAdminPwd()">
+        <div class="err-box" id="setup-err"></div>
+        <button class="btn btn-green" onclick="createAdminPwd()">Create &amp; Enter Admin</button>
+      </div>
+
+      <!-- Normal login -->
+      <div id="normal-login">
+        <label class="field-label">Master Password</label>
+        <input type="password" id="login-pwd" placeholder="Enter master password" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter') adminLogin()">
+        <div class="err-box" id="login-err"></div>
+        <button class="btn btn-green" onclick="adminLogin()">Enter Admin</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ADMIN APP ═══════════════════ -->
+<div id="admin-app">
+  <div class="wrap">
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num"  id="stat-stores">—</div>
+        <div class="stat-label">Stores</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num"  id="stat-codes">—</div>
+        <div class="stat-label">Active Codes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num"  id="stat-used">—</div>
+        <div class="stat-label">Used Codes</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn on" onclick="goTab('codes')">🎫 Codes</button>
+      <button class="tab-btn"    onclick="goTab('stores')">🏪 Stores</button>
+      <button class="tab-btn"    onclick="goTab('settings')">⚙️ Settings</button>
+    </div>
+
+    <!-- ══ TAB: CODES ══════════════════════════ -->
+    <div class="tab-pane on" id="tab-codes">
+
+      <div class="card">
+        <div class="card-title">🎫 Generate Registration Code</div>
+
+        <label class="field-label">Store # — leave blank to allow any store</label>
+        <input type="text" id="gen-store" placeholder="e.g. 1234  (optional)" inputmode="numeric" maxlength="10">
+
+        <label class="field-label">Expires In</label>
+        <div class="pill-row">
+          <button class="epill on" onclick="setExpiry(this,'7d')">7 Days</button>
+          <button class="epill"    onclick="setExpiry(this,'30d')">30 Days</button>
+          <button class="epill"    onclick="setExpiry(this,'never')">Never</button>
+        </div>
+
+        <button class="btn btn-green" id="btn-gen" onclick="generateCode()">Generate Code</button>
+
+        <div class="code-display" id="code-display"></div>
+        <div class="copy-row" id="copy-row">
+          <button class="btn btn-sm btn-outline" id="btn-copy" onclick="copyCode()">📋 Copy Code</button>
+        </div>
+        <div class="ok-box" id="gen-ok"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 All Codes</div>
+        <div id="codes-list"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: STORES ═════════════════════════ -->
+    <div class="tab-pane" id="tab-stores">
+      <div class="card">
+        <div class="card-title">🏪 Registered Stores</div>
+        <div id="stores-list"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: SETTINGS ══════════════════════ -->
+    <div class="tab-pane" id="tab-settings">
+      <div class="card">
+        <div class="card-title">🔑 Change Master Password</div>
+        <label class="field-label">Current Password</label>
+        <input type="password" id="chg-cur"  placeholder="Current password">
+        <label class="field-label">New Password</label>
+        <input type="password" id="chg-new1" placeholder="New password (6+ chars)">
+        <label class="field-label">Confirm New Password</label>
+        <input type="password" id="chg-new2" placeholder="Confirm new password">
+        <div class="err-box" id="chg-err"></div>
+        <div class="ok-box"  id="chg-ok"></div>
+        <button class="btn btn-green" onclick="changePwd()">Update Password</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🗑️ Maintenance</div>
+        <button class="btn btn-red" onclick="clearUsedCodes()" style="margin-bottom:0;">
+          Delete All Used &amp; Expired Codes
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import {
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+  collection, onSnapshot, writeBatch, serverTimestamp, Timestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const cfg = {
+  apiKey:            "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
+  authDomain:        "daily-recap-v1.firebaseapp.com",
+  projectId:         "daily-recap-v1",
+  storageBucket:     "daily-recap-v1.firebasestorage.app",
+  messagingSenderId: "476802421766",
+  appId:             "1:476802421766:web:171eccca066feb711bdf87"
+};
+const app  = initializeApp(cfg);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+signInAnonymously(auth).catch(e => console.error("Auth:", e));
+
+// ── HELPERS ───────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+function v(id)  { return el(id).value.trim(); }
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+}
+
+function randCode() {
+  // Avoids ambiguous chars (O, 0, I, 1) so codes are easy to read aloud / type
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let c = "";
+  for (let i = 0; i < 8; i++) {
+    if (i === 4) c += "-";
+    c += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return "CC-" + c;
+}
+
+function expiresLabel(ts) {
+  if (!ts) return "Never expires";
+  const d   = ts.toDate ? ts.toDate() : new Date(ts);
+  const now = new Date();
+  if (d < now) return "EXPIRED";
+  const days = Math.ceil((d - now) / 86400000);
+  return days === 1 ? "Expires tomorrow" : `Expires in ${days}d`;
+}
+
+function fmtDate(ts) {
+  if (!ts) return "—";
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// ── STATE ─────────────────────────────────────────────────────
+let loggedIn       = false;
+let selectedExpiry = "7d";
+let lastCode       = "";
+let allCodes       = [];
+let allStores      = [];
+let unsubCodes     = null;
+let unsubStores    = null;
+
+// ── ADMIN AUTH ────────────────────────────────────────────────
+(async function checkSetup() {
+  try {
+    const snap = await getDoc(doc(db, "admin", "config"));
+    if (!snap.exists() || !snap.data().masterPwdHash) {
+      el("login-sub").textContent = "First run — create your admin password.";
+      el("first-run-setup").style.display = "block";
+      el("normal-login").style.display    = "none";
+    }
+  } catch(e) { console.error("Admin setup check:", e); }
+})();
+
+window.createAdminPwd = async function() {
+  const p1    = v("setup-pwd1");
+  const p2    = v("setup-pwd2");
+  const errEl = el("setup-err");
+  errEl.classList.remove("show");
+  if (p1.length < 6) { errEl.textContent = "Password must be at least 6 characters."; errEl.classList.add("show"); return; }
+  if (p1 !== p2)     { errEl.textContent = "Passwords don't match.";                  errEl.classList.add("show"); return; }
+  try {
+    await setDoc(doc(db, "admin", "config"), { masterPwdHash: await sha256(p1), created: serverTimestamp() });
+    enterAdmin();
+  } catch(e) { errEl.textContent = "Error: " + e.message; errEl.classList.add("show"); }
+};
+
+window.adminLogin = async function() {
+  const pwd   = v("login-pwd");
+  const errEl = el("login-err");
+  errEl.classList.remove("show");
+  if (!pwd) { errEl.textContent = "Enter your password."; errEl.classList.add("show"); return; }
+  try {
+    const snap = await getDoc(doc(db, "admin", "config"));
+    if (!snap.exists()) { errEl.textContent = "Admin not configured."; errEl.classList.add("show"); return; }
+    if (snap.data().masterPwdHash !== await sha256(pwd)) {
+      errEl.textContent = "Incorrect password."; errEl.classList.add("show"); return;
+    }
+    enterAdmin();
+  } catch(e) { errEl.textContent = "Error: " + e.message; errEl.classList.add("show"); }
+};
+
+function enterAdmin() {
+  loggedIn = true;
+  el("login-screen").classList.add("hidden");
+  el("admin-app").classList.add("show");
+  el("topbar-badge").style.display = "inline-block";
+  el("btn-logout").style.display   = "inline-block";
+  listenCodes();
+  listenStores();
+}
+
+window.adminLogout = function() {
+  if (unsubCodes)  { unsubCodes();  unsubCodes  = null; }
+  if (unsubStores) { unsubStores(); unsubStores = null; }
+  loggedIn = false;
+  el("login-screen").classList.remove("hidden");
+  el("admin-app").classList.remove("show");
+  el("topbar-badge").style.display = "none";
+  el("btn-logout").style.display   = "none";
+  el("login-pwd").value = "";
+};
+
+// ── TABS ──────────────────────────────────────────────────────
+window.goTab = function(tab) {
+  const names = ["codes","stores","settings"];
+  document.querySelectorAll(".tab-btn").forEach((b, i) => b.classList.toggle("on", names[i] === tab));
+  document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("on"));
+  el("tab-" + tab).classList.add("on");
+};
+
+// ── EXPIRY PICKER ─────────────────────────────────────────────
+window.setExpiry = function(btn, val) {
+  document.querySelectorAll(".epill").forEach(b => b.classList.remove("on"));
+  btn.classList.add("on");
+  selectedExpiry = val;
+};
+
+// ── GENERATE CODE ─────────────────────────────────────────────
+window.generateCode = async function() {
+  if (!loggedIn) return;
+  const storeNum = v("gen-store") || null;
+  let expires = null;
+  if (selectedExpiry === "7d")  expires = Timestamp.fromDate(new Date(Date.now() + 7  * 86400000));
+  if (selectedExpiry === "30d") expires = Timestamp.fromDate(new Date(Date.now() + 30 * 86400000));
+
+  const code = randCode();
+  try {
+    await setDoc(doc(db, "reg_codes", code), {
+      created:     serverTimestamp(),
+      expires:     expires,
+      storeNumber: storeNum,
+      used:        false,
+      usedAt:      null,
+      usedByStore: null
+    });
+    lastCode = code;
+    el("code-display").textContent = code;
+    el("code-display").classList.add("show");
+    el("copy-row").style.display = "block";
+    const okEl = el("gen-ok");
+    okEl.textContent = "Code saved — share it with the store manager.";
+    okEl.classList.add("show");
+    setTimeout(() => okEl.classList.remove("show"), 4000);
+    el("gen-store").value = "";
+  } catch(e) { alert("Error generating code: " + e.message); }
+};
+
+window.copyCode = function() {
+  navigator.clipboard.writeText(lastCode)
+    .then(() => {
+      el("btn-copy").textContent = "✓ Copied!";
+      setTimeout(() => el("btn-copy").textContent = "📋 Copy Code", 2500);
+    })
+    .catch(() => prompt("Copy this code:", lastCode));
+};
+
+// ── LISTEN: CODES ─────────────────────────────────────────────
+function listenCodes() {
+  if (unsubCodes) unsubCodes();
+  unsubCodes = onSnapshot(collection(db, "reg_codes"), snap => {
+    allCodes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderCodes();
+    updateStats();
+  });
+}
+
+function renderCodes() {
+  const container = el("codes-list");
+  if (!allCodes.length) { container.innerHTML = '<div class="empty">No codes yet. Generate one above.</div>'; return; }
+
+  const now    = new Date();
+  const sorted = [...allCodes].sort((a, b) => {
+    const aExp = a.expires ? a.expires.toDate() < now : false;
+    const bExp = b.expires ? b.expires.toDate() < now : false;
+    if (a.used !== b.used) return a.used ? 1 : -1;
+    if (aExp  !== bExp)    return aExp   ? 1 : -1;
+    return 0;
+  });
+
+  container.innerHTML = sorted.map(c => {
+    const expired = c.expires && c.expires.toDate && c.expires.toDate() < now;
+    const badge   = c.used    ? `<span class="badge badge-red">Used</span>`
+                  : expired   ? `<span class="badge badge-amber">Expired</span>`
+                              : `<span class="badge badge-green">Active</span>`;
+    const store   = c.storeNumber ? `Store ${esc(c.storeNumber)}` : "Any store";
+    const usedBy  = c.used ? ` · Used by Store ${esc(c.usedByStore || "?")}` : "";
+    return `
+      <div class="code-item">
+        <div style="flex:1;min-width:0;">
+          <div class="code-mono">${esc(c.id)}</div>
+          <div class="code-meta">${store} · ${expiresLabel(c.expires)}${usedBy}</div>
+        </div>
+        ${badge}
+        <button class="btn btn-sm btn-red" onclick="revokeCode('${esc(c.id)}')">Revoke</button>
+      </div>`;
+  }).join("");
+}
+
+window.revokeCode = async function(id) {
+  if (!confirm(`Revoke and delete code "${id}"? This cannot be undone.`)) return;
+  await deleteDoc(doc(db, "reg_codes", id)).catch(e => alert("Error: " + e.message));
+};
+
+// ── LISTEN: STORES ────────────────────────────────────────────
+function listenStores() {
+  if (unsubStores) unsubStores();
+  unsubStores = onSnapshot(collection(db, "stores"), snap => {
+    allStores = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderStores();
+    updateStats();
+  });
+}
+
+function renderStores() {
+  const container = el("stores-list");
+  if (!allStores.length) { container.innerHTML = '<div class="empty">No stores registered yet.</div>'; return; }
+
+  const sorted = [...allStores].sort((a, b) => a.id.localeCompare(b.id));
+  container.innerHTML = sorted.map(s => `
+    <div class="store-item">
+      <div class="store-num">Store ${esc(s.id)}</div>
+      <div class="store-detail">
+        👤 ${esc(s.managerName   || "—")}
+        &nbsp;·&nbsp; 📞 ${esc(s.managerPhone  || "—")}
+        &nbsp;·&nbsp; 🛟 ${esc(s.helpdeskPhone || "—")}
+        ${s.created ? `<br>📅 Registered ${fmtDate(s.created)}` : ""}
+      </div>
+      <div class="store-actions">
+        <button class="btn btn-sm btn-red" onclick="deleteStore('${esc(s.id)}')">🗑️ Delete Store</button>
+      </div>
+    </div>`).join("");
+}
+
+window.deleteStore = async function(id) {
+  if (!confirm(`Delete Store ${id}?\n\nThis removes the store record and PIN. Logbook entries and messages are NOT deleted.\n\nThis cannot be undone.`)) return;
+  await deleteDoc(doc(db, "stores", id)).catch(e => alert("Error: " + e.message));
+};
+
+// ── STATS ─────────────────────────────────────────────────────
+function updateStats() {
+  const now    = new Date();
+  const active = allCodes.filter(c => !c.used && (!c.expires || c.expires.toDate() > now)).length;
+  const used   = allCodes.filter(c =>  c.used).length;
+  el("stat-stores").textContent = allStores.length;
+  el("stat-codes").textContent  = active;
+  el("stat-used").textContent   = used;
+}
+
+// ── CHANGE PASSWORD ───────────────────────────────────────────
+window.changePwd = async function() {
+  const cur   = v("chg-cur");
+  const nw1   = v("chg-new1");
+  const nw2   = v("chg-new2");
+  const errEl = el("chg-err");
+  const okEl  = el("chg-ok");
+  errEl.classList.remove("show"); okEl.classList.remove("show");
+  if (!cur || !nw1 || !nw2) { errEl.textContent = "All fields are required.";             errEl.classList.add("show"); return; }
+  if (nw1.length < 6)       { errEl.textContent = "New password must be 6+ characters.";  errEl.classList.add("show"); return; }
+  if (nw1 !== nw2)          { errEl.textContent = "New passwords don't match.";            errEl.classList.add("show"); return; }
+  try {
+    const snap = await getDoc(doc(db, "admin", "config"));
+    if (snap.data().masterPwdHash !== await sha256(cur)) {
+      errEl.textContent = "Current password is incorrect."; errEl.classList.add("show"); return;
+    }
+    await updateDoc(doc(db, "admin", "config"), { masterPwdHash: await sha256(nw1) });
+    okEl.textContent = "Password updated successfully."; okEl.classList.add("show");
+    el("chg-cur").value = ""; el("chg-new1").value = ""; el("chg-new2").value = "";
+  } catch(e) { errEl.textContent = "Error: " + e.message; errEl.classList.add("show"); }
+};
+
+// ── CLEAR USED/EXPIRED CODES ──────────────────────────────────
+window.clearUsedCodes = async function() {
+  const now    = new Date();
+  const toDelete = allCodes.filter(c => c.used || (c.expires && c.expires.toDate && c.expires.toDate() < now));
+  if (!toDelete.length) { alert("No used or expired codes to delete."); return; }
+  if (!confirm(`Delete ${toDelete.length} used/expired code(s)?`)) return;
+  const batch = writeBatch(db);
+  toDelete.forEach(c => batch.delete(doc(db, "reg_codes", c.id)));
+  await batch.commit().catch(e => alert("Error: " + e.message));
+};
+</script>
+</body>
+</html>
