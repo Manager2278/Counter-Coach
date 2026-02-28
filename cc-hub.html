@@ -220,12 +220,27 @@
     .config-info { flex: 1; }
     .config-label { font-size: 14px; font-weight: 700; color: var(--ink); }
     .config-sub   { font-size: 12px; color: var(--ink-faint); margin-top: 2px; line-height: 1.4; }
+    /* ── LOGO UPLOAD */
+    .logo-upload-area { border: 2px dashed var(--ruled); border-radius: 10px; padding: 16px; text-align: center; transition: border-color .2s; margin-bottom: 12px; }
+    .logo-upload-area:hover { border-color: var(--sage); }
+    .logo-preview { max-height: 60px; max-width: 200px; border-radius: 6px; display: none; }
+    .logo-preview.show { display: block; margin: 0 auto 8px; }
+    .logo-default-text { font-size: 13px; color: var(--ink-faint); margin-bottom: 8px; }
+    .logo-upload-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .logo-progress-wrap { height: 4px; background: var(--mint); border-radius: 2px; margin-top: 10px; display: none; }
+    .logo-progress-bar  { height: 100%; background: var(--forest); border-radius: 2px; width: 0%; transition: width .2s; }
+    /* ── COLOR PICKER */
+    .color-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    input[type=color] { width: 44px; height: 36px; padding: 2px; border: 1.5px solid var(--ruled); border-radius: 6px; cursor: pointer; background: var(--paper); flex-shrink: 0; }
   </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="topbar-title">⚙️ CC Admin</div>
+  <div class="topbar-title">
+    <img id="topbar-logo-img" src="" alt="Logo" style="max-height:30px;vertical-align:middle;border-radius:4px;display:none;">
+    <span id="topbar-title-text">⚙️ CC Admin</span>
+  </div>
   <div style="display:flex;gap:10px;align-items:center;">
     <span class="topbar-badge" id="topbar-badge" style="display:none;">ADMIN</span>
     <button class="btn-logout" id="btn-logout" onclick="adminLogout()" style="display:none;">Logout</button>
@@ -476,6 +491,45 @@
 
     <!-- ══ TAB: APP CONFIG ═════════════════════ -->
     <div class="tab-pane" id="tab-config">
+
+      <!-- BRANDING CARD -->
+      <div class="card">
+        <div class="card-title">🎨 Branding</div>
+
+        <label class="field-label">App Logo</label>
+        <div class="logo-upload-area">
+          <img id="cfg-logo-preview" class="logo-preview" src="" alt="Logo preview">
+          <div class="logo-default-text" id="cfg-logo-default">No custom logo set — using default app icon</div>
+          <div class="logo-upload-actions">
+            <label class="btn btn-sm btn-outline" style="cursor:pointer;">
+              📁 Choose Image
+              <input type="file" id="cfg-logo-input" accept="image/*" style="display:none;" onchange="uploadLogo(this)">
+            </label>
+            <button class="btn btn-sm btn-red" id="cfg-logo-remove" onclick="removeLogo()" style="display:none;">🗑️ Remove</button>
+          </div>
+          <div class="logo-progress-wrap" id="cfg-logo-progress-wrap">
+            <div class="logo-progress-bar" id="cfg-logo-progress-bar"></div>
+          </div>
+          <div class="ok-box" id="cfg-logo-ok" style="margin-top:8px;margin-bottom:0;"></div>
+        </div>
+
+        <label class="field-label">App Name</label>
+        <input type="text" id="cfg-app-name" placeholder="e.g. Store Coach  (leave blank for default)" style="margin-bottom:4px;">
+        <p style="font-size:12px;color:var(--ink-faint);margin-bottom:16px;">Overrides "Counter Coach" in all page titles and topbars.</p>
+
+        <label class="field-label">Primary Brand Color</label>
+        <div class="color-row" style="margin-bottom:4px;">
+          <input type="color" id="cfg-brand-color" value="#2d5a27"
+            oninput="el('cfg-brand-color-hex').textContent=this.value;">
+          <span id="cfg-brand-color-hex" style="font-family:'Courier Prime',monospace;font-size:14px;color:var(--ink-faint);">#2d5a27</span>
+          <button class="btn btn-sm btn-outline" onclick="resetBrandColor()">↺ Reset to Default</button>
+        </div>
+        <p style="font-size:12px;color:var(--ink-faint);margin-bottom:16px;">Changes the main green color across all pages (topbars, buttons, tabs).</p>
+
+        <div class="ok-box" id="cfg-brand-ok"></div>
+        <button class="btn btn-green" onclick="saveBranding()">Save Branding</button>
+      </div>
+
       <div class="card">
         <div class="card-title">🛠️ App Settings</div>
         <label class="field-label">Global Helpdesk Fallback Phone</label>
@@ -527,6 +581,8 @@ import {
   collection, onSnapshot, writeBatch, serverTimestamp, Timestamp,
   query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const cfg = {
   apiKey:            "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
@@ -536,9 +592,10 @@ const cfg = {
   messagingSenderId: "476802421766",
   appId:             "1:476802421766:web:171eccca066feb711bdf87"
 };
-const app  = initializeApp(cfg);
-const db   = getFirestore(app);
-const auth = getAuth(app);
+const app     = initializeApp(cfg);
+const db      = getFirestore(app);
+const auth    = getAuth(app);
+const storage = getStorage(app);
 const authReady = signInAnonymously(auth).catch(e => console.error("Auth:", e));
 
 // ── HELPERS ───────────────────────────────────────────────────
@@ -1285,8 +1342,120 @@ async function loadAppConfig() {
     el("cfg-footer").value   = data.appFooterNote    || "";
     el("cfg-feedback-enabled").checked = data.feedbackEnabled !== false;
     el("cfg-msgs-enabled").checked     = data.msgsEnabled     !== false;
+    // Branding fields
+    el("cfg-app-name").value = data.appName || "";
+    const color = data.brandColor || "#2d5a27";
+    el("cfg-brand-color").value = color;
+    el("cfg-brand-color-hex").textContent = color;
+    if (data.logoUrl) {
+      el("cfg-logo-preview").src = data.logoUrl;
+      el("cfg-logo-preview").classList.add("show");
+      el("cfg-logo-default").style.display  = "none";
+      el("cfg-logo-remove").style.display   = "inline-block";
+    }
+    applyBranding(data);
   } catch(e) { console.error("loadAppConfig:", e); }
 }
+
+function applyBranding(data) {
+  if (!data) return;
+  // Apply brand color to this page's CSS variables
+  if (data.brandColor) {
+    document.documentElement.style.setProperty("--forest", data.brandColor);
+    document.documentElement.style.setProperty("--forest-mid", data.brandColor);
+  }
+  // Apply app name to topbar title and page title
+  const name = data.appName || "Counter Coach";
+  document.title = name + " — Admin";
+  el("topbar-title-text").textContent = "⚙️ " + name + " Admin";
+  // Apply logo to topbar
+  const logoEl = el("topbar-logo-img");
+  if (data.logoUrl) {
+    logoEl.src = data.logoUrl;
+    logoEl.style.display = "inline-block";
+    el("topbar-title-text").style.display = "none";
+  } else {
+    logoEl.style.display = "none";
+    el("topbar-title-text").style.display = "";
+  }
+}
+
+// ── BRANDING ──────────────────────────────────────────────────
+window.saveBranding = async function() {
+  const appName    = el("cfg-app-name").value.trim();
+  const brandColor = el("cfg-brand-color").value;
+  try {
+    await setDoc(doc(db, "admin", "appConfig"), { appName, brandColor, updatedAt: serverTimestamp() }, { merge: true });
+    const snap = await getDoc(doc(db, "admin", "appConfig"));
+    applyBranding(snap.exists() ? snap.data() : {});
+    const okEl = el("cfg-brand-ok");
+    okEl.textContent = "Branding saved.";
+    okEl.classList.add("show");
+    setTimeout(() => okEl.classList.remove("show"), 3000);
+    auditLog("Updated branding", `Name: "${appName || "default"}" · Color: ${brandColor}`);
+  } catch(e) { alert("Error: " + e.message); }
+};
+
+window.resetBrandColor = async function() {
+  el("cfg-brand-color").value = "#2d5a27";
+  el("cfg-brand-color-hex").textContent = "#2d5a27";
+};
+
+window.uploadLogo = async function(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) { alert("Please select an image file."); return; }
+  if (file.size > 2 * 1024 * 1024) { alert("Image must be under 2 MB."); return; }
+  const progressWrap = el("cfg-logo-progress-wrap");
+  const progressBar  = el("cfg-logo-progress-bar");
+  const okEl         = el("cfg-logo-ok");
+  progressWrap.style.display = "block";
+  progressBar.style.width    = "0%";
+  okEl.classList.remove("show");
+  try {
+    const sRef = storageRef(storage, "branding/logo");
+    await new Promise((resolve, reject) => {
+      const task = uploadBytesResumable(sRef, file);
+      task.on("state_changed",
+        snap => { progressBar.style.width = Math.round(snap.bytesTransferred / snap.totalBytes * 100) + "%"; },
+        reject,
+        async () => {
+          const url = await getDownloadURL(task.snapshot.ref);
+          await setDoc(doc(db, "admin", "appConfig"), { logoUrl: url, updatedAt: serverTimestamp() }, { merge: true });
+          el("cfg-logo-preview").src = url;
+          el("cfg-logo-preview").classList.add("show");
+          el("cfg-logo-default").style.display  = "none";
+          el("cfg-logo-remove").style.display   = "inline-block";
+          progressWrap.style.display = "none";
+          okEl.textContent = "Logo uploaded successfully.";
+          okEl.classList.add("show");
+          setTimeout(() => okEl.classList.remove("show"), 4000);
+          const snap2 = await getDoc(doc(db, "admin", "appConfig"));
+          applyBranding(snap2.exists() ? snap2.data() : {});
+          auditLog("Uploaded custom logo");
+          resolve();
+        }
+      );
+    });
+  } catch(e) {
+    progressWrap.style.display = "none";
+    alert("Upload error: " + e.message);
+  }
+  input.value = "";
+};
+
+window.removeLogo = async function() {
+  if (!confirm("Remove the custom logo? The app will revert to default branding.")) return;
+  try {
+    await setDoc(doc(db, "admin", "appConfig"), { logoUrl: "", updatedAt: serverTimestamp() }, { merge: true });
+    el("cfg-logo-preview").src = "";
+    el("cfg-logo-preview").classList.remove("show");
+    el("cfg-logo-default").style.display = "";
+    el("cfg-logo-remove").style.display  = "none";
+    applyBranding({ logoUrl: "", appName: el("cfg-app-name").value.trim(), brandColor: el("cfg-brand-color").value });
+    auditLog("Removed custom logo");
+  } catch(e) { alert("Error: " + e.message); }
+};
 
 window.saveAppConfig = async function() {
   const helpdesk = el("cfg-helpdesk").value.trim();

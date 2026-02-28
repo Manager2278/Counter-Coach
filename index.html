@@ -71,8 +71,11 @@
   </style>
 </head>
 <body>
-  <div class="header">
-    <h2>&#x1F3EA; Counter Coach</h2>
+  <div class="header" id="main-header">
+    <h2 id="header-brand">
+      <img id="header-logo-img" src="" alt="Logo" style="max-height:30px;vertical-align:middle;border-radius:4px;display:none;">
+      <span id="header-brand-text">&#x1F3EA; Counter Coach</span>
+    </h2>
     <div class="header-right">
       <div id="header-info"></div>
       <button class="btn-mgr-setup" onclick="showManagerSetup()">&#x1F511; Manager</button>
@@ -221,7 +224,7 @@ async function loadBroadcast() {
 
 // ── INIT
 signInAnonymously(auth)
-  .then(() => { loadBroadcast(); }) // fire-and-forget — don't stall auth chain
+  .then(() => { loadBroadcast(); loadBranding(); }) // fire-and-forget
   .catch(e => showBanner("Auth error: " + e.message));
 const params  = new URLSearchParams(location.search);
 const qrStore = params.get("store");
@@ -486,6 +489,32 @@ window.emergency = () => {
   btn.innerHTML = `<a href="tel:911" class="btn btn-emergency">&#x1F6A8; Call 911</a>`;
   if (managerPhone) btn.innerHTML += `<a href="tel:${managerPhone}" class="btn btn-green">&#x1F4DE; Then Call Manager</a>`;
 };
+
+// ── BRANDING ─────────────────────────────────────────────────
+async function loadBranding() {
+  try {
+    const snap = await getDoc(doc(db, "admin", "appConfig"));
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const appName = data.appName || "";
+    // App name
+    if (appName) {
+      document.title = appName;
+      el("header-brand-text").textContent = "🏪 " + appName;
+    }
+    // Logo
+    if (data.logoUrl) {
+      el("header-logo-img").src = data.logoUrl;
+      el("header-logo-img").style.display = "inline-block";
+      el("header-brand-text").style.display = "none";
+    }
+    // Brand color (index.html uses hardcoded background on .header, not CSS var)
+    if (data.brandColor) {
+      el("main-header").style.background = data.brandColor;
+      document.querySelector('meta[name="theme-color"]').content = data.brandColor;
+    }
+  } catch(e) { /* non-fatal — keep default styling */ }
+}
 </script>
 </body>
 </html>
