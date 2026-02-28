@@ -165,7 +165,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const cfg = {
@@ -180,12 +180,6 @@ const app = initializeApp(cfg);
 const db  = getFirestore(app);
 const auth = getAuth(app);
 
-// Registration code — obfuscated. Change this to update the code.
-// Encoded as base64: "CC-SETUP-2278" -> "Q0MtU0VUVVAtMjI3OA=="
-const REG_CODE_B64 = "Q0MtU0VUVVAtMjI3OA==";
-function validRegCode(input) {
-  try { return atob(REG_CODE_B64) === input.trim(); } catch { return false; }
-}
 
 let store = "", name = "", role = "employee", managerPhone = "", helpdeskPhone = "";
 let historyStack = [];
@@ -368,9 +362,18 @@ window.mgrLogin = async () => {
       if (storeSnap.data().pin !== pin) { showErr("mgr-err", "Incorrect PIN."); return; }
       await setDoc(storeRef, { managerPhone: ph, helpdeskPhone: hd, managerName: n }, { merge: true });
     } else {
-      // NEW STORE — require valid registration code first
+      // NEW STORE — validate registration code against Firestore reg_codes
       if (!reg) { showErr("mgr-err", "A registration code is required to create a new store."); return; }
-      if (!validRegCode(reg)) { showErr("mgr-err", "Invalid registration code. Contact SM 2278 Justin."); return; }
+      const codeKey  = reg.trim().toUpperCase();
+      const codeRef  = doc(db, "reg_codes", codeKey);
+      const codeSnap = await getDoc(codeRef);
+      if (!codeSnap.exists())                                           { showErr("mgr-err", "Invalid registration code."); return; }
+      const cd = codeSnap.data();
+      if (cd.used)                                                      { showErr("mgr-err", "This registration code has already been used."); return; }
+      if (cd.expires && cd.expires.toDate && cd.expires.toDate() < new Date()) { showErr("mgr-err", "This registration code has expired."); return; }
+      if (cd.storeNumber && cd.storeNumber !== s)                       { showErr("mgr-err", `This code is for store ${cd.storeNumber}, not store ${s}.`); return; }
+      // Mark code used BEFORE creating store (prevents race re-use)
+      await updateDoc(codeRef, { used: true, usedAt: serverTimestamp(), usedByStore: s });
       await setDoc(storeRef, { pin, managerName: n, managerPhone: ph, helpdeskPhone: hd, created: serverTimestamp() });
     }
 

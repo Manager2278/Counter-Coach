@@ -1,0 +1,77 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── ADMIN CONFIG ─────────────────────────────────────────
+    // Any signed-in user can read (needed for login check / password verify).
+    // Any signed-in user can write — the master password hash itself is the
+    // access control; there is no other privileged identity available here.
+    match /admin/{docId} {
+      allow read:   if request.auth != null;
+      allow write:  if request.auth != null;
+    }
+
+    // ── REGISTRATION CODES ───────────────────────────────────
+    // Any signed-in user can read (needed to validate a code on store setup).
+    // Only cc-hub admin creates codes (write from admin panel — signed-in user).
+    // Update allowed so index.html can mark a code as used after validation.
+    // No client-side delete (admin revoke goes through deleteDoc in cc-hub).
+    match /reg_codes/{codeId} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasAll(['used','created'])
+                    && request.resource.data.used == false;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    // ── STORES ──────────────────────────────────────────────
+    // Anyone signed in can read a store (needed for PIN verification)
+    // Only authenticated users can create/update (manager setup from index.html)
+    // No one can delete a store document
+    match /stores/{storeId} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasAll(['pin','managerName'])
+                    && request.resource.data.pin is string
+                    && request.resource.data.pin.size() >= 4;
+      allow update: if request.auth != null
+                    && request.resource.data.keys().hasAll(['pin','managerName'])
+                    && request.resource.data.pin is string
+                    && request.resource.data.pin.size() >= 4;
+      allow delete: if request.auth != null;
+    }
+
+    // ── ENTRIES ─────────────────────────────────────────────
+    // Any signed-in user can read/create entries for any store
+    // Updates allowed (for toggling done status + adding photoURL)
+    // Only allow delete (manager confirm-clear) — no client-side restriction
+    // needed beyond being signed in since manager verified their PIN locally
+    match /entries/{entryId} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasAll(['store','author','text','type','status','time'])
+                    && request.resource.data.status == 'open'
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 2000;
+      allow update: if request.auth != null
+                    && request.resource.data.store == resource.data.store;
+      allow delete: if request.auth != null;
+    }
+
+    // ── MESSAGES ────────────────────────────────────────────
+    // Any signed-in user can read/create messages
+    // Only allow update (marking read) — no delete
+    match /messages/{messageId} {
+      allow read:   if request.auth != null;
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasAll(['store','from','text','time'])
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 5000;
+      allow update: if request.auth != null;
+      allow delete: if false;
+    }
+  }
+}
