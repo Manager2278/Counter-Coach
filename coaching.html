@@ -54,10 +54,6 @@ input, textarea, select {
   gap: 10px;
 }
 
-.checkbox-group label {
-  font-size: 14px;
-}
-
 button {
   width: 100%;
   padding: 15px;
@@ -68,8 +64,22 @@ button {
   font-weight: bold;
 }
 
-button:hover {
-  background: #e6c200;
+canvas {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  width: 100%;
+  height: 150px;
+}
+
+.sig-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.sig-buttons button {
+  flex: 1;
+  padding: 8px;
+  font-size: 12px;
 }
 </style>
 </head>
@@ -84,76 +94,42 @@ Employee Coaching Form
 
 <div class="card">
 <h3>Employee Info</h3>
-<input placeholder="Employee Name">
-<input placeholder="Employee ID">
-<input placeholder="Store Number">
-<input placeholder="Manager Name">
-<input type="date">
-</div>
-
-<div class="card">
-<h3>Type of Coaching</h3>
-<select>
-<option>Verbal Coaching</option>
-<option>Written Warning</option>
-<option>Final Warning</option>
-<option>Policy Violation</option>
-<option>Performance Improvement</option>
-</select>
-</div>
-
-<div class="card">
-<h3>Reason for Coaching</h3>
-<div class="checkbox-group">
-<label><input type="checkbox"> Customer Service</label>
-<label><input type="checkbox"> Parts Lookup Error</label>
-<label><input type="checkbox"> Core Charge Violation</label>
-<label><input type="checkbox"> Warranty Violation</label>
-<label><input type="checkbox"> Procedures</label>
-<label><input type="checkbox"> Attendance</label>
-<label><input type="checkbox"> Cash Handling</label>
-<label><input type="checkbox"> Conduct</label>
-</div>
+<input id="empName" placeholder="Employee Name">
+<input id="empId" placeholder="Employee ID">
+<input id="store" placeholder="Store Number">
+<input id="manager" placeholder="Manager Name">
+<input id="date" type="date">
 </div>
 
 <div class="card">
 <h3>Incident Description</h3>
-<textarea rows="4" placeholder="What happened?"></textarea>
+<textarea id="incident"></textarea>
 </div>
 
 <div class="card">
 <h3>Expected Standard</h3>
-<textarea rows="3" placeholder="What should have happened?"></textarea>
-</div>
-
-<div class="card">
-<h3>Impact</h3>
-<div class="checkbox-group">
-<label><input type="checkbox"> Loss of Sale</label>
-<label><input type="checkbox"> Financial Loss</label>
-<label><input type="checkbox"> Customer Issue</label>
-<label><input type="checkbox"> Policy Risk</label>
-<label><input type="checkbox"> Safety</label>
-</div>
+<textarea id="expected"></textarea>
 </div>
 
 <div class="card">
 <h3>Corrective Action</h3>
-<textarea rows="3"></textarea>
+<textarea id="action"></textarea>
 </div>
 
 <div class="card">
-<h3>Follow-Up</h3>
-<select>
-<option>Immediate</option>
-<option>7 Days</option>
-<option>30 Days</option>
-</select>
+<h3>Employee Signature</h3>
+<canvas id="empSig"></canvas>
+<div class="sig-buttons">
+<button onclick="clearPad(empSigPad)">Clear</button>
+</div>
 </div>
 
 <div class="card">
-<h3>Employee Comments</h3>
-<textarea rows="3"></textarea>
+<h3>Manager Signature</h3>
+<canvas id="mgrSig"></canvas>
+<div class="sig-buttons">
+<button onclick="clearPad(mgrSigPad)">Clear</button>
+</div>
 </div>
 
 <button onclick="submitForm()">Submit Coaching</button>
@@ -161,8 +137,80 @@ Employee Coaching Form
 </div>
 
 <script>
+function SignaturePad(canvas) {
+  this.canvas = canvas;
+  this.ctx = canvas.getContext("2d");
+  this.drawing = false;
+
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width;
+  canvas.height = rect.height;
+
+  canvas.addEventListener("mousedown", e => {
+    this.drawing = true;
+    this.ctx.beginPath();
+    this.ctx.moveTo(e.offsetX, e.offsetY);
+  });
+
+  canvas.addEventListener("mousemove", e => {
+    if (!this.drawing) return;
+    this.ctx.lineTo(e.offsetX, e.offsetY);
+    this.ctx.stroke();
+  });
+
+  canvas.addEventListener("mouseup", () => this.drawing = false);
+  canvas.addEventListener("mouseleave", () => this.drawing = false);
+
+  // Touch support
+  canvas.addEventListener("touchstart", e => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    this.drawing = true;
+    this.ctx.beginPath();
+    this.ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+  });
+
+  canvas.addEventListener("touchmove", e => {
+    e.preventDefault();
+    if (!this.drawing) return;
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    this.ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    this.ctx.stroke();
+  });
+
+  canvas.addEventListener("touchend", () => this.drawing = false);
+
+  this.clear = function() {
+    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  this.getData = function() {
+    return canvas.toDataURL();
+  };
+}
+
+const empSigPad = new SignaturePad(document.getElementById("empSig"));
+const mgrSigPad = new SignaturePad(document.getElementById("mgrSig"));
+
+function clearPad(pad){
+  pad.clear();
+}
+
 function submitForm(){
-  alert("Coaching form submitted (you can connect this to Firebase next)");
+  const data = {
+    employee: document.getElementById("empName").value,
+    manager: document.getElementById("manager").value,
+    incident: document.getElementById("incident").value,
+    expected: document.getElementById("expected").value,
+    action: document.getElementById("action").value,
+    empSignature: empSigPad.getData(),
+    mgrSignature: mgrSigPad.getData()
+  };
+
+  console.log("Form Data:", data);
+  alert("Coaching submitted with signatures ✔️");
 }
 </script>
 
