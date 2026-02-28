@@ -171,6 +171,55 @@
     /* ── REPLIES TOGGLE IN STORE EDIT */
     .replies-toggle-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; padding: 8px 10px; background: var(--paper); border-radius: 8px; border: 1.5px solid var(--ruled); }
     .replies-toggle-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--forest); cursor: pointer; }
+
+    /* ── ANALYTICS */
+    .chart-row { display: flex; flex-direction: column; gap: 10px; }
+    .chart-item { display: flex; align-items: center; gap: 8px; }
+    .chart-label { font-size: 12px; color: var(--ink); min-width: 90px; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chart-bar-wrap { flex: 1; background: var(--mint); border-radius: 4px; height: 20px; overflow: hidden; }
+    .chart-bar { height: 100%; border-radius: 4px; transition: width 0.5s ease; min-width: 2px; }
+    .bar-progress { background: #2e7d32; }
+    .bar-issue    { background: var(--red); }
+    .bar-note     { background: #1565c0; }
+    .bar-store    { background: var(--forest); }
+    .bar-msg      { background: var(--amber); }
+    .chart-val { font-family: 'Courier Prime', monospace; font-size: 13px; font-weight: 700; min-width: 28px; text-align: right; color: var(--ink-faint); }
+    .analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .analytics-stat { background: var(--mint); border-radius: 10px; padding: 12px; text-align: center; }
+    .analytics-stat-num { font-family: 'Courier Prime', monospace; font-size: 22px; font-weight: 700; color: var(--forest); }
+    .analytics-stat-lbl { font-size: 11px; color: var(--ink-faint); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    /* ── FEEDBACK */
+    .feedback-item { padding: 12px 0; border-bottom: 1px solid var(--ruled); }
+    .feedback-item:last-child { border-bottom: none; }
+    .feedback-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+    .feedback-store { font-family: 'Courier Prime', monospace; font-size: 12px; font-weight: 700; color: var(--forest); }
+    .feedback-body  { font-size: 13px; color: var(--ink); line-height: 1.5; margin: 4px 0; }
+    .feedback-meta  { font-size: 12px; color: var(--ink-faint); margin-top: 4px; }
+    .feedback-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .badge-bug     { background: #ffebee; color: var(--red);    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+    .badge-idea    { background: #e3f2fd; color: #1565c0;       font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+    .badge-other   { background: #f5f5f5; color: #666;          font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+    .badge-resolved{ background: #e8f5e9; color: #2e7d32;       font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+    .badge-open-fb { background: #fff8e1; color: #7a5800;       font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+    .fb-filter-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .fb-filter-row select { flex: 1; min-width: 120px; padding: 8px 10px; border: 1.5px solid var(--ruled); border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 14px; background: var(--paper); color: var(--ink); }
+
+    /* ── AUDIT LOG */
+    .audit-item { padding: 10px 0; border-bottom: 1px solid var(--ruled); display: flex; align-items: flex-start; gap: 10px; }
+    .audit-item:last-child { border-bottom: none; }
+    .audit-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sage); margin-top: 5px; flex-shrink: 0; }
+    .audit-body { flex: 1; }
+    .audit-action { font-size: 13px; font-weight: 700; color: var(--ink); }
+    .audit-detail { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+    .audit-time   { font-size: 11px; color: var(--ink-faint); margin-top: 3px; font-family: 'Courier Prime', monospace; }
+
+    /* ── APP CONFIG */
+    .config-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--ruled); gap: 12px; }
+    .config-row:last-child { border-bottom: none; }
+    .config-info { flex: 1; }
+    .config-label { font-size: 14px; font-weight: 700; color: var(--ink); }
+    .config-sub   { font-size: 12px; color: var(--ink-faint); margin-top: 2px; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -243,6 +292,10 @@
       <button class="tab-btn"    onclick="goTab('messages')">📬 Messages</button>
       <button class="tab-btn"    onclick="goTab('broadcast')">📢 Broadcast</button>
       <button class="tab-btn"    onclick="goTab('settings')">⚙️ Settings</button>
+      <button class="tab-btn"    onclick="goTab('analytics')">📊 Analytics</button>
+      <button class="tab-btn"    onclick="goTab('feedback')">💬 Feedback</button>
+      <button class="tab-btn"    onclick="goTab('audit')">📓 Audit Log</button>
+      <button class="tab-btn"    onclick="goTab('config')">🛠️ Config</button>
     </div>
 
     <!-- ══ TAB: CODES ══════════════════════════ -->
@@ -360,6 +413,109 @@
       </div>
     </div>
 
+    <!-- ══ TAB: ANALYTICS ══════════════════════ -->
+    <div class="tab-pane" id="tab-analytics">
+      <div class="card">
+        <div class="card-title">📊 Overview</div>
+        <div class="analytics-grid" id="analytics-overview"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Entry Type Breakdown</div>
+        <div class="chart-row" id="chart-types"><div class="empty">No data yet.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🏪 Top Stores by Activity</div>
+        <div class="chart-row" id="chart-stores"><div class="empty">No data yet.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📬 Message Stats by Store</div>
+        <div class="chart-row" id="chart-msgs"><div class="empty">No data yet.</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: FEEDBACK ═══════════════════════ -->
+    <div class="tab-pane" id="tab-feedback">
+      <div class="card">
+        <div class="card-title">💬 Manager Feedback</div>
+        <p style="font-size:13px;color:var(--ink-faint);margin-bottom:14px;line-height:1.5;">
+          Feedback submitted by managers from the Daily Recap app. Includes bug reports and improvement ideas.
+        </p>
+        <div class="fb-filter-row">
+          <select id="fb-store-filter" onchange="filterFeedback()">
+            <option value="">All Stores</option>
+          </select>
+          <select id="fb-type-filter" onchange="filterFeedback()">
+            <option value="">All Types</option>
+            <option value="bug">Bug Reports</option>
+            <option value="idea">Ideas</option>
+            <option value="other">Other</option>
+          </select>
+          <button class="btn btn-sm btn-outline" onclick="filterFeedback()">↺ Refresh</button>
+        </div>
+        <div id="feedback-list"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: AUDIT LOG ══════════════════════ -->
+    <div class="tab-pane" id="tab-audit">
+      <div class="card">
+        <div class="card-title">📓 Admin Audit Log</div>
+        <p style="font-size:13px;color:var(--ink-faint);margin-bottom:14px;line-height:1.5;">
+          All admin actions are automatically recorded here.
+        </p>
+        <div id="audit-list"><div class="empty">Loading…</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🗑️ Clear Audit Log</div>
+        <p style="font-size:13px;color:var(--ink-faint);margin-bottom:12px;">Permanently delete all audit log entries.</p>
+        <button class="btn btn-red" onclick="clearAuditLog()" style="margin-bottom:0;">
+          Delete All Audit Entries
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ TAB: APP CONFIG ═════════════════════ -->
+    <div class="tab-pane" id="tab-config">
+      <div class="card">
+        <div class="card-title">🛠️ App Settings</div>
+        <label class="field-label">Global Helpdesk Fallback Phone</label>
+        <input type="tel" id="cfg-helpdesk" placeholder="e.g. 1-800-555-0000" style="margin-bottom:4px;">
+        <p style="font-size:12px;color:var(--ink-faint);margin-bottom:16px;">Shown to employees when a store has no helpdesk number configured.</p>
+        <label class="field-label">App Footer Note</label>
+        <input type="text" id="cfg-footer" placeholder="e.g. For tech support call x1234" style="margin-bottom:4px;">
+        <p style="font-size:12px;color:var(--ink-faint);margin-bottom:16px;">Short note displayed at the bottom of the main Counter Coach app.</p>
+        <div class="ok-box" id="cfg-ok"></div>
+        <button class="btn btn-green" onclick="saveAppConfig()">Save Settings</button>
+      </div>
+      <div class="card">
+        <div class="card-title">🎛️ Feature Flags</div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-label">Manager Feedback</div>
+            <div class="config-sub">Allow managers to submit bug reports and ideas from the Daily Recap app</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="cfg-feedback-enabled">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-label">Employee Private Messages</div>
+            <div class="config-sub">Allow employees to send private messages through the app</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="cfg-msgs-enabled">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="ok-box" id="cfg-flags-ok"></div>
+          <button class="btn btn-green" onclick="saveFeatureFlags()">Save Feature Flags</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -367,9 +523,9 @@
 import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc,
+  getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc,
   collection, onSnapshot, writeBatch, serverTimestamp, Timestamp,
-  query, orderBy
+  query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const cfg = {
@@ -421,6 +577,13 @@ function fmtDate(ts) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+// ── AUDIT LOG HELPER ──────────────────────────────────────────
+async function auditLog(action, details = "") {
+  try {
+    await addDoc(collection(db, "audit_log"), { action, details, time: serverTimestamp() });
+  } catch(e) { console.warn("auditLog write failed:", e); }
+}
+
 // ── STATE ─────────────────────────────────────────────────────
 let loggedIn        = false;
 let selectedExpiry  = "7d";
@@ -435,6 +598,11 @@ let unsubCodes      = null;
 let unsubStores     = null;
 let unsubEntries    = null;
 let unsubAdminMsgs  = null;
+let allFeedback     = [];
+let filtFeedback    = [];
+let unsubFeedback   = null;
+let allAuditLog     = [];
+let unsubAuditLog   = null;
 
 // ── ADMIN AUTH ────────────────────────────────────────────────
 (async function checkSetup() {
@@ -490,6 +658,8 @@ function enterAdmin() {
   listenStores();
   listenEntries();
   listenAdminMsgs();
+  listenFeedback();
+  listenAuditLog();
 }
 
 window.adminLogout = function() {
@@ -497,6 +667,8 @@ window.adminLogout = function() {
   if (unsubStores)   { unsubStores();   unsubStores   = null; }
   if (unsubEntries)  { unsubEntries();  unsubEntries  = null; }
   if (unsubAdminMsgs){ unsubAdminMsgs(); unsubAdminMsgs = null; }
+  if (unsubFeedback) { unsubFeedback(); unsubFeedback  = null; }
+  if (unsubAuditLog) { unsubAuditLog(); unsubAuditLog  = null; }
   loggedIn = false;
   el("login-screen").classList.remove("hidden");
   el("admin-app").classList.remove("show");
@@ -507,11 +679,13 @@ window.adminLogout = function() {
 
 // ── TABS ──────────────────────────────────────────────────────
 window.goTab = function(tab) {
-  const names = ["codes","stores","logbook","messages","broadcast","settings"];
+  const names = ["codes","stores","logbook","messages","broadcast","settings","analytics","feedback","audit","config"];
   document.querySelectorAll(".tab-btn").forEach((b, i) => b.classList.toggle("on", names[i] === tab));
   document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("on"));
   el("tab-" + tab).classList.add("on");
   if (tab === "broadcast") loadBroadcast();
+  if (tab === "analytics") renderAnalytics();
+  if (tab === "config")    loadAppConfig();
 };
 
 // ── EXPIRY PICKER ─────────────────────────────────────────────
@@ -548,6 +722,7 @@ window.generateCode = async function() {
     okEl.classList.add("show");
     setTimeout(() => okEl.classList.remove("show"), 4000);
     el("gen-store").value = "";
+    auditLog("Generated registration code", `Code: ${code}${storeNum ? ` · Store ${storeNum}` : " · Any store"} · Expires: ${selectedExpiry}`);
   } catch(e) { alert("Error generating code: " + e.message); }
 };
 
@@ -605,6 +780,7 @@ function renderCodes() {
 window.revokeCode = async function(id) {
   if (!confirm(`Revoke and delete code "${id}"? This cannot be undone.`)) return;
   await deleteDoc(doc(db, "reg_codes", id)).catch(e => alert("Error: " + e.message));
+  auditLog("Revoked registration code", `Code: ${id}`);
 };
 
 // ── LISTEN: STORES ────────────────────────────────────────────
@@ -665,6 +841,7 @@ function renderStores() {
 window.deleteStore = async function(id) {
   if (!confirm(`Delete Store ${id}?\n\nThis removes the store record and PIN. Logbook entries and messages are NOT deleted.\n\nThis cannot be undone.`)) return;
   await deleteDoc(doc(db, "stores", id)).catch(e => alert("Error: " + e.message));
+  auditLog("Deleted store", `Store: ${id}`);
 };
 
 // ── STATS ─────────────────────────────────────────────────────
@@ -696,6 +873,7 @@ window.changePwd = async function() {
     await updateDoc(doc(db, "admin", "config"), { masterPwdHash: await sha256(nw1) });
     okEl.textContent = "Password updated successfully."; okEl.classList.add("show");
     el("chg-cur").value = ""; el("chg-new1").value = ""; el("chg-new2").value = "";
+    auditLog("Changed master password");
   } catch(e) { errEl.textContent = "Error: " + e.message; errEl.classList.add("show"); }
 };
 
@@ -708,6 +886,7 @@ window.clearUsedCodes = async function() {
   const batch = writeBatch(db);
   toDelete.forEach(c => batch.delete(doc(db, "reg_codes", c.id)));
   await batch.commit().catch(e => alert("Error: " + e.message));
+  auditLog("Deleted used/expired codes", `Count: ${toDelete.length}`);
 };
 
 // ── STORE EDITING ──────────────────────────────────────────────
@@ -734,6 +913,7 @@ window.saveStore = async function(storeId) {
       pin:            cur.pin || "0000"
     });
     document.getElementById("edit-" + storeId).classList.remove("open");
+    auditLog("Updated store info", `Store: ${storeId} · Manager: ${name}`);
   } catch(e) { alert("Error saving store: " + e.message); }
 };
 
@@ -752,6 +932,7 @@ window.resetPIN = async function(storeId) {
       helpdeskPhone: cur.helpdeskPhone || ""
     });
     alert(`✅ PIN for Store ${storeId} has been updated.`);
+    auditLog("Reset manager PIN", `Store: ${storeId}`);
   } catch(e) { alert("Error resetting PIN: " + e.message); }
 };
 
@@ -918,6 +1099,7 @@ window.saveBroadcast = async function() {
     okEl.classList.add("show");
     setTimeout(() => okEl.classList.remove("show"), 4000);
     updateBroadcastBadge(active);
+    auditLog(active ? "Activated broadcast" : "Saved broadcast (inactive)", title ? `Title: ${title}` : "");
   } catch(e) { alert("Error: " + e.message); }
 };
 
@@ -928,6 +1110,218 @@ window.clearBroadcast = async function() {
   el("bc-title").value    = "";
   el("bc-msg").value      = "";
   updateBroadcastBadge(false);
+  auditLog("Cleared broadcast");
+};
+
+// ── ANALYTICS ─────────────────────────────────────────────────
+function renderAnalytics() {
+  // Overview stats
+  const totalEntries  = allEntries.length;
+  const totalMsgs     = allAdminMsgs.length;
+  const unreadMsgs    = allAdminMsgs.filter(m => !m.read).length;
+  const totalStores   = allStores.length;
+  el("analytics-overview").innerHTML = `
+    <div class="analytics-stat"><div class="analytics-stat-num">${totalEntries}</div><div class="analytics-stat-lbl">Total Entries</div></div>
+    <div class="analytics-stat"><div class="analytics-stat-num">${totalMsgs}</div><div class="analytics-stat-lbl">Total Messages</div></div>
+    <div class="analytics-stat"><div class="analytics-stat-num">${unreadMsgs}</div><div class="analytics-stat-lbl">Unread Messages</div></div>
+    <div class="analytics-stat"><div class="analytics-stat-num">${totalStores}</div><div class="analytics-stat-lbl">Stores</div></div>`;
+
+  // Entry type breakdown
+  const typeCounts = { progress: 0, issue: 0, note: 0 };
+  allEntries.forEach(e => { if (typeCounts[e.type] !== undefined) typeCounts[e.type]++; });
+  const maxType = Math.max(...Object.values(typeCounts), 1);
+  const typeLabels = { progress: "📈 Progress", issue: "⚠️ Issue", note: "📝 Note" };
+  const typeClasses = { progress: "bar-progress", issue: "bar-issue", note: "bar-note" };
+  el("chart-types").innerHTML = !totalEntries ? '<div class="empty">No entries yet.</div>' :
+    Object.entries(typeCounts).map(([type, count]) => `
+      <div class="chart-item">
+        <div class="chart-label">${typeLabels[type]}</div>
+        <div class="chart-bar-wrap"><div class="chart-bar ${typeClasses[type]}" style="width:${Math.round(count/maxType*100)}%"></div></div>
+        <div class="chart-val">${count}</div>
+      </div>`).join("");
+
+  // Top stores by entry count
+  const storeCounts = {};
+  allEntries.forEach(e => { if (e.store) storeCounts[e.store] = (storeCounts[e.store] || 0) + 1; });
+  const topStores = Object.entries(storeCounts).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  const maxStore  = topStores.length ? topStores[0][1] : 1;
+  el("chart-stores").innerHTML = !topStores.length ? '<div class="empty">No entries yet.</div>' :
+    topStores.map(([store, count]) => `
+      <div class="chart-item">
+        <div class="chart-label">Store ${esc(store)}</div>
+        <div class="chart-bar-wrap"><div class="chart-bar bar-store" style="width:${Math.round(count/maxStore*100)}%"></div></div>
+        <div class="chart-val">${count}</div>
+      </div>`).join("");
+
+  // Message stats by store
+  const msgCounts = {};
+  allAdminMsgs.forEach(m => { if (m.store) msgCounts[m.store] = (msgCounts[m.store] || 0) + 1; });
+  const topMsgStores = Object.entries(msgCounts).sort((a,b) => b[1]-a[1]).slice(0, 8);
+  const maxMsg = topMsgStores.length ? topMsgStores[0][1] : 1;
+  el("chart-msgs").innerHTML = !topMsgStores.length ? '<div class="empty">No messages yet.</div>' :
+    topMsgStores.map(([store, count]) => `
+      <div class="chart-item">
+        <div class="chart-label">Store ${esc(store)}</div>
+        <div class="chart-bar-wrap"><div class="chart-bar bar-msg" style="width:${Math.round(count/maxMsg*100)}%"></div></div>
+        <div class="chart-val">${count}</div>
+      </div>`).join("");
+}
+
+// ── FEEDBACK ──────────────────────────────────────────────────
+function listenFeedback() {
+  if (unsubFeedback) unsubFeedback();
+  const q = query(collection(db, "feedback"), orderBy("time", "desc"));
+  unsubFeedback = onSnapshot(q, snap => {
+    allFeedback = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    populateFbStoreFilter();
+    filterFeedback();
+  }, e => console.error("feedback snapshot:", e));
+}
+
+function populateFbStoreFilter() {
+  const stores = [...new Set(allFeedback.map(f => f.store).filter(Boolean))].sort();
+  const sel = el("fb-store-filter");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Stores</option>' +
+    stores.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  if (cur) sel.value = cur;
+}
+
+window.filterFeedback = function() {
+  const store = el("fb-store-filter").value;
+  const type  = el("fb-type-filter").value;
+  filtFeedback = allFeedback
+    .filter(f => (!store || f.store === store) && (!type || f.type === type));
+  renderFeedback();
+};
+
+function renderFeedback() {
+  const container = el("feedback-list");
+  if (!filtFeedback.length) {
+    container.innerHTML = '<div class="empty">No feedback found.</div>';
+    return;
+  }
+  const typeBadge = { bug: "badge-bug", idea: "badge-idea", other: "badge-other" };
+  const typeLabel = { bug: "Bug Report", idea: "Idea", other: "Other" };
+  container.innerHTML = filtFeedback.map(f => `
+    <div class="feedback-item">
+      <div class="feedback-head">
+        <div>
+          <span class="feedback-store">Store ${esc(f.store || "?")}</span>
+          <span style="margin:0 5px;color:var(--ink-faint)">·</span>
+          <span style="font-size:13px;font-weight:700;">${esc(f.from || "Manager")}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span class="${typeBadge[f.type] || 'badge-other'}">${typeLabel[f.type] || "Other"}</span>
+          <span class="${f.status === 'resolved' ? 'badge-resolved' : 'badge-open-fb'}">${f.status === 'resolved' ? 'Resolved' : 'Open'}</span>
+        </div>
+      </div>
+      <div class="feedback-body">${esc(f.text || "")}</div>
+      <div class="feedback-meta">${fmtTime(f.time)}</div>
+      <div class="feedback-actions">
+        ${f.status !== 'resolved'
+          ? `<button class="btn btn-sm btn-green" onclick="resolveFeedback('${esc(f.id)}')">✅ Mark Resolved</button>`
+          : `<button class="btn btn-sm btn-outline" onclick="reopenFeedback('${esc(f.id)}')">↩ Reopen</button>`}
+        <button class="btn btn-sm btn-red" onclick="deleteFeedback('${esc(f.id)}')">🗑️ Delete</button>
+      </div>
+    </div>`).join("") +
+    (allFeedback.length > filtFeedback.length ? `<div class="empty" style="padding:10px 0;">Filtered — ${filtFeedback.length} of ${allFeedback.length} items shown</div>` : "");
+}
+
+window.resolveFeedback = async function(id) {
+  await updateDoc(doc(db, "feedback", id), { status: "resolved" }).catch(e => alert("Error: " + e.message));
+  auditLog("Resolved feedback", `ID: ${id}`);
+};
+
+window.reopenFeedback = async function(id) {
+  await updateDoc(doc(db, "feedback", id), { status: "open" }).catch(e => alert("Error: " + e.message));
+};
+
+window.deleteFeedback = async function(id) {
+  if (!confirm("Delete this feedback item? This cannot be undone.")) return;
+  await deleteDoc(doc(db, "feedback", id)).catch(e => alert("Error: " + e.message));
+  auditLog("Deleted feedback", `ID: ${id}`);
+};
+
+// ── AUDIT LOG ─────────────────────────────────────────────────
+function listenAuditLog() {
+  if (unsubAuditLog) unsubAuditLog();
+  const q = query(collection(db, "audit_log"), orderBy("time", "desc"), limit(200));
+  unsubAuditLog = onSnapshot(q, snap => {
+    allAuditLog = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderAuditLog();
+  }, e => console.error("audit_log snapshot:", e));
+}
+
+function renderAuditLog() {
+  const container = el("audit-list");
+  if (!allAuditLog.length) { container.innerHTML = '<div class="empty">No actions logged yet.</div>'; return; }
+  container.innerHTML = allAuditLog.map(a => `
+    <div class="audit-item">
+      <div class="audit-dot"></div>
+      <div class="audit-body">
+        <div class="audit-action">${esc(a.action || "Unknown action")}</div>
+        ${a.details ? `<div class="audit-detail">${esc(a.details)}</div>` : ""}
+        <div class="audit-time">${fmtTime(a.time)}</div>
+      </div>
+    </div>`).join("") +
+    (allAuditLog.length >= 200 ? '<div class="empty" style="padding:10px 0;">Showing latest 200 entries</div>' : "");
+}
+
+window.clearAuditLog = async function() {
+  if (!allAuditLog.length) { alert("Audit log is already empty."); return; }
+  if (!confirm(`Delete all ${allAuditLog.length} audit log entries? This cannot be undone.`)) return;
+  const batch = writeBatch(db);
+  allAuditLog.forEach(a => batch.delete(doc(db, "audit_log", a.id)));
+  await batch.commit().catch(e => alert("Error: " + e.message));
+};
+
+// ── APP CONFIG ────────────────────────────────────────────────
+async function loadAppConfig() {
+  try {
+    const snap = await getDoc(doc(db, "admin", "appConfig"));
+    const data = snap.exists() ? snap.data() : {};
+    el("cfg-helpdesk").value = data.helpdeskFallback || "";
+    el("cfg-footer").value   = data.appFooterNote    || "";
+    el("cfg-feedback-enabled").checked = data.feedbackEnabled !== false;
+    el("cfg-msgs-enabled").checked     = data.msgsEnabled     !== false;
+  } catch(e) { console.error("loadAppConfig:", e); }
+}
+
+window.saveAppConfig = async function() {
+  const helpdesk = el("cfg-helpdesk").value.trim();
+  const footer   = el("cfg-footer").value.trim();
+  try {
+    await setDoc(doc(db, "admin", "appConfig"), {
+      helpdeskFallback: helpdesk,
+      appFooterNote:    footer,
+      feedbackEnabled:  el("cfg-feedback-enabled").checked,
+      msgsEnabled:      el("cfg-msgs-enabled").checked,
+      updatedAt:        serverTimestamp()
+    }, { merge: true });
+    const okEl = el("cfg-ok");
+    okEl.textContent = "Settings saved.";
+    okEl.classList.add("show");
+    setTimeout(() => okEl.classList.remove("show"), 3000);
+    auditLog("Updated app config", helpdesk ? `Helpdesk fallback: ${helpdesk}` : "");
+  } catch(e) { alert("Error: " + e.message); }
+};
+
+window.saveFeatureFlags = async function() {
+  const feedbackEnabled = el("cfg-feedback-enabled").checked;
+  const msgsEnabled     = el("cfg-msgs-enabled").checked;
+  try {
+    await setDoc(doc(db, "admin", "appConfig"), {
+      feedbackEnabled,
+      msgsEnabled,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    const okEl = el("cfg-flags-ok");
+    okEl.textContent = "Feature flags saved.";
+    okEl.classList.add("show");
+    setTimeout(() => okEl.classList.remove("show"), 3000);
+    auditLog("Updated feature flags", `Feedback: ${feedbackEnabled}, Messages: ${msgsEnabled}`);
+  } catch(e) { alert("Error: " + e.message); }
 };
 </script>
 </body>
