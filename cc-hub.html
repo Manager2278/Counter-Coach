@@ -156,6 +156,21 @@
     .bc-inactive { background: #f5f5f5; color: #999; }
     textarea.bc-msg { width: 100%; padding: 11px 14px; border: 1.5px solid var(--ruled); border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 15px; background: var(--paper); color: var(--ink); resize: vertical; min-height: 100px; margin-bottom: 12px; }
     textarea.bc-msg:focus { outline: none; border-color: var(--sage); background: white; }
+
+    /* ── ADMIN MESSAGE CARDS */
+    .admin-msg { padding: 12px 0; border-bottom: 1px solid var(--ruled); }
+    .admin-msg:last-child { border-bottom: none; }
+    .admin-msg-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+    .admin-msg-store { font-family: 'Courier Prime', monospace; font-size: 12px; font-weight: 700; color: var(--forest); }
+    .admin-msg-from  { font-size: 13px; font-weight: 700; }
+    .admin-msg-body  { font-size: 13px; color: var(--ink); line-height: 1.5; }
+    .admin-msg-reply { font-size: 12px; color: var(--ink-soft); margin-top: 5px; padding: 5px 9px; background: var(--mint); border-radius: 6px; }
+    .badge-unread { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; background: var(--red); color: white; white-space: nowrap; }
+    .badge-read   { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; background: var(--ruled); color: var(--ink-faint); white-space: nowrap; }
+
+    /* ── REPLIES TOGGLE IN STORE EDIT */
+    .replies-toggle-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; padding: 8px 10px; background: var(--paper); border-radius: 8px; border: 1.5px solid var(--ruled); }
+    .replies-toggle-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--forest); cursor: pointer; }
   </style>
 </head>
 <body>
@@ -225,6 +240,7 @@
       <button class="tab-btn on" onclick="goTab('codes')">🎫 Codes</button>
       <button class="tab-btn"    onclick="goTab('stores')">🏪 Stores</button>
       <button class="tab-btn"    onclick="goTab('logbook')">📋 Logbook</button>
+      <button class="tab-btn"    onclick="goTab('messages')">📬 Messages</button>
       <button class="tab-btn"    onclick="goTab('broadcast')">📢 Broadcast</button>
       <button class="tab-btn"    onclick="goTab('settings')">⚙️ Settings</button>
     </div>
@@ -265,6 +281,20 @@
       <div class="card">
         <div class="card-title">🏪 Registered Stores</div>
         <div id="stores-list"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: MESSAGES ═══════════════════════ -->
+    <div class="tab-pane" id="tab-messages">
+      <div class="card">
+        <div class="card-title">📬 All Private Messages</div>
+        <div class="log-filter">
+          <select id="msg-store-filter" onchange="filterMessages()">
+            <option value="">All Stores</option>
+          </select>
+          <button class="btn btn-sm btn-outline" onclick="refreshMessages()">↺ Refresh</button>
+        </div>
+        <div id="admin-msg-list"><div class="empty">Loading…</div></div>
       </div>
     </div>
 
@@ -399,9 +429,12 @@ let allCodes        = [];
 let allStores       = [];
 let allEntries      = [];
 let filteredEntries = [];
+let allAdminMsgs    = [];
+let filtAdminMsgs   = [];
 let unsubCodes      = null;
 let unsubStores     = null;
 let unsubEntries    = null;
+let unsubAdminMsgs  = null;
 
 // ── ADMIN AUTH ────────────────────────────────────────────────
 (async function checkSetup() {
@@ -456,12 +489,14 @@ function enterAdmin() {
   listenCodes();
   listenStores();
   listenEntries();
+  listenAdminMsgs();
 }
 
 window.adminLogout = function() {
-  if (unsubCodes)   { unsubCodes();   unsubCodes   = null; }
-  if (unsubStores)  { unsubStores();  unsubStores  = null; }
-  if (unsubEntries) { unsubEntries(); unsubEntries = null; }
+  if (unsubCodes)     { unsubCodes();     unsubCodes     = null; }
+  if (unsubStores)   { unsubStores();   unsubStores   = null; }
+  if (unsubEntries)  { unsubEntries();  unsubEntries  = null; }
+  if (unsubAdminMsgs){ unsubAdminMsgs(); unsubAdminMsgs = null; }
   loggedIn = false;
   el("login-screen").classList.remove("hidden");
   el("admin-app").classList.remove("show");
@@ -472,7 +507,7 @@ window.adminLogout = function() {
 
 // ── TABS ──────────────────────────────────────────────────────
 window.goTab = function(tab) {
-  const names = ["codes","stores","logbook","broadcast","settings"];
+  const names = ["codes","stores","logbook","messages","broadcast","settings"];
   document.querySelectorAll(".tab-btn").forEach((b, i) => b.classList.toggle("on", names[i] === tab));
   document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("on"));
   el("tab-" + tab).classList.add("on");
@@ -615,7 +650,11 @@ function renderStores() {
             <input type="tel" id="sf-helpdesk-${esc(s.id)}" value="${esc(s.helpdeskPhone || '')}" placeholder="Helpdesk number">
           </div>
         </div>
-        <div style="display:flex;gap:8px;">
+        <label class="replies-toggle-row">
+          <input type="checkbox" id="sf-replies-${esc(s.id)}" ${s.repliesEnabled ? 'checked' : ''}>
+          Allow manager to reply to employee private messages
+        </label>
+        <div style="display:flex;gap:8px;margin-top:10px;">
           <button class="btn btn-sm btn-green" onclick="saveStore('${esc(s.id)}')">💾 Save</button>
           <button class="btn btn-sm btn-outline" onclick="resetPIN('${esc(s.id)}')">🔑 Reset PIN</button>
         </div>
@@ -678,19 +717,21 @@ window.toggleStoreEdit = function(storeId) {
 };
 
 window.saveStore = async function(storeId) {
-  const name     = document.getElementById(`sf-name-${storeId}`).value.trim();
-  const phone    = document.getElementById(`sf-phone-${storeId}`).value.trim();
-  const helpdesk = document.getElementById(`sf-helpdesk-${storeId}`).value.trim();
+  const name          = document.getElementById(`sf-name-${storeId}`).value.trim();
+  const phone         = document.getElementById(`sf-phone-${storeId}`).value.trim();
+  const helpdesk      = document.getElementById(`sf-helpdesk-${storeId}`).value.trim();
+  const repliesEnabled = document.getElementById(`sf-replies-${storeId}`).checked;
   if (!name) { alert("Manager name is required."); return; }
   try {
     const storeDoc = doc(db, "stores", storeId);
     const snap = await getDoc(storeDoc);
     const cur  = snap.exists() ? snap.data() : {};
     await updateDoc(storeDoc, {
-      managerName:   name,
-      managerPhone:  phone,
-      helpdeskPhone: helpdesk,
-      pin:           cur.pin || "0000"
+      managerName:    name,
+      managerPhone:   phone,
+      helpdeskPhone:  helpdesk,
+      repliesEnabled: repliesEnabled,
+      pin:            cur.pin || "0000"
     });
     document.getElementById("edit-" + storeId).classList.remove("open");
   } catch(e) { alert("Error saving store: " + e.message); }
@@ -781,6 +822,61 @@ window.deleteEntry = async function(id) {
   if (!confirm("Delete this logbook entry? This cannot be undone.")) return;
   await deleteDoc(doc(db, "entries", id)).catch(e => alert("Error: " + e.message));
 };
+
+// ── ADMIN MESSAGES ─────────────────────────────────────────────
+function listenAdminMsgs() {
+  if (unsubAdminMsgs) unsubAdminMsgs();
+  const q = query(collection(db, "messages"), orderBy("time", "desc"));
+  unsubAdminMsgs = onSnapshot(q, snap => {
+    allAdminMsgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    populateMsgStoreFilter();
+    filterMessages();
+  }, e => console.error("admin msgs:", e));
+}
+
+function populateMsgStoreFilter() {
+  const stores = [...new Set(allAdminMsgs.map(m => m.store).filter(Boolean))].sort();
+  const sel = el("msg-store-filter");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Stores</option>' +
+    stores.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  if (cur) sel.value = cur;
+}
+
+window.filterMessages = function() {
+  const store = el("msg-store-filter").value;
+  filtAdminMsgs = store ? allAdminMsgs.filter(m => m.store === store) : allAdminMsgs;
+  renderAdminMsgs();
+};
+
+window.refreshMessages = function() {
+  el("admin-msg-list").innerHTML = '<div class="empty">Loading…</div>';
+  listenAdminMsgs();
+};
+
+function renderAdminMsgs() {
+  const container = el("admin-msg-list");
+  if (!filtAdminMsgs.length) {
+    container.innerHTML = '<div class="empty">No messages found.</div>';
+    return;
+  }
+  const shown = filtAdminMsgs.slice(0, 100);
+  container.innerHTML = shown.map(m => `
+    <div class="admin-msg">
+      <div class="admin-msg-head">
+        <div>
+          <span class="admin-msg-store">Store ${esc(m.store || "?")}</span>
+          <span style="margin:0 5px;color:var(--ink-faint)">·</span>
+          <span class="admin-msg-from">From: ${esc(m.from || "?")}</span>
+        </div>
+        <span class="${m.read ? 'badge-read' : 'badge-unread'}">${m.read ? "Read" : "Unread"}</span>
+      </div>
+      <div class="admin-msg-body">${esc(m.text || "")}</div>
+      ${m.reply ? `<div class="admin-msg-reply">↩ <b>${esc(m.reply.from)}</b> replied: ${esc(m.reply.text)}</div>` : ""}
+      <div class="log-meta" style="margin-top:4px;">${fmtTime(m.time)}</div>
+    </div>`).join("") +
+    (filtAdminMsgs.length > 100 ? `<div class="empty" style="padding:10px 0;">Showing 100 of ${filtAdminMsgs.length}</div>` : "");
+}
 
 // ── BROADCAST ──────────────────────────────────────────────────
 async function loadBroadcast() {

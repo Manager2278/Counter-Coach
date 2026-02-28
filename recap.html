@@ -119,21 +119,22 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .btn-add:hover { filter: brightness(1.1); }
 
 /* ── PHOTO ATTACH ────────────────────────── */
-.photo-attach { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.btn-photo { display: inline-block; padding: 7px 13px; border: 1.5px dashed var(--forest-light); border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--forest); cursor: pointer; background: var(--paper); transition: all .15s; font-family: 'Karla', sans-serif; }
+.photo-attach { margin-top: 10px; display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.btn-photo { display: inline-block; padding: 7px 13px; border: 1.5px dashed var(--forest-light); border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--forest); cursor: pointer; background: var(--paper); transition: all .15s; font-family: 'Karla', sans-serif; white-space: nowrap; }
 .btn-photo:hover { background: var(--mint); border-style: solid; }
 #photo-input { display: none; }
-#photo-preview-wrap { position: relative; display: inline-flex; }
-#photo-preview { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--ruled); display: block; }
-.btn-remove-photo { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--red); color: white; border: none; font-size: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+#photo-preview-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
+.preview-thumb-wrap { position: relative; }
+.preview-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--ruled); display: block; }
+.btn-remove-thumb { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; border-radius: 50%; background: var(--red); color: white; border: none; font-size: 9px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
 
 /* Upload progress */
 .upload-bar-wrap { width: 100%; height: 4px; background: var(--ruled); border-radius: 2px; margin-top: 8px; display: none; }
 .upload-bar-wrap.show { display: block; }
 .upload-bar { height: 4px; background: var(--forest-light); border-radius: 2px; width: 0%; transition: width .2s; }
 
-/* Photo on entry cards */
-.entry-photo { margin-top: 10px; }
+/* Photos on entry cards */
+.entry-photo { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
 .entry-photo img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--ruled); cursor: pointer; display: block; transition: opacity .15s; }
 .entry-photo img:hover { opacity: 0.9; }
 
@@ -204,6 +205,13 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .msg-lock { font-size: 10px; font-weight: 700; background: var(--purple-pale); color: var(--purple); padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
 .msg-text { font-family: 'Courier Prime', monospace; font-size: 14px; line-height: 1.6; }
 .msg-time { font-size: 11px; color: var(--ink-faint); font-family: 'Courier Prime', monospace; margin-top: 5px; }
+.reply-bubble { background: var(--mint); border-left: 3px solid var(--forest-light); padding: 6px 10px; border-radius: 0 6px 6px 0; margin-top: 7px; font-size: 13px; line-height: 1.4; }
+.reply-bubble strong { font-size: 11px; font-weight: 700; color: var(--forest); display: block; margin-bottom: 2px; }
+.reply-input-row { display: flex; gap: 6px; margin-top: 8px; }
+.reply-input-row textarea { flex: 1; padding: 6px 10px; border: 1.5px solid var(--ruled); border-radius: 6px; font-family: 'Karla', sans-serif; font-size: 13px; resize: none; min-height: 38px; background: var(--paper); }
+.reply-input-row textarea:focus { outline: none; border-color: var(--sage); background: white; }
+.btn-reply-send { padding: 0 14px; border: none; background: var(--forest); color: white; border-radius: 6px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-reply-send:disabled { opacity: 0.5; }
 
 /* ── MANAGER PANEL ───────────────────────── */
 .mgr-panel-header { background: var(--forest); color: white; padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -317,12 +325,9 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
       <button class="btn-add" onclick="addEntry()">Add</button>
     </div>
     <div class="photo-attach">
-      <label class="btn-photo" for="photo-input">📷 Attach Photo</label>
-      <input type="file" id="photo-input" accept="image/*" capture="environment" onchange="previewPhoto(this)">
-      <div id="photo-preview-wrap" class="hidden">
-        <img id="photo-preview" src="" alt="preview">
-        <button class="btn-remove-photo" onclick="removePhoto()">✕</button>
-      </div>
+      <label class="btn-photo" id="photo-label" for="photo-input">📷 Add Photos</label>
+      <input type="file" id="photo-input" accept="image/*" multiple onchange="previewPhoto(this)">
+      <div id="photo-preview-wrap"></div>
     </div>
     <div class="upload-bar-wrap"><div class="upload-bar"></div></div>
   </div>
@@ -459,8 +464,9 @@ let store = "", name = "", filterVal = "all";
 let mgrLoggedIn = false, storePin = "";
 let allEntries = [], allEntriesMgr = [], myMsgs = [];
 let unsubEntries = null, unsubMgrEntries = null, unsubMsgs = null, unsubMgrMsgs = null;
-let pendingPhotoFile = null;
-let mgrViewingInbox = false;
+let pendingPhotoFiles  = []; // up to 4
+let mgrViewingInbox    = false;
+let repliesEnabled     = false;
 
 // ── SESSION ───────────────────────────────────────────────────
 function saveSession()    { localStorage.setItem("cc_v2_session", JSON.stringify({ store, name, role: "employee", managerPhone: "", helpdeskPhone: "" })); }
@@ -563,7 +569,10 @@ function bootApp() {
 async function loadStorePin() {
   try {
     const snap = await getDoc(doc(db,"stores",store));
-    if (snap.exists()) storePin = snap.data().pin || "";
+    if (snap.exists()) {
+      storePin       = snap.data().pin            || "";
+      repliesEnabled = snap.data().repliesEnabled || false;
+    }
   } catch(e) { console.error("loadStorePin:", e); }
 }
 
@@ -648,15 +657,25 @@ window.logoutMgr = () => {
   goScreen("log");
 };
 
-// Manager attach photo to existing entry
+// Attach photos to an existing entry (employee or manager)
 window.attachPhotoToEntry = async (entryId, input) => {
-  const file = input.files[0]; if (!file) return;
+  const files = Array.from(input.files); if (!files.length) return;
   input.disabled = true;
   const label = input.previousElementSibling;
   label.textContent = "Uploading…";
   try {
-    const url = await uploadPhoto(file, entryId);
-    await updateDoc(doc(db,"entries",entryId), { photoURL: url });
+    const snap    = await getDoc(doc(db, "entries", entryId));
+    const cur     = snap.data() || {};
+    const existing = cur.photos && cur.photos.length ? cur.photos
+                   : cur.photoURL ? [cur.photoURL] : [];
+    const slots   = 4 - existing.length;
+    if (slots <= 0) { alert("This entry already has 4 photos."); input.disabled = false; label.textContent = "📷 Add Photo"; return; }
+    const toUpload = files.slice(0, slots);
+    const urls = [...existing];
+    for (let i = 0; i < toUpload.length; i++) {
+      urls.push(await uploadPhoto(toUpload[i], entryId, existing.length + i));
+    }
+    await updateDoc(doc(db,"entries",entryId), { photos: urls, photoURL: urls[0] });
   } catch(e) {
     alert("Upload error: " + e.message);
     label.textContent = "📷 Add Photo";
@@ -683,34 +702,51 @@ window.selectType = (btn) => {
 };
 
 window.previewPhoto = (input) => {
-  const file = input.files[0];
-  if (!file) return;
-  pendingPhotoFile = file;
-  const url = URL.createObjectURL(file);
-  el("photo-preview").src = url;
-  el("photo-preview-wrap").classList.remove("hidden");
+  const incoming = Array.from(input.files);
+  const slots = 4 - pendingPhotoFiles.length;
+  if (slots <= 0) { alert("Maximum 4 photos per entry."); input.value = ""; return; }
+  const adding = incoming.slice(0, slots);
+  if (incoming.length > slots) alert(`Only ${slots} slot(s) left — adding first ${slots}.`);
+  pendingPhotoFiles.push(...adding);
+  input.value = ""; // reset so the same file can be picked again if needed
+  renderPhotoPreview();
 };
 
-window.removePhoto = () => {
-  pendingPhotoFile = null;
-  el("photo-input").value = "";
-  el("photo-preview").src = "";
-  el("photo-preview-wrap").classList.add("hidden");
+window.removePhoto = (index) => {
+  if (index === undefined) {
+    pendingPhotoFiles = [];
+  } else {
+    pendingPhotoFiles.splice(index, 1);
+  }
+  renderPhotoPreview();
 };
 
-async function uploadPhoto(file, entryId) {
+function renderPhotoPreview() {
+  const wrap  = el("photo-preview-wrap");
+  const label = el("photo-label");
+  if (!pendingPhotoFiles.length) {
+    wrap.innerHTML = "";
+    label.textContent = "📷 Add Photos";
+    return;
+  }
+  wrap.innerHTML = pendingPhotoFiles.map((f, i) => {
+    const url = URL.createObjectURL(f);
+    return `<div class="preview-thumb-wrap">
+      <img class="preview-thumb" src="${url}" alt="photo ${i+1}">
+      <button class="btn-remove-thumb" onclick="removePhoto(${i})">✕</button>
+    </div>`;
+  }).join("");
+  const count = pendingPhotoFiles.length;
+  label.textContent = count >= 4 ? "📷 4 / 4" : `📷 Add Photos (${count}/4)`;
+}
+
+async function uploadPhoto(file, entryId, index = 0) {
   const ext  = file.name.split(".").pop();
-  const path = `entries/${store}/${entryId}.${ext}`;
+  const path = `entries/${store}/${entryId}_${index}.${ext}`;
   const sRef = ref(storage, path);
   return new Promise((resolve, reject) => {
     const task = uploadBytesResumable(sRef, file);
-    task.on("state_changed",
-      snap => {
-        const pct = (snap.bytesTransferred / snap.totalBytes) * 100;
-        const bar = document.querySelector(".upload-bar");
-        if (bar) bar.style.width = pct + "%";
-      },
-      reject,
+    task.on("state_changed", null, reject,
       async () => { resolve(await getDownloadURL(task.snapshot.ref)); }
     );
   });
@@ -723,32 +759,35 @@ window.addEntry = async () => {
   const btn  = document.querySelector(".btn-add");
   btn.disabled = true; btn.textContent = "Saving…";
 
-  // Show upload bar if photo
   const barWrap = document.querySelector(".upload-bar-wrap");
-  if (pendingPhotoFile) { barWrap.classList.add("show"); }
+  const bar     = document.querySelector(".upload-bar");
+  if (pendingPhotoFiles.length) { barWrap.classList.add("show"); bar.style.width = "0%"; }
 
   try {
-    // Create entry first to get the ID
     const docRef = await addDoc(collection(db,"entries"), {
       store, author: name, text: txt, type,
       status: "open", time: Date.now(), ts: serverTimestamp(),
-      photoURL: null
+      photos: [], photoURL: null
     });
 
-    // Upload photo if attached
-    if (pendingPhotoFile) {
-      const url = await uploadPhoto(pendingPhotoFile, docRef.id);
-      await updateDoc(docRef, { photoURL: url });
+    if (pendingPhotoFiles.length) {
+      const files = [...pendingPhotoFiles];
+      const urls  = [];
+      for (let i = 0; i < files.length; i++) {
+        urls.push(await uploadPhoto(files[i], docRef.id, i));
+        bar.style.width = ((i + 1) / files.length * 100) + "%";
+      }
+      await updateDoc(docRef, { photos: urls, photoURL: urls[0] });
     }
 
     el("new-text").value = "";
-    removePhoto();
+    removePhoto(); // clears all pending
   } catch(e) {
     alert("Save error: " + e.message);
   } finally {
     btn.disabled = false; btn.textContent = "Add";
     barWrap.classList.remove("show");
-    document.querySelector(".upload-bar").style.width = "0%";
+    bar.style.width = "0%";
   }
 };
 
@@ -838,19 +877,28 @@ function renderEmpEntries() {
     : '<div class="empty"><div class="ei">📋</div><p>No entries here yet.</p></div>';
 }
 
+// Shared: build photo block for a card (supports legacy single photoURL + new photos array)
+function entryPhotosHtml(e, inputId) {
+  const urls = e.photos && e.photos.length ? e.photos : e.photoURL ? [e.photoURL] : [];
+  const grid = urls.map(u =>
+    `<img src="${esc(u)}" loading="lazy" onclick="openLightbox('${esc(u)}')" alt="photo">`
+  ).join("");
+  const addBtn = urls.length < 4
+    ? `<div class="mgr-photo-attach"><label class="btn-photo-sm" for="${inputId}">📷 Add Photo</label><input type="file" id="${inputId}" accept="image/*" multiple style="display:none" onchange="attachPhotoToEntry('${e.id}',this)"></div>`
+    : "";
+  return `${urls.length ? `<div class="entry-photo">${grid}</div>` : ""}${addBtn}`;
+}
+
 function empEntryCard(e) {
   const emoji  = {progress:"📈",issue:"⚠️",note:"📝"};
   const bClass = {progress:"badge-progress",issue:"badge-issue",note:"badge-note"};
   const done   = e.status === "complete";
-  const photo  = e.photoURL
-    ? `<div class="entry-photo"><img src="${esc(e.photoURL)}" loading="lazy" onclick="openLightbox('${esc(e.photoURL)}')" alt="photo"></div>`
-    : `<div class="mgr-photo-attach"><label class="btn-photo-sm" for="emp-photo-${e.id}">📷 Add Photo</label><input type="file" id="emp-photo-${e.id}" accept="image/*" capture="environment" style="display:none" onchange="attachPhotoToEntry('${e.id}',this)"></div>`;
   return `<div class="entry-card ${done?"done":""}" data-type="${esc(e.type)}">
     <div class="entry-top">
       <div class="entry-text">${esc(e.text)}</div>
       <span class="badge ${bClass[e.type]||"badge-note"}">${emoji[e.type]||"📝"} ${e.type}</span>
     </div>
-    ${photo}
+    ${entryPhotosHtml(e, "emp-photo-"+e.id)}
     <div class="entry-footer">
       <div class="entry-meta"><span class="by">${esc(e.author)}</span> — ${ts(e.time)}</div>
       <button class="btn-done ${done?"is-done":""}" onclick="toggleDone('${e.id}','${e.status}')">
@@ -864,15 +912,12 @@ function mgrEntryCard(e) {
   const emoji  = {progress:"📈",issue:"⚠️",note:"📝"};
   const bClass = {progress:"badge-progress",issue:"badge-issue",note:"badge-note"};
   const done   = e.status === "complete";
-  const photo  = e.photoURL
-    ? `<div class="entry-photo"><img src="${esc(e.photoURL)}" loading="lazy" onclick="openLightbox('${esc(e.photoURL)}')" alt="photo"></div>`
-    : `<div class="mgr-photo-attach"><label class="btn-photo-sm" for="mgr-photo-${e.id}">📷 Add Photo</label><input type="file" id="mgr-photo-${e.id}" accept="image/*" capture="environment" style="display:none" onchange="attachPhotoToEntry('${e.id}',this)"></div>`;
   return `<div class="entry-card ${done?"pending-clear":""}" data-type="${esc(e.type)}">
     <div class="entry-top">
       <div class="entry-text">${esc(e.text)}</div>
       <span class="badge ${bClass[e.type]||"badge-note"}">${emoji[e.type]||"📝"} ${e.type}</span>
     </div>
-    ${photo}
+    ${entryPhotosHtml(e, "mgr-photo-"+e.id)}
     <div class="entry-footer">
       <div class="entry-meta"><span class="by">${esc(e.author)}</span> — ${ts(e.time)}</div>
       <div class="entry-actions">
@@ -952,16 +997,46 @@ function renderMsgs(msgs, targetId, isMgr) {
   }
   container.innerHTML = msgs.map(m => {
     const unread = isMgr && !m.read;
+    // Reply bubble — shown to both sides
+    const replyBubble = m.reply
+      ? `<div class="reply-bubble"><strong>↩ ${esc(m.reply.from)} replied:</strong>${esc(m.reply.text)}</div>`
+      : "";
+    // Reply form — shown only to manager if admin has enabled it and no reply yet
+    const replyForm = (isMgr && repliesEnabled && !m.reply)
+      ? `<div class="reply-input-row">
+           <textarea rows="1" id="ri-${esc(m.id)}" placeholder="Reply to ${esc(m.from)}…"></textarea>
+           <button class="btn-reply-send" onclick="sendReply('${esc(m.id)}')">Send</button>
+         </div>`
+      : "";
     return `<div class="msg-card ${unread?"msg-unread":""}">
       <div class="msg-head">
         <span class="msg-from">From: ${esc(m.from)}</span>
         <span class="msg-lock">🔒 Private</span>
       </div>
       <div class="msg-text">${esc(m.text)}</div>
+      ${replyBubble}
+      ${replyForm}
       <div class="msg-time">${ts(m.time)}</div>
     </div>`;
   }).join("");
 }
+
+window.sendReply = async (msgId) => {
+  const ta  = el("ri-" + msgId);
+  const txt = ta ? ta.value.trim() : "";
+  if (!txt) return;
+  ta.disabled = true;
+  ta.nextElementSibling.disabled = true;
+  try {
+    await updateDoc(doc(db, "messages", msgId), {
+      reply: { from: name, text: txt, time: Date.now() }
+    });
+  } catch(e) {
+    alert("Send error: " + e.message);
+    ta.disabled = false;
+    ta.nextElementSibling.disabled = false;
+  }
+};
 
 function msgCardInline(m) {
   return `<div class="msg-card">
