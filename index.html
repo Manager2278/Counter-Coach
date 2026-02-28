@@ -466,7 +466,11 @@ window.noCall = (reasonEncoded) => {
   el("why").innerHTML  = "<b>WHY:</b> " + reason;
   el("ask").innerHTML  = "<b>MANAGER WILL ASK:</b> Why wasn't this handled in-store?";
   el("expect").innerHTML = "<b>EXPECTED:</b> Store-level ownership.";
-  el("actionBtn").innerHTML = "";
+  const btn = el("actionBtn");
+  btn.innerHTML = "";
+  if (helpdeskPhone && reason.toLowerCase().includes("help desk")) {
+    btn.innerHTML = `<a href="tel:${helpdeskPhone}" class="btn btn-green">&#x1F4DE; Call Help Desk</a>`;
+  }
 };
 window.emergency = () => {
   showScreen("screen-result");

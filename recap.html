@@ -205,6 +205,13 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .msg-lock { font-size: 10px; font-weight: 700; background: var(--purple-pale); color: var(--purple); padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
 .msg-text { font-family: 'Courier Prime', monospace; font-size: 14px; line-height: 1.6; }
 .msg-time { font-size: 11px; color: var(--ink-faint); font-family: 'Courier Prime', monospace; margin-top: 5px; }
+.reply-bubble { background: var(--mint); border-left: 3px solid var(--forest-light); padding: 6px 10px; border-radius: 0 6px 6px 0; margin-top: 7px; font-size: 13px; line-height: 1.4; }
+.reply-bubble strong { font-size: 11px; font-weight: 700; color: var(--forest); display: block; margin-bottom: 2px; }
+.reply-input-row { display: flex; gap: 6px; margin-top: 8px; }
+.reply-input-row textarea { flex: 1; padding: 6px 10px; border: 1.5px solid var(--ruled); border-radius: 6px; font-family: 'Karla', sans-serif; font-size: 13px; resize: none; min-height: 38px; background: var(--paper); }
+.reply-input-row textarea:focus { outline: none; border-color: var(--sage); background: white; }
+.btn-reply-send { padding: 0 14px; border: none; background: var(--forest); color: white; border-radius: 6px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-reply-send:disabled { opacity: 0.5; }
 
 /* ── MANAGER PANEL ───────────────────────── */
 .mgr-panel-header { background: var(--forest); color: white; padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -457,8 +464,9 @@ let store = "", name = "", filterVal = "all";
 let mgrLoggedIn = false, storePin = "";
 let allEntries = [], allEntriesMgr = [], myMsgs = [];
 let unsubEntries = null, unsubMgrEntries = null, unsubMsgs = null, unsubMgrMsgs = null;
-let pendingPhotoFiles = []; // up to 4
-let mgrViewingInbox = false;
+let pendingPhotoFiles  = []; // up to 4
+let mgrViewingInbox    = false;
+let repliesEnabled     = false;
 
 // ── SESSION ───────────────────────────────────────────────────
 function saveSession()    { localStorage.setItem("cc_v2_session", JSON.stringify({ store, name, role: "employee", managerPhone: "", helpdeskPhone: "" })); }
@@ -561,7 +569,10 @@ function bootApp() {
 async function loadStorePin() {
   try {
     const snap = await getDoc(doc(db,"stores",store));
-    if (snap.exists()) storePin = snap.data().pin || "";
+    if (snap.exists()) {
+      storePin       = snap.data().pin            || "";
+      repliesEnabled = snap.data().repliesEnabled || false;
+    }
   } catch(e) { console.error("loadStorePin:", e); }
 }
 
@@ -986,16 +997,46 @@ function renderMsgs(msgs, targetId, isMgr) {
   }
   container.innerHTML = msgs.map(m => {
     const unread = isMgr && !m.read;
+    // Reply bubble — shown to both sides
+    const replyBubble = m.reply
+      ? `<div class="reply-bubble"><strong>↩ ${esc(m.reply.from)} replied:</strong>${esc(m.reply.text)}</div>`
+      : "";
+    // Reply form — shown only to manager if admin has enabled it and no reply yet
+    const replyForm = (isMgr && repliesEnabled && !m.reply)
+      ? `<div class="reply-input-row">
+           <textarea rows="1" id="ri-${esc(m.id)}" placeholder="Reply to ${esc(m.from)}…"></textarea>
+           <button class="btn-reply-send" onclick="sendReply('${esc(m.id)}')">Send</button>
+         </div>`
+      : "";
     return `<div class="msg-card ${unread?"msg-unread":""}">
       <div class="msg-head">
         <span class="msg-from">From: ${esc(m.from)}</span>
         <span class="msg-lock">🔒 Private</span>
       </div>
       <div class="msg-text">${esc(m.text)}</div>
+      ${replyBubble}
+      ${replyForm}
       <div class="msg-time">${ts(m.time)}</div>
     </div>`;
   }).join("");
 }
+
+window.sendReply = async (msgId) => {
+  const ta  = el("ri-" + msgId);
+  const txt = ta ? ta.value.trim() : "";
+  if (!txt) return;
+  ta.disabled = true;
+  ta.nextElementSibling.disabled = true;
+  try {
+    await updateDoc(doc(db, "messages", msgId), {
+      reply: { from: name, text: txt, time: Date.now() }
+    });
+  } catch(e) {
+    alert("Send error: " + e.message);
+    ta.disabled = false;
+    ta.nextElementSibling.disabled = false;
+  }
+};
 
 function msgCardInline(m) {
   return `<div class="msg-card">
