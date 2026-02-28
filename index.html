@@ -177,7 +177,7 @@ const app = initializeApp(cfg);
 const db  = getFirestore(app);
 const auth = getAuth(app);
 
-// Registration codes are managed in Firestore via admin.html
+// Registration codes are managed in Firestore via the admin hub
 async function validateRegCode(input, storeNum) {
   const code = input.trim();
   if (!code) return { valid: false, reason: "No code entered." };
