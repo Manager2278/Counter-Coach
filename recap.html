@@ -265,9 +265,10 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 </head>
 <body>
 
-<header class="topbar">
-  <button class="topbar-back" onclick="goBack()">&#x2190; Counter Coach</button>
-  <div class="topbar-brand">Daily Recap</div>
+<header class="topbar" id="recap-topbar">
+  <button class="topbar-back" id="topbar-back-btn" onclick="goBack()">&#x2190; Counter Coach</button>
+  <div class="topbar-brand" id="topbar-brand-text">Daily Recap</div>
+  <img id="topbar-logo-img" src="" alt="Logo" style="max-height:30px;vertical-align:middle;border-radius:4px;position:absolute;left:50%;transform:translateX(-50%);display:none;">
   <div class="topbar-right">
     <span class="topbar-store hidden" id="tb-store"></span>
     <span class="topbar-user  hidden" id="tb-user"></span>
@@ -516,7 +517,7 @@ async function loadBroadcast() {
 
 // ── INIT ──────────────────────────────────────────────────────
 signInAnonymously(auth)
-  .then(() => { loadBroadcast(); }) // fire-and-forget — don't block init
+  .then(() => { loadBroadcast(); loadBranding(); }) // fire-and-forget — don't block init
   .catch(e => console.error("Auth:", e))
   .finally(init);
 
@@ -1124,6 +1125,33 @@ window.sendFeedback = async () => {
     setTimeout(() => { okEl.style.display = "none"; }, 4000);
   } catch(e) { errEl.textContent = "Send error: " + e.message; errEl.style.display = "block"; }
 };
+
+// ── BRANDING ──────────────────────────────────────────────────
+async function loadBranding() {
+  try {
+    const snap = await getDoc(doc(db, "admin", "appConfig"));
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const appName = data.appName || "";
+    // App name — update back button text and page title
+    if (appName) {
+      document.title = "Daily Recap · " + appName;
+      el("topbar-back-btn").textContent = "← " + appName;
+    }
+    // Logo — show centered in topbar, hide brand text
+    if (data.logoUrl) {
+      el("topbar-logo-img").src = data.logoUrl;
+      el("topbar-logo-img").style.display = "inline-block";
+      el("topbar-brand-text").style.display = "none";
+    }
+    // Brand color — recap.html uses CSS variables throughout
+    if (data.brandColor) {
+      document.documentElement.style.setProperty("--forest",       data.brandColor);
+      document.documentElement.style.setProperty("--forest-mid",   data.brandColor);
+      document.documentElement.style.setProperty("--forest-light", data.brandColor);
+    }
+  } catch(e) { /* non-fatal — keep default styling */ }
+}
 
 // ── APP CONFIG CHECK (feature flags) ──────────────────────────
 async function checkAppConfig() {
