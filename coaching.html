@@ -1,248 +1,1144 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Coaching System Elite AI</title>
-
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<title>Coaching System — Counter Coach</title>
+<meta name="theme-color" content="#1c3a2a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;600;700&family=Courier+Prime:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <style>
-body { font-family: Arial; background:#f4f4f4; margin:0; }
-.header { background:#006400; color:white; padding:15px; text-align:center; }
-.container { padding:15px; }
-.card { background:white; padding:15px; border-radius:10px; margin-bottom:15px; }
-input, textarea, select { width:100%; padding:10px; margin:5px 0; }
-button { width:100%; padding:12px; background:#FFD700; border:none; border-radius:10px; }
-canvas { width:100%; height:150px; border:1px solid #ccc; }
+:root {
+  --forest:       #1c3a2a;
+  --forest-mid:   #2d5a40;
+  --forest-light: #4a8c60;
+  --sage:         #7fb891;
+  --mint:         #c8e6d0;
+  --cream:        #f5f2eb;
+  --paper:        #faf8f3;
+  --ruled:        #e2ddd3;
+  --ink:          #1a1a16;
+  --ink-soft:     #4a4a42;
+  --ink-faint:    #8a8a7e;
+  --red:          #b83232;
+  --red-pale:     #fdeaea;
+  --amber:        #c45c00;
+  --amber-pale:   #fef3e2;
+  --shadow:       rgba(0,0,0,0.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+
+/* ── TOPBAR */
+.topbar { background: var(--forest); color: white; padding: 0 16px; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+.topbar-title { font-family: 'Courier Prime', monospace; font-size: 15px; font-weight: 700; letter-spacing: 1px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.topbar-store { font-size: 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); padding: 3px 10px; border-radius: 20px; font-weight: 700; white-space: nowrap; }
+.btn-back { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.75); background: none; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 5px 11px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.btn-back:hover { color: white; border-color: rgba(255,255,255,0.7); }
+
+/* ── TABS */
+.tab-bar { background: white; border-bottom: 2px solid var(--ruled); display: flex; position: sticky; top: 54px; z-index: 99; }
+.tab-btn { flex: 1; padding: 13px 6px; font-family: 'Karla', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-faint); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: color .15s, border-color .15s; white-space: nowrap; }
+.tab-btn.on { color: var(--forest); border-bottom-color: var(--forest); }
+
+/* ── WRAP */
+.wrap { max-width: 600px; margin: 0 auto; padding: 16px 14px 80px; }
+.screen { display: none; }
+.screen.on { display: block; }
+
+/* ── AUTH GATE */
+.auth-gate { max-width: 400px; margin: 60px auto; padding: 0 16px; }
+.auth-card { background: white; border: 1.5px solid var(--ruled); border-top: 4px solid var(--amber); border-radius: 14px; padding: 28px 24px; text-align: center; box-shadow: 0 4px 20px var(--shadow); }
+.auth-icon { font-size: 36px; margin-bottom: 12px; }
+.auth-title { font-family: 'Courier Prime', monospace; font-size: 18px; color: var(--forest); font-weight: 700; margin-bottom: 8px; }
+.auth-sub { font-size: 14px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 20px; }
+
+/* ── CARDS */
+.card { background: white; border: 1.5px solid var(--ruled); border-radius: 12px; padding: 18px 18px; box-shadow: 0 2px 10px var(--shadow); margin-bottom: 14px; }
+.card-title { font-family: 'Courier Prime', monospace; font-size: 14px; font-weight: 700; color: var(--forest); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── FORMS */
+.field-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); display: block; margin-bottom: 4px; }
+input[type=text], select, textarea {
+  width: 100%; padding: 10px 13px; border: 1.5px solid var(--ruled); border-radius: 8px;
+  font-family: 'Karla', sans-serif; font-size: 14px; background: var(--paper); color: var(--ink);
+  transition: border-color .2s; margin-bottom: 14px;
+}
+input[type=text]:focus, select:focus, textarea:focus { outline: none; border-color: var(--forest-light); background: white; }
+input[type=text]:last-child, select:last-child, textarea:last-child { margin-bottom: 0; }
+textarea { resize: vertical; min-height: 80px; font-family: 'Courier Prime', monospace; font-size: 13px; line-height: 1.6; }
+.input-row { display: flex; gap: 8px; }
+.input-row > * { flex: 1; }
+
+/* ── BUTTONS */
+.btn { display: block; width: 100%; padding: 13px; font-family: 'Karla', sans-serif; font-weight: 700; font-size: 14px; border: none; border-radius: 10px; cursor: pointer; transition: filter .15s, transform .1s; text-align: center; text-decoration: none; margin-bottom: 8px; }
+.btn:last-child { margin-bottom: 0; }
+.btn:active { transform: scale(0.98); }
+.btn-green  { background: var(--forest); color: white; }
+.btn-green:hover { filter: brightness(1.12); }
+.btn-red    { background: var(--red); color: white; }
+.btn-outline { background: transparent; border: 1.5px solid var(--ruled); color: var(--ink); }
+.btn-outline:hover { border-color: var(--sage); }
+.btn-sm { display: inline-block; width: auto; padding: 6px 13px; font-size: 12px; border-radius: 7px; margin-bottom: 0; }
+.btn-amber-outline { background: transparent; border: 1.5px solid var(--amber); color: var(--amber); }
+
+/* ── ALERTS */
+.err-box { background: var(--red-pale); border: 1px solid #f5c6c6; color: var(--red); padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: none; }
+.err-box.show { display: block; }
+.ok-box  { background: #e6f4ea; border: 1px solid #b8dfc4; color: #1e6b36; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: none; }
+.ok-box.show { display: block; }
+
+/* ── LEVEL BADGE PREVIEW */
+.level-preview { border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; text-align: center; border: 2px solid transparent; }
+.level-verbal  { background: #e6f4ea; border-color: #b8dfc4; }
+.level-written { background: var(--amber-pale); border-color: #f0c080; }
+.level-final   { background: var(--red-pale); border-color: #f5c6c6; }
+.level-label { font-family: 'Courier Prime', monospace; font-size: 19px; font-weight: 700; }
+.level-verbal  .level-label { color: #1e6b36; }
+.level-written .level-label { color: var(--amber); }
+.level-final   .level-label { color: var(--red); }
+.level-sub { font-size: 12px; color: var(--ink-faint); margin-top: 4px; }
+
+/* ── FINAL WARNING BOX */
+.fw-box { background: var(--red-pale); border: 2px solid #f5c6c6; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px; display: none; }
+.fw-box.show { display: block; }
+.fw-box-title { font-size: 13px; font-weight: 700; color: var(--red); margin-bottom: 10px; }
+.check-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.check-row input[type=checkbox] { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: var(--red); cursor: pointer; }
+.check-row label { font-size: 13px; color: var(--ink); line-height: 1.5; cursor: pointer; }
+
+/* ── SIGNATURE PAD */
+canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled); border-radius: 8px; background: white; display: block; touch-action: none; cursor: crosshair; }
+.sig-hint { font-size: 11px; color: var(--ink-faint); margin-top: 4px; font-style: italic; }
+.sig-actions { margin-top: 8px; }
+
+/* ── SHARE BOX */
+.share-box { background: #e6f4ea; border: 1.5px solid var(--sage); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+.share-box p { font-size: 13px; font-weight: 700; color: var(--forest); margin-bottom: 8px; }
+.share-url { font-family: 'Courier Prime', monospace; font-size: 11px; color: var(--forest-mid); background: white; border: 1px solid var(--ruled); border-radius: 6px; padding: 8px 10px; word-break: break-all; margin-bottom: 8px; }
+
+/* ── DASHBOARD CARDS */
+.emp-card { background: white; border: 1.5px solid var(--ruled); border-radius: 10px; padding: 13px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: box-shadow .15s; }
+.emp-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); border-color: var(--sage); }
+.emp-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--forest); color: white; font-family: 'Courier Prime', monospace; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.emp-info { flex: 1; min-width: 0; }
+.emp-name { font-size: 15px; font-weight: 700; color: var(--ink); }
+.emp-meta { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+
+/* ── BADGES */
+.badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+.badge-verbal   { background: #e6f4ea; color: #1e6b36; }
+.badge-written  { background: var(--amber-pale); color: var(--amber); }
+.badge-final    { background: var(--red-pale); color: var(--red); }
+.badge-signed   { background: #e3f2fd; color: #1565c0; }
+.badge-pending  { background: var(--amber-pale); color: var(--amber); }
+
+/* ── HISTORY ITEMS */
+.hist-item { padding: 12px 0; border-bottom: 1px solid var(--ruled); }
+.hist-item:last-child { border-bottom: none; }
+.hist-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.hist-date { font-size: 11px; color: var(--ink-faint); font-family: 'Courier Prime', monospace; }
+.hist-issue { font-size: 13px; color: var(--ink-soft); margin: 3px 0; }
+.hist-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+/* ── ROSTER ITEMS */
+.roster-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ruled); gap: 8px; }
+.roster-item:last-child { border-bottom: none; }
+.roster-name { font-size: 14px; font-weight: 700; }
+.roster-role { font-size: 12px; color: var(--ink-faint); }
+.btn-remove { background: none; border: none; color: var(--red); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+.btn-remove:hover { background: var(--red-pale); }
+
+/* ── SIGN VIEW */
+.sign-field { margin-bottom: 12px; }
+.sign-field-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); margin-bottom: 4px; }
+.sign-field-value { font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--ruled); border-radius: 8px; padding: 10px 13px; line-height: 1.6; font-family: 'Courier Prime', monospace; }
+
+/* ── EMPTY STATE */
+.empty { text-align: center; padding: 36px 0; color: var(--ink-faint); font-size: 14px; }
+.empty-icon { font-size: 38px; margin-bottom: 8px; }
+
+/* ── SECTION HEAD */
+.section-head { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--ruled); }
 </style>
 </head>
-
 <body>
 
-<div class="header" id="header"></div>
-
-<div class="container">
-
-<div class="card">
-<h3>New Coaching</h3>
-
-<input id="empName" placeholder="Employee Name">
-
-<select id="issue" onchange="applyAI()">
-<option value="">Select Issue</option>
-<option>Core Charge Violation</option>
-<option>Warranty Violation</option>
-<option>Customer Service</option>
-<option>Lookup Error</option>
-<option>Cash Handling</option>
-</select>
-
-<textarea id="incident" placeholder="Incident"></textarea>
-<textarea id="expected" placeholder="Expected Behavior"></textarea>
-<textarea id="ask" placeholder="Manager Will Ask"></textarea>
-<textarea id="action" placeholder="Corrective Action"></textarea>
-
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-title">&#x1F4CB; Coaching</div>
+  <div class="topbar-right">
+    <span class="topbar-store" id="topbar-store" style="display:none;"></span>
+    <a class="btn-back" href="recap.html">&#x2190; Daily Recap</a>
+  </div>
 </div>
 
-<div class="card">
-<h3>Employee Signature</h3>
-<canvas id="empSig"></canvas>
-<button onclick="empPad.clear()">Clear</button>
+<!-- ═══════════════ EMPLOYEE SIGN VIEW (shown when ?sign=docId) ═══════════════ -->
+<div id="sign-view" style="display:none;">
+  <div class="wrap">
+    <div class="card" style="margin-top:8px;">
+      <div class="card-title" id="sv-card-title">Coaching Review &amp; Sign</div>
+      <div id="sv-fields"></div>
+    </div>
+    <div class="card" id="sv-sig-card">
+      <div class="card-title">&#x270D;&#xFE0F; Your Signature</div>
+      <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;line-height:1.6;">
+        By signing below you acknowledge receipt of this coaching record.
+        Signing does <strong>not</strong> imply agreement — it confirms you received this document.
+      </p>
+      <canvas class="sig-canvas" id="sv-sig"></canvas>
+      <p class="sig-hint">Sign above with your finger or mouse</p>
+      <div class="sig-actions">
+        <button class="btn btn-outline btn-sm" onclick="svPad && svPad.clear()">Clear</button>
+      </div>
+    </div>
+    <div class="err-box" id="sv-err"></div>
+    <div class="ok-box"  id="sv-ok"></div>
+    <button class="btn btn-green" id="sv-btn" onclick="submitSignature()">Submit My Signature</button>
+  </div>
 </div>
 
-<div class="card">
-<h3>Manager Signature</h3>
-<canvas id="mgrSig"></canvas>
-<button onclick="mgrPad.clear()">Clear</button>
-</div>
+<!-- ═══════════════ MAIN MANAGER UI ═══════════════ -->
+<div id="main-ui" style="display:none;">
 
-<button onclick="save()">Save + PDF</button>
+  <!-- Auth gate (shown when not manager-logged-in) -->
+  <div class="auth-gate" id="auth-gate" style="display:none;">
+    <div class="auth-card">
+      <div class="auth-icon">&#x1F511;</div>
+      <div class="auth-title">Manager Login Required</div>
+      <div class="auth-sub">You must be logged in as a Manager to access the coaching system.<br>Please log in from the Daily Recap app first.</div>
+      <a href="recap.html" class="btn btn-green">&#x2190; Go to Daily Recap</a>
+    </div>
+  </div>
 
-<div class="card" id="dashboard"></div>
+  <!-- Coaching app (shown when authenticated) -->
+  <div id="coaching-app" style="display:none;">
+    <div class="tab-bar">
+      <button class="tab-btn on" id="tab-new-btn" onclick="switchTab('new')">&#x2795; New</button>
+      <button class="tab-btn"    id="tab-dash-btn" onclick="switchTab('dash')">&#x1F4CA; Dashboard</button>
+      <button class="tab-btn"    id="tab-emp-btn"  onclick="switchTab('emp')">&#x1F465; Employees</button>
+    </div>
 
-</div>
+    <div class="wrap">
 
-<script>
-// SESSION
-const store = localStorage.getItem("store") || "0000";
-const manager = localStorage.getItem("manager") || "Manager";
-document.getElementById("header").innerText = `Store ${store} - ${manager}`;
+      <!-- ══ NEW COACHING ══ -->
+      <div class="screen on" id="screen-new">
 
-// FIREBASE CONFIG
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID"
+        <div class="card" style="margin-top:8px;">
+          <div class="card-title">&#x1F464; Employee &amp; Issue</div>
+
+          <label class="field-label">Employee Name</label>
+          <input type="text" id="emp-name" placeholder="Type name or select from roster" list="emp-datalist" autocomplete="off">
+          <datalist id="emp-datalist"></datalist>
+
+          <label class="field-label">Issue Type</label>
+          <select id="issue" onchange="applyAI()">
+            <option value="">— Select Issue —</option>
+            <optgroup label="Performance">
+              <option>Core Charge Violation</option>
+              <option>Warranty Violation</option>
+              <option>Lookup Error</option>
+              <option>Cash Handling</option>
+            </optgroup>
+            <optgroup label="Service">
+              <option>Customer Service</option>
+              <option>Attitude / Conduct</option>
+            </optgroup>
+            <optgroup label="Attendance">
+              <option>Attendance / Punctuality</option>
+              <option>No Call / No Show</option>
+            </optgroup>
+            <optgroup label="Compliance">
+              <option>Safety Violation</option>
+              <option>Policy Violation</option>
+              <option>Dress Code / Appearance</option>
+            </optgroup>
+          </select>
+
+          <label class="field-label">Incident Description</label>
+          <textarea id="incident" placeholder="Describe what occurred, when, and where…"></textarea>
+
+          <label class="field-label">Expected Behavior</label>
+          <textarea id="expected" placeholder="What is the correct behavior or policy?"></textarea>
+
+          <label class="field-label">Manager Will Ask</label>
+          <textarea id="ask" placeholder="Questions you will ask the employee…"></textarea>
+
+          <label class="field-label">Corrective Action</label>
+          <textarea id="action" placeholder="Steps the employee must take to correct this…" style="margin-bottom:0;"></textarea>
+        </div>
+
+        <!-- Level preview -->
+        <div id="level-preview" class="level-preview level-verbal">
+          <div class="level-label" id="level-label">Verbal Coaching</div>
+          <div class="level-sub"   id="level-sub">Enter employee name to check history</div>
+        </div>
+
+        <!-- Final Warning extra step -->
+        <div class="fw-box" id="fw-box">
+          <div class="fw-box-title">&#x26A0;&#xFE0F; Final Warning — Additional Step Required</div>
+          <div class="check-row">
+            <input type="checkbox" id="fw-check" onchange="updateFWCheck()">
+            <label for="fw-check">I have completed the required writeup in the company HR / discipline system before saving this record.</label>
+          </div>
+          <label class="field-label">System Reference / Ticket # <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></label>
+          <input type="text" id="fw-ref" placeholder="e.g. HR-20264821" style="margin-bottom:0;">
+        </div>
+
+        <!-- Manager signature -->
+        <div class="card">
+          <div class="card-title">&#x270F;&#xFE0F; Manager Signature</div>
+          <canvas class="sig-canvas" id="mgr-sig"></canvas>
+          <p class="sig-hint">Required — sign to authorize this coaching record</p>
+          <div class="sig-actions">
+            <button class="btn btn-outline btn-sm" onclick="mgrPad.clear()">Clear</button>
+          </div>
+        </div>
+
+        <!-- Employee signature -->
+        <div class="card">
+          <div class="card-title">&#x270D;&#xFE0F; Employee Signature</div>
+          <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;line-height:1.6;">
+            Have the employee sign in person below, <strong>or</strong> save the record first and send them a secure link to sign on their own device.
+          </p>
+          <canvas class="sig-canvas" id="emp-sig"></canvas>
+          <p class="sig-hint">Optional — employee may sign via link after saving</p>
+          <div class="sig-actions">
+            <button class="btn btn-outline btn-sm" onclick="empPad.clear()">Clear</button>
+          </div>
+        </div>
+
+        <div class="err-box" id="save-err"></div>
+
+        <button class="btn btn-green"    onclick="saveCoaching(false)">&#x1F4BE; Save &amp; Download PDF</button>
+        <button class="btn btn-outline"  onclick="saveCoaching(true)">&#x1F517; Save &amp; Send Employee Signing Link</button>
+
+      </div><!-- /screen-new -->
+
+      <!-- ══ POST-SAVE ══ -->
+      <div class="screen" id="screen-saved">
+        <div class="card" style="margin-top:8px;">
+          <div class="ok-box show" style="margin-bottom:12px;">Coaching record saved successfully.</div>
+          <div id="saved-level" style="margin-bottom:10px;"></div>
+          <div id="saved-details" style="font-size:14px;color:var(--ink-soft);line-height:1.8;"></div>
+        </div>
+
+        <div class="share-box" id="share-box" style="display:none;">
+          <p>&#x1F517; Share this link with the employee to sign:</p>
+          <div class="share-url" id="share-url-text"></div>
+          <button class="btn btn-sm btn-outline" onclick="copyShareLink()">&#x1F4CB; Copy Link</button>
+        </div>
+
+        <button class="btn btn-green"   onclick="downloadLastPDF()">&#x1F4C4; Download PDF</button>
+        <button class="btn btn-outline" onclick="startNewCoaching()">&#x2795; New Coaching</button>
+        <button class="btn btn-outline" onclick="switchTab('dash')">&#x1F4CA; View Dashboard</button>
+      </div>
+
+      <!-- ══ DASHBOARD ══ -->
+      <div class="screen" id="screen-dash">
+        <div class="card" style="margin-top:8px;">
+          <div class="card-title">&#x1F4CA; Coaching Dashboard</div>
+          <input type="text" id="dash-search" placeholder="Search by employee name…" oninput="renderDashboard()" style="margin-bottom:0;">
+        </div>
+        <div id="dash-list"><div class="empty"><div class="empty-icon">&#x1F4CA;</div>Loading…</div></div>
+      </div>
+
+      <!-- ══ EMPLOYEE DETAIL (shown over dashboard) ══ -->
+      <div class="screen" id="screen-emp-detail">
+        <div class="card" style="margin-top:8px;">
+          <button class="btn btn-sm btn-outline" onclick="switchTab('dash')" style="margin-bottom:14px;">&#x2190; Back to Dashboard</button>
+          <div class="card-title" id="det-name"></div>
+          <div id="det-badge" style="margin-bottom:12px;"></div>
+          <div id="det-list"></div>
+        </div>
+      </div>
+
+      <!-- ══ EMPLOYEES ══ -->
+      <div class="screen" id="screen-emp">
+        <div class="card" style="margin-top:8px;">
+          <div class="card-title">&#x1F465; Employee Roster</div>
+          <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;">Add employees to pre-fill the name field when creating coaching records.</p>
+          <div class="input-row">
+            <div>
+              <label class="field-label">Name</label>
+              <input type="text" id="new-emp-name" placeholder="Employee name" style="margin-bottom:0;">
+            </div>
+            <div>
+              <label class="field-label">Role (optional)</label>
+              <input type="text" id="new-emp-role" placeholder="e.g. Parts Specialist" style="margin-bottom:0;">
+            </div>
+          </div>
+          <div class="err-box" id="emp-err" style="margin-top:10px;"></div>
+          <button class="btn btn-green" onclick="addEmployee()" style="margin-top:10px;">&#x2795; Add to Roster</button>
+        </div>
+        <div class="card">
+          <div class="card-title">&#x1F4CB; Current Roster</div>
+          <div id="roster-list"><div class="empty">No employees added yet.</div></div>
+        </div>
+      </div>
+
+    </div><!-- /wrap -->
+  </div><!-- /coaching-app -->
+</div><!-- /main-ui -->
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, doc, getDoc, addDoc, updateDoc, deleteDoc,
+  collection, query, where, orderBy, getDocs, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const fbCfg = {
+  apiKey:            "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
+  authDomain:        "daily-recap-v1.firebaseapp.com",
+  projectId:         "daily-recap-v1",
+  storageBucket:     "daily-recap-v1.firebasestorage.app",
+  messagingSenderId: "476802421766",
+  appId:             "1:476802421766:web:171eccca066feb711bdf87"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const app  = initializeApp(fbCfg);
+const db   = getFirestore(app);
+const auth = getAuth(app);
 
-// SIGNATURE PAD (FIXED)
-function Sig(canvas){
-  this.ctx = canvas.getContext("2d");
-  this.draw = false;
+// ── SESSION ────────────────────────────────────────────────────
+let store = "", managerName = "", isMgr = false;
 
-  function resize(){
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+function loadSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem("cc_v2_session") || "{}");
+    if (s.store) { store = String(s.store); managerName = s.name || ""; }
+  } catch(_) {}
+  // Manager auth from recap.html PIN login
+  try {
+    const m = JSON.parse(localStorage.getItem("cc_recap_mgr") || "{}");
+    if (m.store === store && m.on) isMgr = true;
+  } catch(_) {}
+}
+
+// ── HELPERS ────────────────────────────────────────────────────
+function el(id) { return document.getElementById(id); }
+function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function showErr(id, msg) { const e=el(id); e.textContent=msg; e.classList.add("show"); }
+function hideErr(id)      { el(id).classList.remove("show"); }
+
+// ── SIGNATURE PAD ──────────────────────────────────────────────
+class SigPad {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx    = canvas.getContext("2d");
+    this._strokes = false;
+    this.drawing  = false;
+    this._resize();
+    this.ctx.strokeStyle = "#1a1a16";
+    this.ctx.lineWidth   = 2;
+    this.ctx.lineCap     = "round";
+    this.ctx.lineJoin    = "round";
+
+    canvas.addEventListener("mousedown",  e => this._start(e.offsetX, e.offsetY));
+    canvas.addEventListener("mousemove",  e => { if (this.drawing) this._draw(e.offsetX, e.offsetY); });
+    canvas.addEventListener("mouseup",    () => { this.drawing = false; });
+    canvas.addEventListener("mouseleave", () => { this.drawing = false; });
+
+    canvas.addEventListener("touchstart", e => {
+      e.preventDefault();
+      const r = canvas.getBoundingClientRect();
+      const t = e.touches[0];
+      this._start((t.clientX - r.left) * (canvas.width / r.width),
+                  (t.clientY - r.top)  * (canvas.height / r.height));
+    }, { passive: false });
+    canvas.addEventListener("touchmove", e => {
+      e.preventDefault();
+      if (!this.drawing) return;
+      const r = canvas.getBoundingClientRect();
+      const t = e.touches[0];
+      this._draw((t.clientX - r.left) * (canvas.width / r.width),
+                 (t.clientY - r.top)  * (canvas.height / r.height));
+    }, { passive: false });
+    canvas.addEventListener("touchend", () => { this.drawing = false; });
   }
-  resize();
-
-  canvas.addEventListener("mousedown", e=>{
-    this.draw = true;
+  _resize() {
+    this.canvas.width  = this.canvas.offsetWidth || 400;
+    this.canvas.height = 150;
+  }
+  _start(x, y) {
+    this.drawing = true;
+    this._strokes = true;
     this.ctx.beginPath();
-    this.ctx.moveTo(e.offsetX,e.offsetY);
-  });
-
-  canvas.addEventListener("mousemove", e=>{
-    if(!this.draw) return;
-    this.ctx.lineTo(e.offsetX,e.offsetY);
-    this.ctx.stroke();
-  });
-
-  canvas.addEventListener("mouseup", ()=>this.draw=false);
-
-  canvas.addEventListener("touchstart", e=>{
-    e.preventDefault();
-    this.draw = true;
-  });
-
-  canvas.addEventListener("touchmove", e=>{
-    if(!this.draw) return;
-    const t = e.touches[0];
-    const r = canvas.getBoundingClientRect();
-    this.ctx.lineTo(t.clientX-r.left, t.clientY-r.top);
-    this.ctx.stroke();
-  });
-
-  canvas.addEventListener("touchend", ()=>this.draw=false);
-
-  this.clear = ()=>this.ctx.clearRect(0,0,canvas.width,canvas.height);
-  this.get = ()=>canvas.toDataURL();
-}
-
-const empPad = new Sig(document.getElementById("empSig"));
-const mgrPad = new Sig(document.getElementById("mgrSig"));
-
-// 🧠 AI LOGIC
-function applyAI(){
-  const issue = document.getElementById("issue").value;
-
-  const AI = {
-    "Core Charge Violation": {
-      expected: "Core charges are only removed when the physical core is present and verified.",
-      ask: "Did you physically receive the core before removing the charge?",
-      action: "Review core policy and require verification before removal."
-    },
-    "Warranty Violation": {
-      expected: "All warranties must follow system guidelines and proper testing procedures.",
-      ask: "What steps did you take to verify the warranty before processing?",
-      action: "Re-train on warranty lookup and validation process."
-    },
-    "Customer Service": {
-      expected: "Every customer should be greeted and assisted professionally.",
-      ask: "How could this interaction have been handled better?",
-      action: "Focus on greeting, listening, and solution-based service."
-    },
-    "Lookup Error": {
-      expected: "Parts must be verified using correct vehicle/application lookup.",
-      ask: "What steps did you use to confirm the correct part?",
-      action: "Slow down and verify part numbers before completing sale."
-    },
-    "Cash Handling": {
-      expected: "All transactions must be accurate and verified before closing.",
-      ask: "What caused the discrepancy in the drawer?",
-      action: "Follow cash handling procedures and double-check transactions."
-    }
-  };
-
-  if(AI[issue]){
-    expected.value = AI[issue].expected;
-    ask.value = AI[issue].ask;
-    action.value = AI[issue].action;
+    this.ctx.moveTo(x, y);
   }
+  _draw(x, y) {
+    this.ctx.lineTo(x, y);
+    this.ctx.stroke();
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y);
+  }
+  clear()   { this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); this._strokes = false; }
+  isEmpty() { return !this._strokes; }
+  get()     { return this.canvas.toDataURL("image/png"); }
 }
 
-// SAVE
-async function save(){
-  if(!empName.value){
-    alert("Employee name required");
+let empPad, mgrPad, svPad;
+
+// ── INIT ───────────────────────────────────────────────────────
+signInAnonymously(auth)
+  .then(() => init())
+  .catch(e  => { console.error("Auth:", e); init(); });
+
+function init() {
+  loadSession();
+  const params   = new URLSearchParams(location.search);
+  const signId   = params.get("sign");
+
+  if (signId) {
+    // Employee remote signing view
+    el("sign-view").style.display = "block";
+    loadSignView(signId);
     return;
   }
 
-  const snapshot = await db.collection("coaching")
-    .where("store","==",store)
-    .where("name","==",empName.value)
-    .get();
+  // Manager coaching UI
+  el("main-ui").style.display = "block";
+  if (!store || !isMgr) {
+    el("auth-gate").style.display = "block";
+    return;
+  }
 
-  const count = snapshot.size;
+  el("coaching-app").style.display = "block";
+  el("topbar-store").style.display = "inline-block";
+  el("topbar-store").textContent   = "Store " + store + " — " + managerName;
 
-  const level = count>=2 ? "Final Warning" :
-                count===1 ? "Written Warning" : "Verbal Coaching";
+  empPad = new SigPad(el("emp-sig"));
+  mgrPad = new SigPad(el("mgr-sig"));
+
+  loadRoster();
+  loadDashData();
+  loadLevelPreview();
+}
+
+// ── EMPLOYEE REMOTE SIGN VIEW ──────────────────────────────────
+async function loadSignView(docId) {
+  try {
+    const snap = await getDoc(doc(db, "coaching", docId));
+    if (!snap.exists()) {
+      el("sv-ok").textContent = "This link is invalid or the record no longer exists.";
+      el("sv-ok").classList.add("show");
+      el("sv-btn").style.display = "none";
+      el("sv-sig-card").style.display = "none";
+      return;
+    }
+    const d = snap.data();
+
+    // Update topbar with store info from record
+    el("topbar-store").style.display = "inline-block";
+    el("topbar-store").textContent   = "Store " + (d.store || "");
+
+    if (d.empSig) {
+      el("sv-ok").textContent = "You have already signed this coaching record. Thank you.";
+      el("sv-ok").classList.add("show");
+      el("sv-btn").style.display     = "none";
+      el("sv-sig-card").style.display = "none";
+      renderSignFields(d);
+      return;
+    }
+
+    el("sv-card-title").textContent = (d.type || "Coaching") + " — Review &amp; Sign";
+    renderSignFields(d);
+    svPad = new SigPad(el("sv-sig"));
+    el("_sv_doc_id") || Object.assign(window, { _svDocId: docId });
+    window._svDocId = docId;
+  } catch(e) {
+    showErr("sv-err", "Error loading record: " + e.message);
+  }
+}
+
+function renderSignFields(d) {
+  const fields = [
+    ["Employee",          d.name],
+    ["Manager",           d.manager],
+    ["Store",             d.store],
+    ["Date",              d.date],
+    ["Coaching Level",    d.type],
+    ["Issue",             d.issue],
+    ["Incident",          d.incident],
+    ["Expected Behavior", d.expected],
+    ["Manager Will Ask",  d.ask],
+    ["Corrective Action", d.action],
+  ];
+  el("sv-fields").innerHTML = fields
+    .filter(([, v]) => v)
+    .map(([l, v]) => `
+      <div class="sign-field">
+        <div class="sign-field-label">${esc(l)}</div>
+        <div class="sign-field-value">${esc(v)}</div>
+      </div>
+    `).join("");
+}
+
+window.submitSignature = async function() {
+  hideErr("sv-err");
+  if (!svPad || svPad.isEmpty()) {
+    showErr("sv-err", "Please sign before submitting.");
+    return;
+  }
+  el("sv-btn").disabled    = true;
+  el("sv-btn").textContent = "Submitting…";
+  try {
+    await updateDoc(doc(db, "coaching", window._svDocId), {
+      empSig:   svPad.get(),
+      signedAt: serverTimestamp(),
+      status:   "complete"
+    });
+    el("sv-ok").textContent = "Signature submitted successfully. You may close this page.";
+    el("sv-ok").classList.add("show");
+    el("sv-btn").style.display      = "none";
+    el("sv-sig-card").style.display = "none";
+  } catch(e) {
+    el("sv-btn").disabled    = false;
+    el("sv-btn").textContent = "Submit My Signature";
+    showErr("sv-err", "Submission error: " + e.message);
+  }
+};
+
+// ── TABS ───────────────────────────────────────────────────────
+window.switchTab = function(tab) {
+  ["new","dash","emp","saved","emp-detail"].forEach(t => {
+    el("screen-" + t)?.classList.remove("on");
+  });
+  ["new","dash","emp"].forEach(t => {
+    el("tab-" + t + "-btn")?.classList.remove("on");
+  });
+
+  if (tab === "dash") {
+    el("screen-dash").classList.add("on");
+    el("tab-dash-btn").classList.add("on");
+    renderDashboard();
+    return;
+  }
+  if (tab === "emp") {
+    el("screen-emp").classList.add("on");
+    el("tab-emp-btn").classList.add("on");
+    renderRoster();
+    return;
+  }
+  // default: new
+  el("screen-new").classList.add("on");
+  el("tab-new-btn").classList.add("on");
+  loadLevelPreview();
+};
+
+// ── AI AUTO-FILL ───────────────────────────────────────────────
+const AI = {
+  "Core Charge Violation": {
+    expected: "Core charges are only removed when the physical core is present and verified at the counter.",
+    ask:      "Did you physically receive and inspect the core before removing the charge?",
+    action:   "Review the core charge policy. Verify physical core is in hand before any removal in the system."
+  },
+  "Warranty Violation": {
+    expected: "All warranty claims must follow system guidelines and include proper part testing before processing.",
+    ask:      "What steps did you take to verify the part was defective before processing the warranty?",
+    action:   "Re-train on warranty lookup and the required testing procedure before any claim is processed."
+  },
+  "Customer Service": {
+    expected: "Every customer must be greeted promptly and assisted with professionalism and a solution-first approach.",
+    ask:      "How could that customer interaction have been handled differently to reach a better outcome?",
+    action:   "Focus on greeting every customer, active listening, and offering at least one solution."
+  },
+  "Lookup Error": {
+    expected: "Parts must be verified using the correct vehicle application — year, make, model, and submodel.",
+    ask:      "What steps did you use to confirm the correct part number before completing the sale?",
+    action:   "Slow down, confirm all vehicle details, and verify part numbers before completing any sale."
+  },
+  "Cash Handling": {
+    expected: "All transactions must be counted aloud, verified on screen, and the drawer confirmed before closing.",
+    ask:      "Walk me through what happened step by step during that transaction.",
+    action:   "Follow cash handling procedures: count aloud, count back change, verify amount before closing drawer."
+  },
+  "Attitude / Conduct": {
+    expected: "Team members must maintain a respectful, professional attitude with customers, coworkers, and management at all times.",
+    ask:      "Can you help me understand what was going through your mind during that situation?",
+    action:   "Review the conduct policy. A repeat of this behavior may result in further disciplinary action."
+  },
+  "Attendance / Punctuality": {
+    expected: "Team members are expected to arrive on time and ready to work for every scheduled shift.",
+    ask:      "What prevented you from arriving on time, and what will you do differently going forward?",
+    action:   "Ensure reliable transportation and alarms are in place. Further occurrences will be documented."
+  },
+  "No Call / No Show": {
+    expected: "If unable to work a shift, team members must notify the store manager at least 2 hours in advance.",
+    ask:      "Why were you unable to contact the store before your shift started?",
+    action:   "Review the attendance and call-in policy. Future NCNS occurrences may result in termination."
+  },
+  "Safety Violation": {
+    expected: "All safety policies must be followed at all times to protect yourself, your coworkers, and customers.",
+    ask:      "Were you aware of the safety requirement, and what caused you to deviate from it?",
+    action:   "Immediately review safety procedures. No exceptions to safety policy are acceptable."
+  },
+  "Policy Violation": {
+    expected: "Company policies exist to protect the business and must be followed consistently.",
+    ask:      "Were you aware of this policy, and what led you to deviate from it?",
+    action:   "Re-read and acknowledge the relevant policy. Future violations may result in stronger action."
+  },
+  "Dress Code / Appearance": {
+    expected: "Team members must report to work in full uniform meeting company appearance standards.",
+    ask:      "Were you aware of the dress code requirement for today's shift?",
+    action:   "Review and comply with the dress code policy effective immediately."
+  }
+};
+
+window.applyAI = function() {
+  const issue = el("issue").value;
+  if (AI[issue]) {
+    el("expected").value = AI[issue].expected;
+    el("ask").value      = AI[issue].ask;
+    el("action").value   = AI[issue].action;
+  }
+  loadLevelPreview();
+};
+
+// ── COACHING LEVEL ─────────────────────────────────────────────
+let priorCount = 0;
+
+async function loadLevelPreview() {
+  const name = el("emp-name").value.trim();
+  if (!name || !store) { setLevelUI(0); return; }
+  try {
+    const q    = query(collection(db,"coaching"), where("store","==",store), where("name","==",name));
+    const snap = await getDocs(q);
+    priorCount = snap.size;
+    setLevelUI(priorCount);
+  } catch(_) { setLevelUI(0); }
+}
+
+function setLevelUI(count) {
+  const preview  = el("level-preview");
+  const labelEl  = el("level-label");
+  const subEl    = el("level-sub");
+  const fwBox    = el("fw-box");
+
+  preview.className = "level-preview";
+  if (count >= 2) {
+    preview.classList.add("level-final");
+    labelEl.textContent = "Final Warning";
+    subEl.textContent   = count === 2
+      ? "3rd coaching for this employee at this store"
+      : `${count + 1}th coaching for this employee`;
+    fwBox.classList.add("show");
+  } else if (count === 1) {
+    preview.classList.add("level-written");
+    labelEl.textContent = "Written Warning";
+    subEl.textContent   = "2nd coaching for this employee at this store";
+    fwBox.classList.remove("show");
+  } else {
+    preview.classList.add("level-verbal");
+    labelEl.textContent = "Verbal Coaching";
+    subEl.textContent   = count === 0
+      ? "No prior coachings found for this employee"
+      : "1st coaching for this employee at this store";
+    fwBox.classList.remove("show");
+  }
+}
+
+window.updateFWCheck = function() { /* validation happens on save */ };
+el("emp-name") && el("emp-name").addEventListener("change", () => loadLevelPreview());
+
+// ── SAVE ───────────────────────────────────────────────────────
+let lastDoc = null, lastId = null;
+window._shareUrl = null;
+
+window.saveCoaching = async function(sendLink) {
+  hideErr("save-err");
+  const empName  = el("emp-name").value.trim();
+  const issue    = el("issue").value;
+  const incident = el("incident").value.trim();
+  const expected = el("expected").value.trim();
+  const ask      = el("ask").value.trim();
+  const action   = el("action").value.trim();
+
+  if (!empName)  { showErr("save-err","Employee name is required."); return; }
+  if (!issue)    { showErr("save-err","Please select an issue type."); return; }
+  if (!incident) { showErr("save-err","Please describe the incident."); return; }
+  if (mgrPad.isEmpty()) { showErr("save-err","Manager signature is required."); return; }
+
+  const isFinal   = priorCount >= 2;
+  const isWritten = priorCount === 1;
+
+  if (isFinal && !el("fw-check").checked) {
+    showErr("save-err","You must confirm you have completed the required company system writeup before saving a Final Warning.");
+    return;
+  }
+
+  const level = isFinal ? "Final Warning" : isWritten ? "Written Warning" : "Verbal Coaching";
+  const empSigData = empPad.isEmpty() ? null : empPad.get();
 
   const data = {
     store,
-    manager,
-    name: empName.value,
-    issue: issue.value,
-    expected: expected.value,
-    ask: ask.value,
-    action: action.value,
-    incident: incident.value,
-    type: level,
-    empSig: empPad.get(),
-    mgrSig: mgrPad.get(),
-    date: new Date().toLocaleString()
+    manager:  managerName,
+    name:     empName,
+    issue,
+    incident,
+    expected,
+    ask,
+    action,
+    type:     level,
+    mgrSig:   mgrPad.get(),
+    empSig:   empSigData,
+    date:     new Date().toLocaleString("en-US",{ month:"short", day:"numeric", year:"numeric", hour:"numeric", minute:"2-digit" }),
+    status:   (sendLink || !empSigData) ? "pending_employee" : "complete",
+    systemWriteupDone: isFinal,
+    systemRef: isFinal ? (el("fw-ref").value.trim() || null) : null,
+    savedAt:  serverTimestamp()
   };
 
-  await db.collection("coaching").add(data);
+  try {
+    const ref = await addDoc(collection(db,"coaching"), data);
+    lastDoc = data;
+    lastId  = ref.id;
 
-  generatePDF(data);
+    // Show post-save screen
+    ["screen-new","screen-dash","screen-emp","screen-emp-detail"].forEach(id => {
+      el(id)?.classList.remove("on");
+    });
+    el("screen-saved").classList.add("on");
+    ["new","dash","emp"].forEach(id => el("tab-"+id+"-btn")?.classList.remove("on"));
 
-  alert("Saved ✔️");
+    const lc = isFinal ? "badge-final" : isWritten ? "badge-written" : "badge-verbal";
+    el("saved-level").innerHTML = `<span class="badge ${lc}">${level}</span>`;
+    el("saved-details").innerHTML = `
+      <strong>Employee:</strong> ${esc(empName)}<br>
+      <strong>Issue:</strong> ${esc(issue)}<br>
+      <strong>Date:</strong> ${esc(data.date)}<br>
+      <strong>Signature status:</strong> ${data.status === "complete" ? "Fully signed" : "Awaiting employee signature"}
+    `;
 
-  loadDashboard();
-}
+    if (sendLink || !empSigData) {
+      const shareUrl = `${location.origin}${location.pathname}?sign=${ref.id}`;
+      el("share-url-text").textContent = shareUrl;
+      el("share-box").style.display    = "block";
+      window._shareUrl = shareUrl;
+    } else {
+      el("share-box").style.display = "none";
+      window._shareUrl = null;
+    }
 
-// PDF
-function generatePDF(d){
+    loadDashData();
+  } catch(e) {
+    showErr("save-err","Error saving: " + e.message);
+  }
+};
+
+window.copyShareLink = function() {
+  if (window._shareUrl) {
+    navigator.clipboard.writeText(window._shareUrl)
+      .then(() => alert("Link copied to clipboard!"))
+      .catch(() => prompt("Copy this link:", window._shareUrl));
+  }
+};
+
+window.downloadLastPDF = function() { if (lastDoc) generatePDF(lastDoc); };
+
+window.startNewCoaching = function() {
+  el("emp-name").value  = "";
+  el("issue").value     = "";
+  el("incident").value  = "";
+  el("expected").value  = "";
+  el("ask").value       = "";
+  el("action").value    = "";
+  el("fw-check").checked = false;
+  el("fw-ref").value    = "";
+  el("fw-box").classList.remove("show");
+  el("save-err").classList.remove("show");
+  empPad.clear();
+  mgrPad.clear();
+  priorCount = 0;
+  setLevelUI(0);
+  el("screen-saved").classList.remove("on");
+  el("screen-new").classList.add("on");
+  ["new","dash","emp"].forEach(id => el("tab-"+id+"-btn")?.classList.remove("on"));
+  el("tab-new-btn").classList.add("on");
+};
+
+// ── PDF ────────────────────────────────────────────────────────
+function generatePDF(d) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
+  const lm  = 20;   // left margin
+  const rw  = 170;  // usable width
+  let   y   = 20;
 
-  doc.text("O'Reilly Coaching Form",20,20);
-  doc.text(`Employee: ${d.name}`,20,40);
-  doc.text(`Type: ${d.type}`,20,50);
-  doc.text(`Issue: ${d.issue}`,20,60);
+  function addPage() { doc.addPage(); y = 20; }
+  function checkPage(needed) { if (y + needed > 270) addPage(); }
 
-  doc.text("Expected:",20,80);
-  doc.text(d.expected,20,90);
+  function heading(text) {
+    checkPage(14);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(10);
+    doc.setTextColor(28, 58, 42);
+    doc.text(text.toUpperCase(), lm, y);
+    y += 4;
+    doc.setDrawColor(200, 230, 210);
+    doc.line(lm, y, lm + rw, y);
+    y += 5;
+    doc.setTextColor(26, 26, 22);
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(11);
+  }
 
-  doc.text("Action:",20,110);
-  doc.text(d.action,20,120);
+  function field(label, value) {
+    if (!value) return;
+    checkPage(14);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(10);
+    doc.text(label + ":", lm, y);
+    y += 5;
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(10);
+    const lines = doc.splitTextToSize(String(value), rw);
+    checkPage(lines.length * 5 + 4);
+    doc.text(lines, lm, y);
+    y += lines.length * 5 + 4;
+  }
 
-  doc.addImage(d.empSig,"PNG",20,140,60,30);
-  doc.addImage(d.mgrSig,"PNG",100,140,60,30);
+  // ── HEADER
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(16);
+  doc.setTextColor(28, 58, 42);
+  doc.text("Employee Coaching Record", lm, y);
+  y += 8;
 
-  doc.save(`${d.name}.pdf`);
+  const lColor = d.type === "Final Warning"   ? [184,50,50]
+               : d.type === "Written Warning" ? [196,92,0]
+               :                                [28,58,42];
+  doc.setFontSize(13);
+  doc.setTextColor(...lColor);
+  doc.text(d.type.toUpperCase(), lm, y);
+  y += 10;
+  doc.setTextColor(26, 26, 22);
+
+  heading("Store Information");
+  field("Store Number", d.store);
+  field("Manager",      d.manager);
+  field("Date",         d.date);
+
+  heading("Employee");
+  field("Employee Name", d.name);
+  field("Issue Type",    d.issue);
+
+  heading("Coaching Details");
+  field("Incident",          d.incident);
+  field("Expected Behavior", d.expected);
+  field("Manager Will Ask",  d.ask);
+  field("Corrective Action", d.action);
+
+  if (d.systemWriteupDone) {
+    heading("Company System Writeup");
+    field("Status", "Completed in company HR / discipline system prior to this record");
+    if (d.systemRef) field("Reference #", d.systemRef);
+  }
+
+  // ── SIGNATURES
+  checkPage(60);
+  heading("Signatures");
+  const sigY = y;
+
+  // Manager sig
+  if (d.mgrSig) {
+    try { doc.addImage(d.mgrSig, "PNG", lm, sigY, 72, 32); } catch(_) {}
+  } else {
+    doc.rect(lm, sigY, 72, 32);
+  }
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(9);
+  doc.text("Manager Signature", lm, sigY + 36);
+  doc.text(d.manager || "", lm, sigY + 41);
+
+  // Employee sig
+  const ex = lm + 90;
+  if (d.empSig) {
+    try { doc.addImage(d.empSig, "PNG", ex, sigY, 72, 32); } catch(_) {}
+  } else {
+    doc.rect(ex, sigY, 72, 32);
+    doc.setFont("helvetica","italic");
+    doc.setFontSize(8);
+    doc.setTextColor(140, 140, 140);
+    doc.text("Signature pending", ex + 2, sigY + 17);
+    doc.setTextColor(26, 26, 22);
+  }
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(9);
+  doc.text("Employee Signature", ex, sigY + 36);
+  doc.text(d.name || "", ex, sigY + 41);
+
+  y = sigY + 50;
+
+  // ── DISCLAIMER
+  checkPage(16);
+  doc.setFont("helvetica","italic");
+  doc.setFontSize(8);
+  doc.setTextColor(130, 130, 120);
+  const disc = "Signing this document acknowledges receipt of this coaching record, not necessarily agreement with its contents. This record is confidential and for internal use only.";
+  const discLines = doc.splitTextToSize(disc, rw);
+  doc.text(discLines, lm, y);
+
+  const fname = `Coaching_${(d.name||"Employee").replace(/\s+/g,"_")}_${(d.date||"").replace(/[/:,\s]/g,"")}.pdf`;
+  doc.save(fname);
 }
 
-// DASHBOARD
-async function loadDashboard(){
-  const snapshot = await db.collection("coaching")
-    .where("store","==",store)
-    .get();
+// ── DASHBOARD ──────────────────────────────────────────────────
+let allCoachings = [];
 
-  let total = snapshot.size;
-
-  document.getElementById("dashboard").innerHTML =
-    `<h3>Dashboard</h3>Total Coachings: ${total}`;
+async function loadDashData() {
+  if (!store) return;
+  try {
+    const q    = query(collection(db,"coaching"), where("store","==",store), orderBy("savedAt","desc"));
+    const snap = await getDocs(q);
+    allCoachings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { console.warn("loadDashData:", e); }
 }
 
-loadDashboard();
+function renderDashboard() {
+  const search  = (el("dash-search")?.value || "").toLowerCase();
+  const byEmp   = {};
+  allCoachings.forEach(c => {
+    if (search && !c.name.toLowerCase().includes(search)) return;
+    if (!byEmp[c.name]) byEmp[c.name] = [];
+    byEmp[c.name].push(c);
+  });
+
+  const container = el("dash-list");
+  if (!Object.keys(byEmp).length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">&#x1F4CA;</div>${search ? "No matches found." : "No coaching records yet."}</div>`;
+    return;
+  }
+
+  container.innerHTML = Object.entries(byEmp).map(([name, recs]) => {
+    const cnt    = recs.length;
+    const lTxt   = cnt >= 3 ? "Final Warning" : cnt === 2 ? "Written Warning" : "Verbal Coaching";
+    const lCls   = cnt >= 3 ? "badge-final"   : cnt === 2 ? "badge-written"   : "badge-verbal";
+    const pend   = recs.some(r => !r.empSig);
+    const init   = name.charAt(0).toUpperCase();
+    return `
+      <div class="emp-card" onclick="showEmpDetail('${esc(name)}')">
+        <div class="emp-avatar">${init}</div>
+        <div class="emp-info">
+          <div class="emp-name">${esc(name)}</div>
+          <div class="emp-meta">${cnt} coaching${cnt !== 1 ? "s" : ""}${pend ? " &bull; sig pending" : ""}</div>
+        </div>
+        <span class="badge ${lCls}">${lTxt}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+window.showEmpDetail = function(name) {
+  const recs = allCoachings.filter(c => c.name === name);
+  const cnt  = recs.length;
+  const lTxt = cnt >= 3 ? "Final Warning" : cnt === 2 ? "Written Warning" : "Verbal Coaching";
+  const lCls = cnt >= 3 ? "badge-final"   : cnt === 2 ? "badge-written"   : "badge-verbal";
+
+  el("det-name").textContent = name;
+  el("det-badge").innerHTML  = `<span class="badge ${lCls}">${lTxt}</span> <span style="font-size:13px;color:var(--ink-faint);">${cnt} coaching${cnt !== 1 ? "s" : ""}</span>`;
+
+  el("det-list").innerHTML = recs.map(r => {
+    const rc  = r.type === "Final Warning" ? "badge-final" : r.type === "Written Warning" ? "badge-written" : "badge-verbal";
+    const sig = r.empSig ? `<span class="badge badge-signed">Signed</span>` : `<span class="badge badge-pending">Sig Pending</span>`;
+    return `
+      <div class="hist-item">
+        <div class="hist-head">
+          <span class="badge ${rc}">${esc(r.type)}</span>
+          <span class="hist-date">${esc(r.date||"")}</span>
+        </div>
+        <div class="hist-issue">${esc(r.issue||"")}</div>
+        <div style="margin-top:6px;">${sig}</div>
+        <div class="hist-actions">
+          <button class="btn btn-sm btn-outline" onclick="pdfById('${r.id}')">&#x1F4C4; PDF</button>
+          ${!r.empSig ? `<button class="btn btn-sm btn-amber-outline" onclick="shareLinkById('${r.id}')">&#x1F517; Share Link</button>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  // Switch to detail screen
+  ["screen-new","screen-dash","screen-emp","screen-saved"].forEach(id => el(id)?.classList.remove("on"));
+  el("screen-emp-detail").classList.add("on");
+};
+
+window.pdfById = function(id) {
+  const r = allCoachings.find(c => c.id === id);
+  if (r) generatePDF(r);
+};
+window.shareLinkById = function(id) {
+  const url = `${location.origin}${location.pathname}?sign=${id}`;
+  navigator.clipboard.writeText(url)
+    .then(() => alert("Link copied to clipboard!"))
+    .catch(() => prompt("Copy this link:", url));
+};
+
+// ── EMPLOYEE ROSTER ────────────────────────────────────────────
+let roster = [];
+
+async function loadRoster() {
+  if (!store) return;
+  try {
+    const q    = query(collection(db,"employees"), where("store","==",store), orderBy("name","asc"));
+    const snap = await getDocs(q);
+    roster = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    updateDatalist();
+  } catch(e) { console.warn("loadRoster:", e); }
+}
+
+function updateDatalist() {
+  el("emp-datalist").innerHTML = roster.map(e => `<option value="${esc(e.name)}">`).join("");
+}
+
+function renderRoster() {
+  const c = el("roster-list");
+  if (!roster.length) { c.innerHTML = '<div class="empty">No employees added yet.</div>'; return; }
+  c.innerHTML = roster.map(e => `
+    <div class="roster-item">
+      <div>
+        <div class="roster-name">${esc(e.name)}</div>
+        ${e.role ? `<div class="roster-role">${esc(e.role)}</div>` : ""}
+      </div>
+      <button class="btn-remove" onclick="removeEmployee('${e.id}','${esc(e.name)}')" title="Remove">&#x2715;</button>
+    </div>
+  `).join("");
+}
+
+window.addEmployee = async function() {
+  const errEl = el("emp-err");
+  errEl.classList.remove("show");
+  const name = el("new-emp-name").value.trim();
+  const role = el("new-emp-role").value.trim();
+  if (!name) { showErr("emp-err","Name is required."); return; }
+  if (!store) { showErr("emp-err","Not logged in."); return; }
+  if (roster.some(e => e.name.toLowerCase() === name.toLowerCase())) {
+    showErr("emp-err","An employee with that name already exists."); return;
+  }
+  try {
+    const ref = await addDoc(collection(db,"employees"), {
+      store, name, role: role || null, addedBy: managerName, addedAt: serverTimestamp()
+    });
+    roster.push({ id: ref.id, store, name, role: role || null });
+    roster.sort((a,b) => a.name.localeCompare(b.name));
+    el("new-emp-name").value = "";
+    el("new-emp-role").value = "";
+    updateDatalist();
+    renderRoster();
+  } catch(e) { showErr("emp-err","Error: " + e.message); }
+};
+
+window.removeEmployee = async function(id, name) {
+  if (!confirm(`Remove ${name} from the roster?\n\nThis only removes them from the name list — their coaching records are not deleted.`)) return;
+  try {
+    await deleteDoc(doc(db,"employees",id));
+    roster = roster.filter(e => e.id !== id);
+    updateDatalist();
+    renderRoster();
+  } catch(e) { alert("Error removing: " + e.message); }
+};
 </script>
-
 </body>
 </html>
