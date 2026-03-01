@@ -3,279 +3,196 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Employee Coaching - O'Reilly Style</title>
+<title>Coaching System Elite</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f4f4;
-  margin: 0;
-}
-
-.header {
-  background: #006400;
-  color: white;
-  padding: 15px;
-  text-align: center;
-  font-size: 22px;
-  font-weight: bold;
-}
-
-.container {
-  padding: 15px;
-}
-
-.card {
-  background: white;
-  border-radius: 10px;
-  padding: 15px;
-  margin-bottom: 15px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-h3 {
-  margin-top: 0;
-  color: #006400;
-}
-
-input, textarea, select {
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  margin-bottom: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-}
-
-.checkbox-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.checkbox-group label {
-  font-size: 14px;
-}
-
-button {
-  width: 100%;
-  padding: 15px;
-  background: #FFD700;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-canvas {
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  width: 100%;
-  height: 150px;
-}
-
-.sig-buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.sig-buttons button {
-  flex: 1;
-  padding: 8px;
-  font-size: 12px;
-}
+body { font-family: Arial; background:#f4f4f4; margin:0; }
+.header { background:#006400; color:white; padding:15px; text-align:center; }
+.container { padding:15px; }
+.card { background:white; padding:15px; border-radius:10px; margin-bottom:15px; }
+button { width:100%; padding:12px; background:#FFD700; border:none; border-radius:10px; }
+canvas { width:100%; height:150px; border:1px solid #ccc; }
+.stat { font-weight:bold; margin:5px 0; }
 </style>
 </head>
 
 <body>
 
-<div class="header">
-Employee Coaching Form
-</div>
+<div class="header" id="header"></div>
 
 <div class="container">
 
 <div class="card">
-<h3>Employee Info</h3>
+<h3>New Coaching</h3>
 <input id="empName" placeholder="Employee Name">
-<input id="empId" placeholder="Employee ID">
-<input id="store" placeholder="Store Number">
-<input id="manager" placeholder="Manager Name">
-<input id="date" type="date">
-</div>
 
-<div class="card">
-<h3>Type of Coaching</h3>
-<select id="type">
-<option>Verbal Coaching</option>
-<option>Written Warning</option>
-<option>Final Warning</option>
-<option>Policy Violation</option>
-<option>Performance Improvement</option>
+<select id="issue">
+<option>Core Charge Violation</option>
+<option>Warranty Violation</option>
+<option>Customer Service</option>
+<option>Lookup Error</option>
+<option>Cash Handling</option>
 </select>
-</div>
 
-<div class="card">
-<h3>Reason for Coaching</h3>
-<div class="checkbox-group">
-<label><input type="checkbox" value="Customer Service"> Customer Service</label>
-<label><input type="checkbox" value="Parts Lookup Error"> Parts Lookup Error</label>
-<label><input type="checkbox" value="Core Charge Violation"> Core Charge Violation</label>
-<label><input type="checkbox" value="Warranty Violation"> Warranty Violation</label>
-<label><input type="checkbox" value="Procedures"> Procedures</label>
-<label><input type="checkbox" value="Attendance"> Attendance</label>
-<label><input type="checkbox" value="Cash Handling"> Cash Handling</label>
-<label><input type="checkbox" value="Conduct"> Conduct</label>
-</div>
-</div>
-
-<div class="card">
-<h3>Incident Description</h3>
-<textarea id="incident"></textarea>
-</div>
-
-<div class="card">
-<h3>Expected Standard</h3>
-<textarea id="expected"></textarea>
-</div>
-
-<div class="card">
-<h3>Impact</h3>
-<div class="checkbox-group">
-<label><input type="checkbox" value="Loss of Sale"> Loss of Sale</label>
-<label><input type="checkbox" value="Financial Loss"> Financial Loss</label>
-<label><input type="checkbox" value="Customer Issue"> Customer Issue</label>
-<label><input type="checkbox" value="Policy Risk"> Policy Risk</label>
-<label><input type="checkbox" value="Safety"> Safety</label>
-</div>
-</div>
-
-<div class="card">
-<h3>Corrective Action</h3>
-<textarea id="action"></textarea>
-</div>
-
-<div class="card">
-<h3>Follow-Up</h3>
-<select id="followup">
-<option>Immediate</option>
-<option>7 Days</option>
-<option>30 Days</option>
-</select>
-</div>
-
-<div class="card">
-<h3>Employee Comments</h3>
-<textarea id="comments"></textarea>
+<textarea id="incident" placeholder="Incident"></textarea>
+<textarea id="action" placeholder="Corrective Action"></textarea>
 </div>
 
 <div class="card">
 <h3>Employee Signature</h3>
 <canvas id="empSig"></canvas>
-<div class="sig-buttons">
-<button onclick="clearPad(empSigPad)">Clear</button>
-</div>
+<button onclick="empPad.clear()">Clear</button>
 </div>
 
 <div class="card">
 <h3>Manager Signature</h3>
 <canvas id="mgrSig"></canvas>
-<div class="sig-buttons">
-<button onclick="clearPad(mgrSigPad)">Clear</button>
-</div>
+<button onclick="mgrPad.clear()">Clear</button>
 </div>
 
-<button onclick="submitForm()">Submit Coaching</button>
+<button onclick="save()">Save + PDF</button>
+
+<div class="card" id="dashboard"></div>
+<div class="card" id="qr"></div>
 
 </div>
 
 <script>
-function getCheckedValues(container){
-  return Array.from(container.querySelectorAll("input:checked"))
-    .map(cb => cb.value);
+// SESSION
+const store = localStorage.getItem("store");
+const manager = localStorage.getItem("manager");
+
+document.getElementById("header").innerText = `Store ${store} - ${manager}`;
+
+// FIREBASE
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// SIGN PAD
+function Sig(c){
+  this.ctx=c.getContext("2d"); this.draw=false;
+  c.width=c.offsetWidth; c.height=c.offsetHeight;
+
+  c.onmousedown=e=>{this.draw=true;this.ctx.beginPath();this.ctx.moveTo(e.offsetX,e.offsetY);}
+  c.onmousemove=e=>{if(!this.draw)return;this.ctx.lineTo(e.offsetX,e.offsetY);this.ctx.stroke();}
+  c.onmouseup=()=>this.draw=false;
+
+  this.clear=()=>this.ctx.clearRect(0,0,c.width,c.height);
+  this.get=()=>c.toDataURL();
 }
 
-function SignaturePad(canvas) {
-  this.canvas = canvas;
-  this.ctx = canvas.getContext("2d");
-  this.drawing = false;
+const empPad=new Sig(empSig);
+const mgrPad=new Sig(mgrSig);
 
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
+// SAVE
+async function save(){
+  const name = empName.value;
 
-  canvas.addEventListener("mousedown", e => {
-    this.drawing = true;
-    this.ctx.beginPath();
-    this.ctx.moveTo(e.offsetX, e.offsetY);
-  });
+  const snapshot = await db.collection("coaching")
+    .where("store","==",store)
+    .where("name","==",name)
+    .get();
 
-  canvas.addEventListener("mousemove", e => {
-    if (!this.drawing) return;
-    this.ctx.lineTo(e.offsetX, e.offsetY);
-    this.ctx.stroke();
-  });
+  const count = snapshot.size;
 
-  canvas.addEventListener("mouseup", () => this.drawing = false);
-  canvas.addEventListener("mouseleave", () => this.drawing = false);
-
-  canvas.addEventListener("touchstart", e => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    this.drawing = true;
-    this.ctx.beginPath();
-    this.ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
-  });
-
-  canvas.addEventListener("touchmove", e => {
-    e.preventDefault();
-    if (!this.drawing) return;
-    const touch = e.touches[0];
-    const rect = canvas.getBoundingClientRect();
-    this.ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
-    this.ctx.stroke();
-  });
-
-  canvas.addEventListener("touchend", () => this.drawing = false);
-
-  this.clear = function() {
-    this.ctx.clearRect(0, 0, canvas.width, canvas.height);
-  };
-
-  this.getData = function() {
-    return canvas.toDataURL();
-  };
-}
-
-const empSigPad = new SignaturePad(document.getElementById("empSig"));
-const mgrSigPad = new SignaturePad(document.getElementById("mgrSig"));
-
-function submitForm(){
-  const reason = getCheckedValues(document.querySelector(".card:nth-of-type(3)"));
-  const impact = getCheckedValues(document.querySelector(".card:nth-of-type(6)"));
+  const level = count >=2 ? "Final Warning" :
+                count ===1 ? "Written Warning" : "Verbal Coaching";
 
   const data = {
-    employee: empName.value,
-    type: type.value,
-    reason,
-    impact,
+    store, manager, name,
+    issue: issue.value,
+    type: level,
     incident: incident.value,
-    expected: expected.value,
     action: action.value,
-    comments: comments.value,
-    empSignature: empSigPad.getData(),
-    mgrSignature: mgrSigPad.getData()
+    empSig: empPad.get(),
+    mgrSig: mgrPad.get(),
+    date: Date.now()
   };
 
-  console.log(data);
-  alert("Coaching submitted with full data ✔️");
+  await db.collection("coaching").add(data);
+
+  generatePDF(data);
+
+  alert("Saved ✔️");
+
+  loadDashboard();
 }
 
-function clearPad(pad){
-  pad.clear();
+// 📊 DASHBOARD + INTELLIGENCE
+async function loadDashboard(){
+  const snapshot = await db.collection("coaching")
+    .where("store","==",store)
+    .get();
+
+  let issues = {};
+  let repeats = {};
+
+  snapshot.forEach(doc=>{
+    let d = doc.data();
+
+    issues[d.issue] = (issues[d.issue]||0)+1;
+    repeats[d.name] = (repeats[d.name]||0)+1;
+  });
+
+  let topIssue = Object.keys(issues).sort((a,b)=>issues[b]-issues[a])[0];
+
+  let repeatList = Object.keys(repeats)
+    .filter(n=>repeats[n] >=3)
+    .map(n=>`${n} (${repeats[n]})`)
+    .join("<br>");
+
+  document.getElementById("dashboard").innerHTML = `
+    <h3>Dashboard</h3>
+    <div class="stat">Top Issue: ${topIssue || "None"}</div>
+    <div class="stat">Repeat Offenders:<br>${repeatList || "None"}</div>
+  `;
 }
+
+// 🖨️ BRANDED PDF
+function generatePDF(d){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.setFontSize(16);
+  doc.text("O'Reilly Auto Parts Coaching Form",20,20);
+
+  doc.setFontSize(12);
+  doc.text(`Employee: ${d.name}`,20,40);
+  doc.text(`Manager: ${d.manager}`,20,50);
+  doc.text(`Type: ${d.type}`,20,60);
+  doc.text(`Issue: ${d.issue}`,20,70);
+
+  doc.text("Incident:",20,90);
+  doc.text(d.incident,20,100);
+
+  doc.text("Action:",20,120);
+  doc.text(d.action,20,130);
+
+  doc.addImage(d.empSig,"PNG",20,150,60,30);
+  doc.addImage(d.mgrSig,"PNG",100,150,60,30);
+
+  doc.save(`${d.name}_coaching.pdf`);
+}
+
+// 📱 QR GENERATOR
+new QRCode(document.getElementById("qr"), {
+  text: window.location.href,
+  width: 128,
+  height: 128
+});
+
+// INIT
+loadDashboard();
 </script>
 
 </body>
