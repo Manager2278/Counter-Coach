@@ -484,7 +484,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, onSnapshot, deleteDoc,
-  query, where, updateDoc, doc, getDoc, getDocs, serverTimestamp, writeBatch
+  query, where, orderBy, limit, updateDoc, doc, getDoc, getDocs, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
@@ -604,10 +604,7 @@ async function bootApp() {
   const ms = loadMgrSession();
   if (ms && ms.store === store && ms.on) mgrLoggedIn = true;
 
-  // Await store data so repliesEnabled is ready before activateMgrPanel
-  // calls listenMgrInbox → renderMsgs on its first run.
-  await loadStorePin();
-
+  // Render UI and start employee listeners immediately — no blocking wait
   el("tb-store").textContent = "Store " + store;
   el("tb-store").classList.remove("hidden");
   el("tb-user").textContent  = name + (mgrLoggedIn ? " 🔑" : "");
@@ -616,11 +613,18 @@ async function bootApp() {
   el("log-date").textContent = new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
   el("banner-store").textContent = store;
 
-  if (mgrLoggedIn) activateMgrPanel();
-
   goScreen("log");
   listenEntries();
   listenMyMsgs();
+
+  // Manager-only: await PIN + repliesEnabled before activating manager panel
+  // (repliesEnabled is needed by renderMsgs inside listenMgrInbox)
+  if (mgrLoggedIn) {
+    await loadStorePin();
+    activateMgrPanel();
+  } else {
+    loadStorePin(); // fire-and-forget — PIN only needed if user opens manager tab
+  }
 }
 
 async function loadStorePin() {
@@ -879,21 +883,19 @@ window.setFilter = (f, btn) => {
 
 function listenEntries() {
   if (unsubEntries) unsubEntries();
-  console.log("listenEntries called, store =", store);
-  const q = query(collection(db,"entries"), where("store","==",store));
+  const q = query(collection(db,"entries"), where("store","==",store), orderBy("time","desc"), limit(200));
   unsubEntries = onSnapshot(q, snap => {
-    console.log("snapshot received, docs:", snap.docs.length);
-    allEntries = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time);
+    allEntries = snap.docs.map(d => ({id:d.id,...d.data()}));
     renderEmpEntries();
     updateStats();
-  }, e => console.error("entries error:", e));
+  }, e => console.error("entries:", e));
 }
 
 function listenMgrEntries() {
   if (unsubMgrEntries) unsubMgrEntries();
-  const q = query(collection(db,"entries"), where("store","==",store));
+  const q = query(collection(db,"entries"), where("store","==",store), orderBy("time","desc"), limit(200));
   unsubMgrEntries = onSnapshot(q, snap => {
-    allEntriesMgr = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time);
+    allEntriesMgr = snap.docs.map(d => ({id:d.id,...d.data()}));
     const doneCount = allEntriesMgr.filter(e => e.status === "complete").length;
     el("ms-open").textContent  = allEntriesMgr.filter(e => e.status === "open").length;
     el("ms-done").textContent  = doneCount;
