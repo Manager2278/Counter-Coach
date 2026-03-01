@@ -2,5 +2,34 @@
   "firestore": {
     "rules":   "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "firestore.rules",
+      "firestore.indexes.json",
+      "store-log.json",
+      "setRole.js",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "service-worker.js",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      },
+      {
+        "source": "**/*.html",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      }
+    ],
+    "rewrites": [
+      { "source": "/hub", "destination": "/cc-hub.html" },
+      { "source": "/login", "destination": "/clogin.html" },
+      { "source": "/coaching", "destination": "/coaching.html" },
+      { "source": "/recap", "destination": "/recap.html" },
+      { "source": "/rules", "destination": "/rules.html" }
+    ]
   }
 }
