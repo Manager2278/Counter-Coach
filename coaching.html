@@ -186,20 +186,6 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
   </div>
 </div>
 
-<!-- KIOSK SIGNING VIEW: shown after employee picks their name -->
-<div id="kiosk-sign-view" style="display:none;">
-  <div class="wrap">
-    <div class="card" style="margin-top:8px;">
-      <button class="btn btn-sm btn-outline" onclick="kioskBack()" style="margin-bottom:14px;">&#x2190; Back to Roster</button>
-      <div class="card-title" id="kiosk-emp-name"></div>
-    </div>
-    <div id="kiosk-records"></div>
-    <div class="card" id="kiosk-no-records" style="display:none;">
-      <div class="ok-box show">No pending coaching records found for you at this time.</div>
-    </div>
-  </div>
-</div>
-
 <!-- ═══════════════ EMPLOYEE SIGN VIEW (shown when ?sign=docId) ═══════════════ -->
 <div id="sign-view" style="display:none;">
   <div class="wrap">
@@ -1250,12 +1236,7 @@ function renderKioskRoster(emps) {
 }
 
 window.kioskSelectEmp = async function(name) {
-  el("kiosk-view").style.display      = "none";
-  el("kiosk-sign-view").style.display = "block";
-  el("kiosk-records").innerHTML       = '<div class="empty">Loading…</div>';
-  el("kiosk-no-records").style.display = "none";
-
-  // Save employee session to localStorage → auto-logs them into Counter Coach
+  // Save employee session → auto-logs them into Counter Coach
   try {
     let managerPhone = "", helpdeskPhone = "";
     const storeSnap = await getDoc(doc(db, "stores", kioskStoreId));
@@ -1267,107 +1248,7 @@ window.kioskSelectEmp = async function(name) {
       store: kioskStoreId, name, role: "employee", managerPhone, helpdeskPhone
     }));
   } catch(_) {}
-
-  // Welcome card with Counter Coach login link
-  el("kiosk-emp-name").innerHTML = `
-    <div style="font-size:18px;font-weight:700;margin-bottom:4px;">${esc(name)}</div>
-    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;">
-      You are now logged in to Counter Coach.
-    </div>
-    <a href="index.html" class="btn btn-green" style="display:inline-block;text-decoration:none;margin-bottom:0;">
-      &#x1F4CB; Go to Counter Coach &rarr;
-    </a>
-  `;
-
-  try {
-    const q    = query(collection(db,"coaching"),
-                       where("store","==",kioskStoreId),
-                       where("name","==",name),
-                       where("status","==","pending_employee"));
-    const snap = await getDocs(q);
-    if (snap.empty) {
-      el("kiosk-records").innerHTML = "";
-      el("kiosk-no-records").style.display = "block";
-      return;
-    }
-    el("kiosk-records").innerHTML = snap.docs.map(d => {
-      const r = d.data();
-      const fields = [
-        ["Issue",             r.issue],
-        ["Incident",          r.incident],
-        ["Expected Behavior", r.expected],
-        ["Corrective Action", r.action],
-        ["Date",              r.date],
-      ].filter(([,v]) => v);
-      return `
-        <div class="card" id="kiosk-rec-${d.id}">
-          <div class="card-title">${esc(r.type || "Coaching Record")}</div>
-          ${fields.map(([l,v]) => `
-            <div class="sign-field">
-              <div class="sign-field-label">${esc(l)}</div>
-              <div class="sign-field-value">${esc(v)}</div>
-            </div>`).join("")}
-          <div class="card" style="margin:12px 0 0;padding:16px;">
-            <div class="card-title">&#x270D;&#xFE0F; Your Signature</div>
-            <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;line-height:1.6;">
-              By signing below you acknowledge receipt of this coaching record. Signing does <strong>not</strong> imply agreement.
-            </p>
-            <canvas class="sig-canvas" id="kiosk-sig-${d.id}"></canvas>
-            <p class="sig-hint">Sign above with your finger or mouse</p>
-            <div class="sig-actions">
-              <button class="btn btn-outline btn-sm" onclick="clearKioskSig('${d.id}')">Clear</button>
-            </div>
-          </div>
-          <div class="err-box" id="kiosk-err-${d.id}"></div>
-          <button class="btn btn-green" id="kiosk-btn-${d.id}" onclick="submitKioskSig('${d.id}','${esc(name)}')">&#x2705; Sign &amp; Submit</button>
-        </div>`;
-    }).join("");
-    // Initialize signature pads for each record
-    snap.docs.forEach(d => {
-      const canvas = el("kiosk-sig-" + d.id);
-      if (canvas) window["_kioskPad_" + d.id] = new SigPad(canvas);
-    });
-  } catch(e) {
-    el("kiosk-records").innerHTML = `<div class="empty">Error: ${esc(e.message)}</div>`;
-  }
-};
-
-window.clearKioskSig = function(id) {
-  const pad = window["_kioskPad_" + id];
-  if (pad) pad.clear();
-};
-
-window.submitKioskSig = async function(docId, name) {
-  const pad   = window["_kioskPad_" + docId];
-  const errEl = el("kiosk-err-" + docId);
-  const btn   = el("kiosk-btn-" + docId);
-  errEl.classList.remove("show");
-  if (!pad || pad.isEmpty()) {
-    errEl.textContent = "Please sign before submitting.";
-    errEl.classList.add("show");
-    return;
-  }
-  btn.disabled    = true;
-  btn.textContent = "Submitting…";
-  try {
-    await updateDoc(doc(db, "coaching", docId), {
-      empSig:   pad.get(),
-      signedAt: serverTimestamp(),
-      status:   "complete"
-    });
-    const card = el("kiosk-rec-" + docId);
-    if (card) card.innerHTML = '<div class="ok-box show" style="margin:0;">Signed successfully. Thank you!</div>';
-  } catch(e) {
-    btn.disabled    = false;
-    btn.textContent = "Sign & Submit";
-    errEl.textContent = "Error: " + e.message;
-    errEl.classList.add("show");
-  }
-};
-
-window.kioskBack = function() {
-  el("kiosk-sign-view").style.display = "none";
-  el("kiosk-view").style.display      = "block";
+  window.location.href = "index.html";
 };
 </script>
 </body>
