@@ -1252,9 +1252,33 @@ function renderKioskRoster(emps) {
 window.kioskSelectEmp = async function(name) {
   el("kiosk-view").style.display      = "none";
   el("kiosk-sign-view").style.display = "block";
-  el("kiosk-emp-name").textContent    = name;
   el("kiosk-records").innerHTML       = '<div class="empty">Loading…</div>';
   el("kiosk-no-records").style.display = "none";
+
+  // Save employee session to localStorage → auto-logs them into Counter Coach
+  try {
+    let managerPhone = "", helpdeskPhone = "";
+    const storeSnap = await getDoc(doc(db, "stores", kioskStoreId));
+    if (storeSnap.exists()) {
+      managerPhone  = storeSnap.data().managerPhone  || "";
+      helpdeskPhone = storeSnap.data().helpdeskPhone || "";
+    }
+    localStorage.setItem("cc_v2_session", JSON.stringify({
+      store: kioskStoreId, name, role: "employee", managerPhone, helpdeskPhone
+    }));
+  } catch(_) {}
+
+  // Welcome card with Counter Coach login link
+  el("kiosk-emp-name").innerHTML = `
+    <div style="font-size:18px;font-weight:700;margin-bottom:4px;">${esc(name)}</div>
+    <div style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;">
+      You are now logged in to Counter Coach.
+    </div>
+    <a href="index.html" class="btn btn-green" style="display:inline-block;text-decoration:none;margin-bottom:0;">
+      &#x1F4CB; Go to Counter Coach &rarr;
+    </a>
+  `;
+
   try {
     const q    = query(collection(db,"coaching"),
                        where("store","==",kioskStoreId),
