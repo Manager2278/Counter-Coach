@@ -546,8 +546,33 @@ async function loadBroadcast() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────
+// Pre-show the login form immediately for QR ?store= params so the user
+// sees UI right away instead of waiting for auth to complete.
+(function preShowQR() {
+  const uS    = new URLSearchParams(location.search).get("store");
+  const saved = loadSession();
+  if (!uS || (saved && saved.store)) return;
+  // Show store # as visible read-only field (not hidden)
+  el("ns-store").value    = uS;
+  el("ns-store").readOnly = true;
+  el("ns-store").style.opacity = "0.55";
+  el("ns-store").style.cursor  = "default";
+  // Prime the dropdown with a loading state immediately
+  el("ns-name").innerHTML = '<option value="">Loading roster\u2026</option>';
+  el("ns-name").disabled  = true;
+  // Show the form without waiting for auth
+  el("no-session").classList.add("show");
+  el("bottom-nav").classList.add("show");
+})();
+
 signInAnonymously(auth)
-  .then(() => { loadBroadcast(); loadBranding(); }) // fire-and-forget — don't block init
+  .then(() => {
+    loadBroadcast(); loadBranding();
+    // Start roster load as soon as auth completes (for QR flow)
+    const uS    = new URLSearchParams(location.search).get("store");
+    const saved = loadSession();
+    if (uS && !(saved && saved.store)) loadNsRoster(uS);
+  })
   .catch(e => console.error("Auth:", e))
   .finally(init);
 
@@ -573,18 +598,17 @@ function init() {
     return;
   }
 
-  // 3. QR scan with store only — pre-fill store, hide that field, load roster, ask for name
+  // 3. QR scan with store only — set store variable; form + roster already
+  //    started by preShowQR() + signInAnonymously.then() above
   if (uS) {
     store = uS;
-    el("ns-store").value         = uS;
-    el("ns-store").style.display = "none";
-    loadNsRoster(uS);
+    return;
   }
 
-  // 4. Show the name/store prompt
+  // 4. No QR — show the name/store prompt manually
   el("no-session").classList.add("show");
   el("bottom-nav").classList.add("show");
-  setTimeout(() => el(uS ? "ns-name" : "ns-store").focus(), 150);
+  setTimeout(() => el("ns-store").focus(), 150);
 }
 
 // ── ROSTER-BACKED NAME DROPDOWN ───────────────────────────────────────────
