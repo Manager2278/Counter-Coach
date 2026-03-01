@@ -380,6 +380,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <button class="mgr-tab"    onclick="setMgrTab('all-log',this)">📋 All Entries</button>
     <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 QR Code</button>
     <button class="mgr-tab"    onclick="setMgrTab('feedback',this)" id="mgr-tab-feedback-btn">📣 Feedback</button>
+    <button class="mgr-tab"    onclick="setMgrTab('coaching',this)">📋 Coaching</button>
   </div>
 
   <!-- INBOX -->
@@ -411,6 +412,17 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
       <p>Employees scan this to go directly to Store <strong id="qr-store-lbl"></strong>.<br>They just enter their name — store is pre-filled.</p>
       <button class="btn-outline" onclick="copyLink()">📋 Copy Login Link</button>
     </div>
+  </div>
+
+  <!-- COACHING -->
+  <div class="mgr-tab-pane" id="mgr-pane-coaching">
+    <div class="section-head">Employee Coaching</div>
+    <p style="font-size:14px;color:var(--ink-soft);margin-bottom:16px;line-height:1.6;">
+      Create and manage coaching records for your team. Supports verbal coaching, written warnings, and final warnings — with digital signatures, a send-to-employee signing link, and PDF export.
+    </p>
+    <a href="coaching.html" class="btn-add" style="display:inline-block;text-decoration:none;border-radius:8px;color:white;">
+      &#x1F4CB; Open Coaching System &rarr;
+    </a>
   </div>
 
   <!-- FEEDBACK -->
