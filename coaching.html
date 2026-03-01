@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Coaching System Elite</title>
+<title>Coaching System Elite AI</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
@@ -15,9 +14,9 @@ body { font-family: Arial; background:#f4f4f4; margin:0; }
 .header { background:#006400; color:white; padding:15px; text-align:center; }
 .container { padding:15px; }
 .card { background:white; padding:15px; border-radius:10px; margin-bottom:15px; }
+input, textarea, select { width:100%; padding:10px; margin:5px 0; }
 button { width:100%; padding:12px; background:#FFD700; border:none; border-radius:10px; }
 canvas { width:100%; height:150px; border:1px solid #ccc; }
-.stat { font-weight:bold; margin:5px 0; }
 </style>
 </head>
 
@@ -29,9 +28,11 @@ canvas { width:100%; height:150px; border:1px solid #ccc; }
 
 <div class="card">
 <h3>New Coaching</h3>
+
 <input id="empName" placeholder="Employee Name">
 
-<select id="issue">
+<select id="issue" onchange="applyAI()">
+<option value="">Select Issue</option>
 <option>Core Charge Violation</option>
 <option>Warranty Violation</option>
 <option>Customer Service</option>
@@ -40,7 +41,10 @@ canvas { width:100%; height:150px; border:1px solid #ccc; }
 </select>
 
 <textarea id="incident" placeholder="Incident"></textarea>
+<textarea id="expected" placeholder="Expected Behavior"></textarea>
+<textarea id="ask" placeholder="Manager Will Ask"></textarea>
 <textarea id="action" placeholder="Corrective Action"></textarea>
+
 </div>
 
 <div class="card">
@@ -58,18 +62,16 @@ canvas { width:100%; height:150px; border:1px solid #ccc; }
 <button onclick="save()">Save + PDF</button>
 
 <div class="card" id="dashboard"></div>
-<div class="card" id="qr"></div>
 
 </div>
 
 <script>
 // SESSION
-const store = localStorage.getItem("store");
-const manager = localStorage.getItem("manager");
-
+const store = localStorage.getItem("store") || "0000";
+const manager = localStorage.getItem("manager") || "Manager";
 document.getElementById("header").innerText = `Store ${store} - ${manager}`;
 
-// FIREBASE
+// FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -78,45 +80,122 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// SIGN PAD
-function Sig(c){
-  this.ctx=c.getContext("2d"); this.draw=false;
-  c.width=c.offsetWidth; c.height=c.offsetHeight;
+// SIGNATURE PAD (FIXED)
+function Sig(canvas){
+  this.ctx = canvas.getContext("2d");
+  this.draw = false;
 
-  c.onmousedown=e=>{this.draw=true;this.ctx.beginPath();this.ctx.moveTo(e.offsetX,e.offsetY);}
-  c.onmousemove=e=>{if(!this.draw)return;this.ctx.lineTo(e.offsetX,e.offsetY);this.ctx.stroke();}
-  c.onmouseup=()=>this.draw=false;
+  function resize(){
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+  resize();
 
-  this.clear=()=>this.ctx.clearRect(0,0,c.width,c.height);
-  this.get=()=>c.toDataURL();
+  canvas.addEventListener("mousedown", e=>{
+    this.draw = true;
+    this.ctx.beginPath();
+    this.ctx.moveTo(e.offsetX,e.offsetY);
+  });
+
+  canvas.addEventListener("mousemove", e=>{
+    if(!this.draw) return;
+    this.ctx.lineTo(e.offsetX,e.offsetY);
+    this.ctx.stroke();
+  });
+
+  canvas.addEventListener("mouseup", ()=>this.draw=false);
+
+  canvas.addEventListener("touchstart", e=>{
+    e.preventDefault();
+    this.draw = true;
+  });
+
+  canvas.addEventListener("touchmove", e=>{
+    if(!this.draw) return;
+    const t = e.touches[0];
+    const r = canvas.getBoundingClientRect();
+    this.ctx.lineTo(t.clientX-r.left, t.clientY-r.top);
+    this.ctx.stroke();
+  });
+
+  canvas.addEventListener("touchend", ()=>this.draw=false);
+
+  this.clear = ()=>this.ctx.clearRect(0,0,canvas.width,canvas.height);
+  this.get = ()=>canvas.toDataURL();
 }
 
-const empPad=new Sig(empSig);
-const mgrPad=new Sig(mgrSig);
+const empPad = new Sig(document.getElementById("empSig"));
+const mgrPad = new Sig(document.getElementById("mgrSig"));
+
+// 🧠 AI LOGIC
+function applyAI(){
+  const issue = document.getElementById("issue").value;
+
+  const AI = {
+    "Core Charge Violation": {
+      expected: "Core charges are only removed when the physical core is present and verified.",
+      ask: "Did you physically receive the core before removing the charge?",
+      action: "Review core policy and require verification before removal."
+    },
+    "Warranty Violation": {
+      expected: "All warranties must follow system guidelines and proper testing procedures.",
+      ask: "What steps did you take to verify the warranty before processing?",
+      action: "Re-train on warranty lookup and validation process."
+    },
+    "Customer Service": {
+      expected: "Every customer should be greeted and assisted professionally.",
+      ask: "How could this interaction have been handled better?",
+      action: "Focus on greeting, listening, and solution-based service."
+    },
+    "Lookup Error": {
+      expected: "Parts must be verified using correct vehicle/application lookup.",
+      ask: "What steps did you use to confirm the correct part?",
+      action: "Slow down and verify part numbers before completing sale."
+    },
+    "Cash Handling": {
+      expected: "All transactions must be accurate and verified before closing.",
+      ask: "What caused the discrepancy in the drawer?",
+      action: "Follow cash handling procedures and double-check transactions."
+    }
+  };
+
+  if(AI[issue]){
+    expected.value = AI[issue].expected;
+    ask.value = AI[issue].ask;
+    action.value = AI[issue].action;
+  }
+}
 
 // SAVE
 async function save(){
-  const name = empName.value;
+  if(!empName.value){
+    alert("Employee name required");
+    return;
+  }
 
   const snapshot = await db.collection("coaching")
     .where("store","==",store)
-    .where("name","==",name)
+    .where("name","==",empName.value)
     .get();
 
   const count = snapshot.size;
 
-  const level = count >=2 ? "Final Warning" :
-                count ===1 ? "Written Warning" : "Verbal Coaching";
+  const level = count>=2 ? "Final Warning" :
+                count===1 ? "Written Warning" : "Verbal Coaching";
 
   const data = {
-    store, manager, name,
+    store,
+    manager,
+    name: empName.value,
     issue: issue.value,
-    type: level,
-    incident: incident.value,
+    expected: expected.value,
+    ask: ask.value,
     action: action.value,
+    incident: incident.value,
+    type: level,
     empSig: empPad.get(),
     mgrSig: mgrPad.get(),
-    date: Date.now()
+    date: new Date().toLocaleString()
   };
 
   await db.collection("coaching").add(data);
@@ -128,70 +207,40 @@ async function save(){
   loadDashboard();
 }
 
-// 📊 DASHBOARD + INTELLIGENCE
+// PDF
+function generatePDF(d){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  doc.text("O'Reilly Coaching Form",20,20);
+  doc.text(`Employee: ${d.name}`,20,40);
+  doc.text(`Type: ${d.type}`,20,50);
+  doc.text(`Issue: ${d.issue}`,20,60);
+
+  doc.text("Expected:",20,80);
+  doc.text(d.expected,20,90);
+
+  doc.text("Action:",20,110);
+  doc.text(d.action,20,120);
+
+  doc.addImage(d.empSig,"PNG",20,140,60,30);
+  doc.addImage(d.mgrSig,"PNG",100,140,60,30);
+
+  doc.save(`${d.name}.pdf`);
+}
+
+// DASHBOARD
 async function loadDashboard(){
   const snapshot = await db.collection("coaching")
     .where("store","==",store)
     .get();
 
-  let issues = {};
-  let repeats = {};
+  let total = snapshot.size;
 
-  snapshot.forEach(doc=>{
-    let d = doc.data();
-
-    issues[d.issue] = (issues[d.issue]||0)+1;
-    repeats[d.name] = (repeats[d.name]||0)+1;
-  });
-
-  let topIssue = Object.keys(issues).sort((a,b)=>issues[b]-issues[a])[0];
-
-  let repeatList = Object.keys(repeats)
-    .filter(n=>repeats[n] >=3)
-    .map(n=>`${n} (${repeats[n]})`)
-    .join("<br>");
-
-  document.getElementById("dashboard").innerHTML = `
-    <h3>Dashboard</h3>
-    <div class="stat">Top Issue: ${topIssue || "None"}</div>
-    <div class="stat">Repeat Offenders:<br>${repeatList || "None"}</div>
-  `;
+  document.getElementById("dashboard").innerHTML =
+    `<h3>Dashboard</h3>Total Coachings: ${total}`;
 }
 
-// 🖨️ BRANDED PDF
-function generatePDF(d){
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-
-  doc.setFontSize(16);
-  doc.text("O'Reilly Auto Parts Coaching Form",20,20);
-
-  doc.setFontSize(12);
-  doc.text(`Employee: ${d.name}`,20,40);
-  doc.text(`Manager: ${d.manager}`,20,50);
-  doc.text(`Type: ${d.type}`,20,60);
-  doc.text(`Issue: ${d.issue}`,20,70);
-
-  doc.text("Incident:",20,90);
-  doc.text(d.incident,20,100);
-
-  doc.text("Action:",20,120);
-  doc.text(d.action,20,130);
-
-  doc.addImage(d.empSig,"PNG",20,150,60,30);
-  doc.addImage(d.mgrSig,"PNG",100,150,60,30);
-
-  doc.save(`${d.name}_coaching.pdf`);
-}
-
-// 📱 QR GENERATOR
-new QRCode(document.getElementById("qr"), {
-  text: window.location.href,
-  width: 128,
-  height: 128
-});
-
-// INIT
 loadDashboard();
 </script>
 
