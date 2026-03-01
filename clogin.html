@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manager Login</title>
+
+<style>
+body { font-family: Arial; background:#f4f4f4; display:flex; justify-content:center; align-items:center; height:100vh; }
+.card { background:white; padding:20px; border-radius:10px; width:300px; }
+input { width:100%; padding:10px; margin:10px 0; }
+button { width:100%; padding:12px; background:#006400; color:white; border:none; border-radius:8px; }
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h3>Manager Login</h3>
+<input id="store" placeholder="Store Number">
+<input id="name" placeholder="Manager Name">
+<button onclick="login()">Enter</button>
+</div>
+
+<script>
+function login(){
+  localStorage.setItem("store", store.value);
+  localStorage.setItem("manager", name.value);
+  window.location.href = "coaching.html";
+}
+</script>
+
+</body>
+</html>
