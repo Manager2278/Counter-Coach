@@ -298,9 +298,9 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <p>Enter your store number and name to get started.</p>
     <div style="margin-top:16px;text-align:left;">
       <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Store Number</label>
-      <input type="text" id="ns-store" inputmode="numeric" placeholder="e.g. 2278" oninput="onNsStoreInput()" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+      <input type="text" id="ns-store" inputmode="numeric" placeholder="e.g. 2278" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
       <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Your Name</label>
-      <select id="ns-name" onchange="onNsNameChange()" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+      <select id="ns-name" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
         <option value="">— Enter store # first —</option>
       </select>
       <input type="text" id="ns-name-fallback" placeholder="Type your name" style="display:none;width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
@@ -669,6 +669,8 @@ window.noSessionLogin = () => {
   bootApp();
 };
 
+el("ns-store").addEventListener("input",  onNsStoreInput);
+el("ns-name").addEventListener("change",  onNsNameChange);
 ["ns-store", "ns-name-fallback"].forEach(id => {
   el(id).addEventListener("keydown", e => { if (e.key === "Enter") noSessionLogin(); });
 });
