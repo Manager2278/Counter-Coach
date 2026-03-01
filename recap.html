@@ -365,6 +365,17 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   <div id="msg-list"></div>
 </div>
 
+<!-- ═══════════════════ MY COACHING ══════════════ -->
+<div class="screen" id="screen-coaching">
+  <div class="page-header">
+    <div class="page-title">&#x1F4CB; My Coaching Records</div>
+    <div class="page-date">Private &mdash; visible only to you</div>
+  </div>
+  <div id="coaching-list">
+    <div style="text-align:center;padding:36px 0;color:var(--ink-faint);font-size:14px;">Loading&hellip;</div>
+  </div>
+</div>
+
 <!-- ═══════════════════ MANAGER PANEL ══════════════ -->
 <div class="screen" id="screen-mgr">
   <div class="mgr-panel-header">
@@ -459,6 +470,10 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <span class="nav-icon">🔒</span>Private
     <span class="nav-dot" id="msg-dot"></span>
   </button>
+  <button class="nav-btn" id="nav-coaching" onclick="navTo('coaching')">
+    <span class="nav-icon">&#x1F4CB;</span>Coaching
+    <span class="nav-dot" id="coaching-dot" style="display:none;"></span>
+  </button>
   <button class="nav-btn" id="nav-mgr" onclick="navTo('mgr')">
     <span class="nav-icon">🔑</span>Manager
     <span class="nav-dot" id="mgr-dot"></span>
@@ -469,7 +484,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, onSnapshot, deleteDoc,
-  query, where, updateDoc, doc, getDoc, serverTimestamp, writeBatch
+  query, where, updateDoc, doc, getDoc, getDocs, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
@@ -646,6 +661,7 @@ window.navTo = (dest) => {
     setTimeout(() => el("b-pin").focus(), 100);
   } else {
     goScreen(dest);
+    if (dest === "coaching") loadMyCoaching();
   }
 };
 
@@ -988,6 +1004,59 @@ window.sendMsg = async () => {
     el("msg-text").value = "";
   } catch(e) { alert("Send error: " + e.message); }
 };
+
+async function loadMyCoaching() {
+  const listEl = el("coaching-list");
+  listEl.innerHTML = '<div style="text-align:center;padding:36px 0;color:var(--ink-faint);font-size:14px;">Loading\u2026</div>';
+  try {
+    const q    = query(collection(db,"coaching"),
+                       where("store","==",store),
+                       where("name","==",name));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      listEl.innerHTML = '<div style="text-align:center;padding:36px 0;color:var(--ink-faint);font-size:14px;">No coaching records on file for you.</div>';
+      return;
+    }
+    const records = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a,b) => (b.savedAt?.toMillis?.() || 0) - (a.savedAt?.toMillis?.() || 0));
+
+    // Show dot on nav if any are pending signature
+    const hasPending = records.some(r => r.status === "pending_employee");
+    el("coaching-dot").style.display = hasPending ? "block" : "none";
+
+    const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    listEl.innerHTML = records.map(r => {
+      const isPending   = r.status === "pending_employee";
+      const borderColor = r.type === "Final Warning"   ? "var(--red)"
+                        : r.type === "Written Warning" ? "var(--amber)"
+                        :                                "var(--forest-light)";
+      const statusHtml  = isPending
+        ? `<span style="font-size:11px;font-weight:700;color:var(--amber);">&#x26A0;&#xFE0F; Signature needed</span>`
+        : `<span style="font-size:11px;font-weight:700;color:var(--forest);">&#x2714;&#xFE0F; Signed</span>`;
+      const signBtn = isPending
+        ? `<a href="coaching.html?sign=${r.id}" style="display:inline-block;margin-top:10px;padding:9px 20px;background:var(--forest);color:white;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">&#x270D;&#xFE0F; Review &amp; Sign</a>`
+        : "";
+      return `
+        <div class="entry-card" style="border-left-color:${borderColor};">
+          <div class="entry-top">
+            <div style="flex:1;">
+              <div style="font-weight:700;font-size:14px;">${esc(r.issue || "Coaching")}</div>
+              <div style="font-size:11px;color:var(--ink-soft);margin-top:2px;">${esc(r.type || "")}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:11px;color:var(--ink-faint);margin-bottom:3px;">${esc(r.date || "")}</div>
+              ${statusHtml}
+            </div>
+          </div>
+          ${r.incident ? `<div style="font-size:13px;color:var(--ink-soft);margin-top:8px;line-height:1.6;font-family:'Courier Prime',monospace;">${esc(r.incident)}</div>` : ""}
+          ${signBtn}
+        </div>`;
+    }).join("");
+  } catch(e) {
+    listEl.innerHTML = `<div style="text-align:center;padding:36px 0;color:var(--red);font-size:14px;">Error loading records: ${e.message}</div>`;
+  }
+}
 
 function listenMyMsgs() {
   if (unsubMsgs) unsubMsgs();
