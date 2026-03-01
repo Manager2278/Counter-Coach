@@ -298,9 +298,12 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <p>Enter your store number and name to get started.</p>
     <div style="margin-top:16px;text-align:left;">
       <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Store Number</label>
-      <input type="text" id="ns-store" inputmode="numeric" placeholder="e.g. 2278" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+      <input type="text" id="ns-store" inputmode="numeric" placeholder="e.g. 2278" oninput="onNsStoreInput()" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
       <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Your Name</label>
-      <input type="text" id="ns-name" placeholder="First name" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+      <select id="ns-name" onchange="onNsNameChange()" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+        <option value="">— Enter store # first —</option>
+      </select>
+      <input type="text" id="ns-name-fallback" placeholder="Type your name" style="display:none;width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
       <div id="ns-err" style="color:var(--red);font-size:13px;margin-bottom:10px;display:none;"></div>
       <button onclick="noSessionLogin()" class="btn-goto" style="width:100%;display:block;">Enter Store →</button>
     </div>
@@ -570,11 +573,12 @@ function init() {
     return;
   }
 
-  // 3. QR scan with store only — pre-fill store, hide that field, ask for name
+  // 3. QR scan with store only — pre-fill store, hide that field, load roster, ask for name
   if (uS) {
     store = uS;
-    el("ns-store").value        = uS;
+    el("ns-store").value         = uS;
     el("ns-store").style.display = "none";
+    loadNsRoster(uS);
   }
 
   // 4. Show the name/store prompt
@@ -583,9 +587,54 @@ function init() {
   setTimeout(() => el(uS ? "ns-name" : "ns-store").focus(), 150);
 }
 
+// ── ROSTER-BACKED NAME DROPDOWN ───────────────────────────────────────────
+let nsRosterTimer = null;
+
+function onNsStoreInput() {
+  const s = el("ns-store").value.trim();
+  clearTimeout(nsRosterTimer);
+  if (s.length >= 3) nsRosterTimer = setTimeout(() => loadNsRoster(s), 600);
+  else el("ns-name").innerHTML = '<option value="">— Enter store # first —</option>';
+}
+
+async function loadNsRoster(s) {
+  const sel = el("ns-name");
+  sel.innerHTML = '<option value="">Loading…</option>';
+  sel.disabled = true;
+  try {
+    const snap = await getDocs(query(collection(db, "employees"), where("store", "==", s)));
+    if (snap.empty) {
+      sel.innerHTML = '<option value="">— No roster found —</option>'
+                    + '<option value="__type__">✏️ Type my name…</option>';
+    } else {
+      const names = snap.docs.map(d => d.data().name).sort((a, b) => a.localeCompare(b));
+      sel.innerHTML = '<option value="">— Select your name —</option>'
+        + names.map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join("")
+        + '<option value="__type__">✏️ Not listed — type my name</option>';
+    }
+  } catch (_) {
+    sel.innerHTML = '<option value="">— Error loading roster —</option>'
+                  + '<option value="__type__">✏️ Type my name…</option>';
+  }
+  sel.disabled = false;
+}
+
+function onNsNameChange() {
+  const sel = el("ns-name");
+  const fb  = el("ns-name-fallback");
+  if (sel.value === "__type__") {
+    fb.style.display = "block";
+    setTimeout(() => fb.focus(), 50);
+  } else {
+    fb.style.display = "none";
+    fb.value = "";
+  }
+}
+
 window.noSessionLogin = () => {
-  const s = el("ns-store").value.trim() || store;
-  const n = el("ns-name").value.trim();
+  const s   = el("ns-store").value.trim() || store;
+  const sel = el("ns-name");
+  const n   = (sel.value === "__type__" ? el("ns-name-fallback").value : sel.value).trim();
   const errEl = el("ns-err");
   if (!s) { errEl.textContent = "Please enter your store number."; errEl.style.display = "block"; return; }
   if (!n) { errEl.textContent = "Please enter your name.";         errEl.style.display = "block"; return; }
@@ -596,7 +645,7 @@ window.noSessionLogin = () => {
   bootApp();
 };
 
-["ns-store","ns-name"].forEach(id => {
+["ns-store", "ns-name-fallback"].forEach(id => {
   el(id).addEventListener("keydown", e => { if (e.key === "Enter") noSessionLogin(); });
 });
 
