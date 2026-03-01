@@ -905,26 +905,31 @@ function listenEntries() {
   });
 }
 
+function renderMgrEntries() {
+  const doneCount = allEntriesMgr.filter(e => e.status === "complete").length;
+  el("ms-open").textContent  = allEntriesMgr.filter(e => e.status === "open").length;
+  el("ms-done").textContent  = doneCount;
+  el("ms-total").textContent = allEntriesMgr.length;
+  el("confirm-all-bar").classList.toggle("hidden", doneCount === 0);
+  el("mgr-dot").classList.toggle("show", doneCount > 0 && !mgrLoggedIn);
+  el("mgr-entries-list").innerHTML = allEntriesMgr.length
+    ? allEntriesMgr.map(e => mgrEntryCard(e)).join("")
+    : '<div class="empty"><div class="ei">📋</div><p>No entries yet.</p></div>';
+}
+
 function listenMgrEntries() {
   if (unsubMgrEntries) unsubMgrEntries();
   unsubMgrEntries = onSnapshot(_entriesQuery(), snap => {
     allEntriesMgr = snap.docs.map(d => ({id:d.id,...d.data()}));
+    renderMgrEntries();
   }, err => {
     // Index not ready yet — fall back to unordered query
     if (unsubMgrEntries) unsubMgrEntries();
     unsubMgrEntries = onSnapshot(_entriesQueryFallback(), snap => {
       allEntriesMgr = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time);
-    const doneCount = allEntriesMgr.filter(e => e.status === "complete").length;
-    el("ms-open").textContent  = allEntriesMgr.filter(e => e.status === "open").length;
-    el("ms-done").textContent  = doneCount;
-    el("ms-total").textContent = allEntriesMgr.length;
-    el("confirm-all-bar").classList.toggle("hidden", doneCount === 0);
-    // Also update mgr notification dot on nav
-    el("mgr-dot").classList.toggle("show", doneCount > 0 && !mgrLoggedIn);
-    el("mgr-entries-list").innerHTML = allEntriesMgr.length
-      ? allEntriesMgr.map(e => mgrEntryCard(e)).join("")
-      : '<div class="empty"><div class="ei">📋</div><p>No entries yet.</p></div>';
-  }, e => console.error("mgr-entries:", e));
+      renderMgrEntries();
+    }, e => console.error("mgr-entries:", e));
+  });
 }
 
 function updatePillCounts() {
