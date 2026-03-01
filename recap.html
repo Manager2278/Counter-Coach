@@ -484,7 +484,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getFirestore, collection, addDoc, onSnapshot, deleteDoc,
-  query, where, orderBy, limit, updateDoc, doc, getDoc, getDocs, serverTimestamp, writeBatch
+  query, where, updateDoc, doc, getDoc, getDocs, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
@@ -883,9 +883,9 @@ window.setFilter = (f, btn) => {
 
 function listenEntries() {
   if (unsubEntries) unsubEntries();
-  const q = query(collection(db,"entries"), where("store","==",store), orderBy("time","desc"), limit(200));
+  const q = query(collection(db,"entries"), where("store","==",store));
   unsubEntries = onSnapshot(q, snap => {
-    allEntries = snap.docs.map(d => ({id:d.id,...d.data()}));
+    allEntries = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time);
     renderEmpEntries();
     updateStats();
   }, e => console.error("entries:", e));
@@ -893,9 +893,9 @@ function listenEntries() {
 
 function listenMgrEntries() {
   if (unsubMgrEntries) unsubMgrEntries();
-  const q = query(collection(db,"entries"), where("store","==",store), orderBy("time","desc"), limit(200));
+  const q = query(collection(db,"entries"), where("store","==",store));
   unsubMgrEntries = onSnapshot(q, snap => {
-    allEntriesMgr = snap.docs.map(d => ({id:d.id,...d.data()}));
+    allEntriesMgr = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time);
     const doneCount = allEntriesMgr.filter(e => e.status === "complete").length;
     el("ms-open").textContent  = allEntriesMgr.filter(e => e.status === "open").length;
     el("ms-done").textContent  = doneCount;
