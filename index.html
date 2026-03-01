@@ -27,6 +27,8 @@
     .nb-fields input { padding: 8px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); font-family: Arial, sans-serif; font-size: 14px; background: rgba(255,255,255,0.15); color: white; flex: 1; min-width: 100px; }
     .nb-fields input::placeholder { color: rgba(255,255,255,0.5); }
     .nb-fields input:focus { outline: none; background: rgba(255,255,255,0.22); }
+    .nb-fields select { padding: 8px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); font-family: Arial, sans-serif; font-size: 14px; background: rgba(255,255,255,0.15); color: white; flex: 1; min-width: 120px; cursor: pointer; }
+    .nb-fields select option { color: #1a1a1a; background: white; }
     .btn-nb { padding: 8px 16px; background: white; color: #1b5e20; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
     .nb-err { font-size: 12px; color: #ffb3b3; margin-top: 6px; display: none; }
     .nb-err.show { display: block; }
@@ -91,11 +93,13 @@
     <div class="nb-inner">
       <div class="nb-title" id="nb-title">Enter your name to continue</div>
       <div class="nb-fields">
-        <input type="text" id="nb-store" placeholder="Store #" style="max-width:90px;" inputmode="numeric">
-        <input type="text" id="nb-name" placeholder="Your name">
+        <input type="text" id="nb-store" placeholder="Store #" style="max-width:90px;" inputmode="numeric" oninput="onNbStoreInput()">
+        <select id="nb-name">
+          <option value="">— Enter store # first —</option>
+        </select>
         <button class="btn-nb" onclick="submitNameBanner()">Go</button>
       </div>
-      <div class="nb-err" id="nb-err">Please enter your store number and name.</div>
+      <div class="nb-err" id="nb-err">Please enter your store number and select your name.</div>
     </div>
   </div>
 
@@ -176,7 +180,8 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp,
+         collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const cfg = {
@@ -322,24 +327,81 @@ async function checkStoreExists(s) {
   }
 }
 
+// ── NAME BANNER — ROSTER LOADER
+let _nbTimer = null;
+window.onNbStoreInput = () => {
+  const s = val("nb-store");
+  const sel = el("nb-name");
+  sel.innerHTML = '<option value="">— Loading\u2026 —</option>';
+  sel.disabled = true;
+  clearTimeout(_nbTimer);
+  if (s.length < 2) {
+    sel.innerHTML = '<option value="">— Enter store # first —</option>';
+    return;
+  }
+  _nbTimer = setTimeout(() => loadNbRoster(s), 600);
+};
+
+async function loadNbRoster(s) {
+  const sel = el("nb-name");
+  try {
+    const snap = await getDocs(query(collection(db,"employees"), where("store","==",s)));
+    if (snap.empty) {
+      sel.innerHTML = '<option value="">— No roster found —</option><option value="__type__">\u270F\uFE0F Type my name\u2026</option>';
+    } else {
+      const names = snap.docs.map(d => d.data().name).sort((a,b) => a.localeCompare(b));
+      sel.innerHTML = '<option value="">— Select your name —</option>' +
+        names.map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join("") +
+        '<option value="__type__">\u270F\uFE0F Not listed \u2014 type my name</option>';
+    }
+    sel.disabled = false;
+  } catch(_) {
+    sel.innerHTML = '<option value="">— Error loading names —</option><option value="__type__">\u270F\uFE0F Type my name\u2026</option>';
+    sel.disabled = false;
+  }
+}
+
+// Show/hide text fallback when "type my name" option is chosen
+function onNbNameChange() {
+  const sel = el("nb-name");
+  let fb = el("nb-name-fallback");
+  if (sel.value === "__type__") {
+    if (!fb) {
+      fb = document.createElement("input");
+      fb.type = "text"; fb.id = "nb-name-fallback"; fb.placeholder = "Type your name";
+      fb.style.cssText = "flex:1;padding:8px 11px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);font-family:Arial,sans-serif;font-size:14px;background:rgba(255,255,255,0.15);color:white;min-width:100px;margin-top:6px;";
+      fb.addEventListener("keydown", e => { if (e.key === "Enter") submitNameBanner(); });
+      sel.parentNode.insertBefore(fb, sel.nextSibling);
+    }
+    setTimeout(() => fb.focus(), 50);
+  } else {
+    if (fb) fb.remove();
+  }
+}
+el("nb-name").addEventListener("change", onNbNameChange);
+
 // ── NAME BANNER
 function showNameBanner(title) {
   el("nb-title").textContent = title || "Enter your name to continue";
   el("nb-err").classList.remove("show");
   el("name-banner").classList.add("show");
   el("nb-store").style.display = store ? "none" : "";
-  if (store) el("nb-store").value = store;
-  setTimeout(() => el("nb-name").focus(), 100);
+  if (store) {
+    el("nb-store").value = store;
+    loadNbRoster(store);
+  }
 }
 window.submitNameBanner = async () => {
-  const s = val("nb-store") || store;
-  const n = val("nb-name");
-  if (!s || !n) { el("nb-err").classList.add("show"); return; }
+  const s   = val("nb-store") || store;
+  const sel = el("nb-name");
+  const fb  = el("nb-name-fallback");
+  const n   = fb ? fb.value.trim() : sel.value;
+  if (!s || !n || n === "__type__") { el("nb-err").classList.add("show"); return; }
   try {
     const snap = await getDoc(doc(db, "stores", s));
     if (snap.exists()) {
       const d = snap.data();
-      managerPhone = d.managerPhone || "";
+      managerPhone  = d.managerPhone  || "";
       helpdeskPhone = d.helpdeskPhone || "";
     }
   } catch(e) { console.error("store fetch:", e); }
@@ -348,7 +410,6 @@ window.submitNameBanner = async () => {
   el("name-banner").classList.remove("show");
   if (pendingAction) { const a = pendingAction; pendingAction = null; a(); }
 };
-el("nb-name").addEventListener("keydown", e => { if (e.key === "Enter") submitNameBanner(); });
 
 // ── GUARDED ACTIONS
 window.guardedAction = (action) => {
