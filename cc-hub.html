@@ -234,6 +234,30 @@
     /* ── COLOR PICKER */
     .color-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
     input[type=color] { width: 44px; height: 36px; padding: 2px; border: 1.5px solid var(--ruled); border-radius: 6px; cursor: pointer; background: var(--paper); flex-shrink: 0; }
+
+    /* ── EMPLOYEES */
+    .emp-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ruled); gap: 8px; }
+    .emp-item:last-child { border-bottom: none; }
+    .emp-name   { font-weight: 700; font-size: 14px; }
+    .emp-detail { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+    .badge-role-mgr { background: #e8f5e9; color: #2e7d32; }
+    .badge-role-key { background: #fff8e1; color: #7a5800; }
+    .badge-role-emp { background: #f5f5f5; color: #555; }
+
+    /* ── COACHING RECORDS */
+    .coaching-item { padding: 12px 0; border-bottom: 1px solid var(--ruled); }
+    .coaching-item:last-child { border-bottom: none; }
+    .coaching-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+    .coaching-store { font-family: 'Courier Prime', monospace; font-size: 12px; font-weight: 700; color: var(--forest); }
+    .coaching-body  { font-size: 13px; color: var(--ink); line-height: 1.5; margin: 4px 0; }
+    .coaching-meta  { font-size: 12px; color: var(--ink-faint); margin-top: 4px; }
+    .badge-verbal      { background: #fff8e1; color: #7a5800;  font-size:11px; font-weight:700; padding:2px 8px; border-radius:8px; }
+    .badge-written     { background: #ffebee; color: #c62828;  font-size:11px; font-weight:700; padding:2px 8px; border-radius:8px; }
+    .badge-final       { background: #ffcdd2; color: #b71c1c;  font-size:11px; font-weight:700; padding:2px 8px; border-radius:8px; }
+    .badge-pip         { background: #fce4ec; color: #880e4f;  font-size:11px; font-weight:700; padding:2px 8px; border-radius:8px; }
+    .badge-termination { background: #263238; color: #fff;     font-size:11px; font-weight:700; padding:2px 8px; border-radius:8px; }
+    .badge-coaching-draft    { background: #e3f2fd; color: #1565c0; font-size:11px; font-weight:700; padding:2px 8px; border-radius:8px; }
+    .badge-coaching-complete { background: #e8f5e9; color: #2e7d32; font-size:11px; font-weight:700; padding:2px 8px; border-radius:8px; }
   </style>
 </head>
 <body>
@@ -315,6 +339,8 @@
         <button class="tab-drop-item"    onclick="goTab('broadcast')">📢 Broadcast</button>
         <button class="tab-drop-item"    onclick="goTab('settings')">⚙️ Settings</button>
         <button class="tab-drop-item"    onclick="goTab('analytics')">📊 Analytics</button>
+        <button class="tab-drop-item"    onclick="goTab('employees')">👥 Employees</button>
+        <button class="tab-drop-item"    onclick="goTab('coaching')">📋 Coaching</button>
         <button class="tab-drop-item"    onclick="goTab('feedback')">💬 Feedback</button>
         <button class="tab-drop-item"    onclick="goTab('audit')">📓 Audit Log</button>
         <button class="tab-drop-item"    onclick="goTab('config')">🛠️ Config</button>
@@ -453,6 +479,69 @@
       <div class="card">
         <div class="card-title">📬 Message Stats by Store</div>
         <div class="chart-row" id="chart-msgs"><div class="empty">No data yet.</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: EMPLOYEES ══════════════════════ -->
+    <div class="tab-pane" id="tab-employees">
+
+      <div class="card">
+        <div class="card-title">➕ Add Employee</div>
+        <div class="store-edit-grid">
+          <div class="edit-field">
+            <label class="field-label">Store #</label>
+            <input type="text" id="emp-add-store" placeholder="e.g. 1234" inputmode="numeric" maxlength="10" style="margin:0;">
+          </div>
+          <div class="edit-field">
+            <label class="field-label">Name</label>
+            <input type="text" id="emp-add-name" placeholder="First Last" style="margin:0;">
+          </div>
+          <div class="edit-field">
+            <label class="field-label">Role</label>
+            <select id="emp-add-role" style="padding:8px 10px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:14px;background:var(--paper);color:var(--ink);width:100%;">
+              <option value="employee">Employee</option>
+              <option value="keyholder">Keyholder</option>
+              <option value="manager">Manager</option>
+            </select>
+          </div>
+          <div class="edit-field">
+            <label class="field-label">Member # (optional)</label>
+            <input type="text" id="emp-add-member" placeholder="Member #" style="margin:0;">
+          </div>
+        </div>
+        <div class="err-box" id="emp-add-err" style="margin-top:10px;"></div>
+        <button class="btn btn-green" onclick="addEmployee()" style="margin-top:12px;">Add to Roster</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👥 All Employees</div>
+        <div class="log-filter">
+          <select id="emp-store-filter" onchange="filterEmployees()">
+            <option value="">All Stores</option>
+          </select>
+        </div>
+        <div id="emp-list"><div class="empty">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: COACHING ════════════════════════ -->
+    <div class="tab-pane" id="tab-coaching">
+      <div class="card">
+        <div class="card-title">📋 Coaching Records</div>
+        <div class="log-filter">
+          <select id="coaching-store-filter" onchange="filterCoaching()">
+            <option value="">All Stores</option>
+          </select>
+          <select id="coaching-type-filter" onchange="filterCoaching()">
+            <option value="">All Types</option>
+            <option value="verbal">Verbal</option>
+            <option value="written">Written</option>
+            <option value="final">Final Written</option>
+            <option value="pip">PIP</option>
+            <option value="termination">Termination</option>
+          </select>
+        </div>
+        <div id="coaching-list"><div class="empty">Loading…</div></div>
       </div>
     </div>
 
@@ -668,6 +757,12 @@ let filtFeedback    = [];
 let unsubFeedback   = null;
 let allAuditLog     = [];
 let unsubAuditLog   = null;
+let allEmployees    = [];
+let filtEmployees   = [];
+let unsubEmployees  = null;
+let allCoaching     = [];
+let filtCoaching    = [];
+let unsubCoaching   = null;
 
 // ── ADMIN AUTH ────────────────────────────────────────────────
 (async function checkSetup() {
@@ -725,6 +820,8 @@ function enterAdmin() {
   listenAdminMsgs();
   listenFeedback();
   listenAuditLog();
+  listenEmployees();
+  listenCoaching();
 }
 
 window.adminLogout = function() {
@@ -733,7 +830,9 @@ window.adminLogout = function() {
   if (unsubEntries)  { unsubEntries();  unsubEntries  = null; }
   if (unsubAdminMsgs){ unsubAdminMsgs(); unsubAdminMsgs = null; }
   if (unsubFeedback) { unsubFeedback(); unsubFeedback  = null; }
-  if (unsubAuditLog) { unsubAuditLog(); unsubAuditLog  = null; }
+  if (unsubAuditLog)  { unsubAuditLog();  unsubAuditLog  = null; }
+  if (unsubEmployees) { unsubEmployees(); unsubEmployees = null; }
+  if (unsubCoaching)  { unsubCoaching();  unsubCoaching  = null; }
   loggedIn = false;
   el("login-screen").classList.remove("hidden");
   el("admin-app").classList.remove("show");
@@ -746,8 +845,8 @@ window.adminLogout = function() {
 const TAB_LABELS = {
   codes:"🎫 Codes", stores:"🏪 Stores", logbook:"📋 Logbook",
   messages:"📬 Messages", broadcast:"📢 Broadcast", settings:"⚙️ Settings",
-  analytics:"📊 Analytics", feedback:"💬 Feedback", audit:"📓 Audit Log",
-  config:"🛠️ Config"
+  analytics:"📊 Analytics", employees:"👥 Employees", coaching:"📋 Coaching",
+  feedback:"💬 Feedback", audit:"📓 Audit Log", config:"🛠️ Config"
 };
 
 window.goTab = function(tab) {
@@ -894,6 +993,7 @@ function renderStores() {
         &nbsp;·&nbsp; 📞 ${esc(s.managerPhone  || "—")}
         &nbsp;·&nbsp; 🛟 ${esc(s.helpdeskPhone || "—")}
         ${s.created ? `<br>📅 Registered ${fmtDate(s.created)}` : ""}
+        ${s.infoUpdatedAt ? `<br>🔄 Info updated ${fmtDate(s.infoUpdatedAt)}` : ""}
       </div>
       <div class="store-actions">
         <button class="btn btn-sm btn-outline" onclick="toggleStoreEdit('${esc(s.id)}')">✏️ Edit</button>
@@ -998,7 +1098,8 @@ window.saveStore = async function(storeId) {
       managerPhone:   phone,
       helpdeskPhone:  helpdesk,
       repliesEnabled: repliesEnabled,
-      pin:            cur.pin || "0000"
+      pin:            cur.pin || "0000",
+      infoUpdatedAt:  serverTimestamp()
     });
     document.getElementById("edit-" + storeId).classList.remove("open");
     auditLog("Updated store info", `Store: ${storeId} · Manager: ${name}`);
@@ -1017,7 +1118,8 @@ window.resetPIN = async function(storeId) {
       pin:           newPin.trim(),
       managerName:   cur.managerName   || "—",
       managerPhone:  cur.managerPhone  || "",
-      helpdeskPhone: cur.helpdeskPhone || ""
+      helpdeskPhone: cur.helpdeskPhone || "",
+      infoUpdatedAt: serverTimestamp()
     });
     alert(`✅ PIN for Store ${storeId} has been updated.`);
     auditLog("Reset manager PIN", `Store: ${storeId}`);
@@ -1523,6 +1625,152 @@ window.saveFeatureFlags = async function() {
     auditLog("Updated feature flags", `Feedback: ${feedbackEnabled}, Messages: ${msgsEnabled}`);
   } catch(e) { alert("Error: " + e.message); }
 };
+
+// ── EMPLOYEES ─────────────────────────────────────────────────
+function listenEmployees() {
+  if (unsubEmployees) unsubEmployees();
+  const q = query(collection(db, "employees"), orderBy("name"));
+  unsubEmployees = onSnapshot(q, snap => {
+    allEmployees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    populateEmpStoreFilter();
+    filterEmployees();
+  }, e => console.error("employees snapshot:", e));
+}
+
+function populateEmpStoreFilter() {
+  const stores = [...new Set(allEmployees.map(e => e.store).filter(Boolean))].sort();
+  const sel = el("emp-store-filter");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Stores</option>' +
+    stores.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  if (cur) sel.value = cur;
+}
+
+window.filterEmployees = function() {
+  const store = el("emp-store-filter").value;
+  filtEmployees = store ? allEmployees.filter(e => e.store === store) : allEmployees;
+  renderEmployees();
+};
+
+function renderEmployees() {
+  const container = el("emp-list");
+  if (!filtEmployees.length) {
+    container.innerHTML = '<div class="empty">No employees found.</div>';
+    return;
+  }
+  const roleLabel = { manager: "Manager", keyholder: "Keyholder", employee: "Employee" };
+  const roleBadge = { manager: "badge-role-mgr", keyholder: "badge-role-key", employee: "badge-role-emp" };
+  container.innerHTML = filtEmployees.map(e => `
+    <div class="emp-item">
+      <div style="flex:1;min-width:0;">
+        <div class="emp-name">${esc(e.name || "—")}</div>
+        <div class="emp-detail">Store ${esc(e.store || "?")}${e.memberNum ? ` · #${esc(e.memberNum)}` : ""}${e.addedAt ? ` · Added ${fmtDate(e.addedAt)}` : ""}</div>
+      </div>
+      <span class="badge ${roleBadge[e.role] || 'badge-role-emp'}" style="flex-shrink:0;">${roleLabel[e.role] || esc(e.role || "Employee")}</span>
+      <button class="btn btn-sm btn-red" onclick="deleteEmployee('${esc(e.id)}','${esc(e.name || '')}')">🗑️</button>
+    </div>`).join("") +
+    (allEmployees.length > filtEmployees.length
+      ? `<div class="empty" style="padding:10px 0;">Filtered — ${filtEmployees.length} of ${allEmployees.length} employees</div>` : "");
+}
+
+window.addEmployee = async function() {
+  const store     = el("emp-add-store").value.trim();
+  const name      = el("emp-add-name").value.trim();
+  const role      = el("emp-add-role").value;
+  const memberNum = el("emp-add-member").value.trim();
+  const errEl     = el("emp-add-err");
+  errEl.classList.remove("show");
+  if (!store) { errEl.textContent = "Store number is required."; errEl.classList.add("show"); return; }
+  if (!name)  { errEl.textContent = "Employee name is required."; errEl.classList.add("show"); return; }
+  try {
+    await addDoc(collection(db, "employees"), {
+      store,
+      name,
+      role,
+      memberNum: memberNum || null,
+      addedBy:  "admin",
+      addedAt:  serverTimestamp()
+    });
+    el("emp-add-name").value   = "";
+    el("emp-add-member").value = "";
+    auditLog("Added employee", `Store: ${store} · Name: ${name} · Role: ${role}`);
+  } catch(e) { errEl.textContent = "Error: " + e.message; errEl.classList.add("show"); }
+};
+
+window.deleteEmployee = async function(id, name) {
+  if (!confirm(`Remove "${name}" from the roster? This cannot be undone.`)) return;
+  await deleteDoc(doc(db, "employees", id)).catch(e => alert("Error: " + e.message));
+  auditLog("Removed employee", `Name: ${name} · ID: ${id}`);
+};
+
+// ── COACHING RECORDS ──────────────────────────────────────────
+function listenCoaching() {
+  if (unsubCoaching) unsubCoaching();
+  const q = query(collection(db, "coaching"), orderBy("savedAt", "desc"), limit(200));
+  unsubCoaching = onSnapshot(q, snap => {
+    allCoaching = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    populateCoachingStoreFilter();
+    filterCoaching();
+  }, e => console.error("coaching snapshot:", e));
+}
+
+function populateCoachingStoreFilter() {
+  const stores = [...new Set(allCoaching.map(c => c.store).filter(Boolean))].sort();
+  const sel = el("coaching-store-filter");
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Stores</option>' +
+    stores.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  if (cur) sel.value = cur;
+}
+
+window.filterCoaching = function() {
+  const store = el("coaching-store-filter").value;
+  const type  = el("coaching-type-filter").value;
+  filtCoaching = allCoaching
+    .filter(c => (!store || c.store === store) && (!type || c.type === type));
+  renderCoaching();
+};
+
+function renderCoaching() {
+  const container = el("coaching-list");
+  if (!filtCoaching.length) {
+    container.innerHTML = '<div class="empty">No coaching records found.</div>';
+    return;
+  }
+  const typeBadge = {
+    verbal: "badge-verbal", written: "badge-written", final: "badge-final",
+    pip: "badge-pip", termination: "badge-termination"
+  };
+  const typeLabel = {
+    verbal: "Verbal", written: "Written", final: "Final Written",
+    pip: "PIP", termination: "Termination"
+  };
+  container.innerHTML = filtCoaching.map(c => `
+    <div class="coaching-item">
+      <div class="coaching-head">
+        <div>
+          <span class="coaching-store">Store ${esc(c.store || "?")}</span>
+          <span style="margin:0 5px;color:var(--ink-faint)">·</span>
+          <span style="font-size:13px;font-weight:700;">${esc(c.name || "—")}</span>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <span class="${typeBadge[c.type] || 'badge-other'}">${typeLabel[c.type] || esc(c.type || "—")}</span>
+          <span class="${c.status === 'complete' ? 'badge-coaching-complete' : 'badge-coaching-draft'}">${c.status === 'complete' ? 'Complete' : 'Draft'}</span>
+        </div>
+      </div>
+      <div class="coaching-body">
+        ${c.issue  ? `<b>Issue:</b> ${esc(c.issue)}<br>` : ""}
+        ${c.action ? `<b>Action:</b> ${esc(c.action)}` : ""}
+      </div>
+      <div class="coaching-meta">
+        👤 Mgr: ${esc(c.manager || "?")}
+        ${c.savedAt ? ` · ${fmtTime(c.savedAt)}` : ""}
+        ${c.empSig  ? ` · <span style="color:#2e7d32;">✍ Signed</span>` : ""}
+      </div>
+    </div>`).join("") +
+    (allCoaching.length > filtCoaching.length
+      ? `<div class="empty" style="padding:10px 0;">Filtered — ${filtCoaching.length} of ${allCoaching.length} records</div>` : "");
+}
 </script>
 </body>
 </html>
