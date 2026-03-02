@@ -514,6 +514,28 @@
       </div>
 
       <div class="card">
+        <div class="card-title">📋 Role Definitions</div>
+        <div class="config-row" style="padding:10px 0;">
+          <div class="config-info">
+            <div class="config-label"><span class="badge badge-role-emp" style="margin-right:6px;">Employee</span></div>
+            <div class="config-sub">Counter access only — can log in via QR or store number, submit check-ins, and send private messages. No managerial functions.</div>
+          </div>
+        </div>
+        <div class="config-row" style="padding:10px 0;">
+          <div class="config-info">
+            <div class="config-label"><span class="badge badge-role-key" style="margin-right:6px;">Keyholder</span></div>
+            <div class="config-sub">All employee access plus ability to open/close store and handle basic operational decisions in the manager's absence.</div>
+          </div>
+        </div>
+        <div class="config-row" style="padding:10px 0;border-bottom:none;">
+          <div class="config-info">
+            <div class="config-label"><span class="badge badge-role-mgr" style="margin-right:6px;">Manager</span></div>
+            <div class="config-sub">Full access — store PIN holder, coaching records, manager setup, logbook, and all Counter Coach features.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card-title">👥 All Employees</div>
         <div class="log-filter">
           <select id="emp-store-filter" onchange="filterEmployees()">
