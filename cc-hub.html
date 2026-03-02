@@ -235,6 +235,12 @@
     .color-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
     input[type=color] { width: 44px; height: 36px; padding: 2px; border: 1.5px solid var(--ruled); border-radius: 6px; cursor: pointer; background: var(--paper); flex-shrink: 0; }
 
+    /* ── NOTIFICATION BANNER */
+    .notif-banner { display: none; background: var(--amber); color: var(--ink); padding: 11px 16px; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center; position: sticky; top: 52px; z-index: 90; gap: 10px; align-items: center; justify-content: center; }
+    .notif-banner.show { display: flex; }
+    .notif-dismiss { background: none; border: none; font-size: 18px; line-height: 1; padding: 0 2px; cursor: pointer; color: var(--ink); opacity: 0.6; flex-shrink: 0; }
+    .notif-dismiss:hover { opacity: 1; }
+
     /* ── EMPLOYEES */
     .emp-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ruled); gap: 8px; }
     .emp-item:last-child { border-bottom: none; }
@@ -307,6 +313,10 @@
 
 <!-- ═══════════════════ ADMIN APP ═══════════════════ -->
 <div id="admin-app">
+  <div class="notif-banner" id="notif-banner" onclick="goTab('feedback'); dismissNotif();">
+    <span id="notif-text">💬 New feedback received</span>
+    <button class="notif-dismiss" onclick="event.stopPropagation(); dismissNotif();">✕</button>
+  </div>
   <div class="wrap">
 
     <!-- Stats -->
@@ -774,9 +784,10 @@ let unsubCodes      = null;
 let unsubStores     = null;
 let unsubEntries    = null;
 let unsubAdminMsgs  = null;
-let allFeedback     = [];
-let filtFeedback    = [];
-let unsubFeedback   = null;
+let allFeedback       = [];
+let filtFeedback      = [];
+let unsubFeedback     = null;
+let prevFeedbackCount = -1; // -1 = initial load, skip notification
 let allAuditLog     = [];
 let unsubAuditLog   = null;
 let allEmployees    = [];
@@ -852,6 +863,8 @@ window.adminLogout = function() {
   if (unsubEntries)  { unsubEntries();  unsubEntries  = null; }
   if (unsubAdminMsgs){ unsubAdminMsgs(); unsubAdminMsgs = null; }
   if (unsubFeedback) { unsubFeedback(); unsubFeedback  = null; }
+  prevFeedbackCount = -1;
+  dismissNotif();
   if (unsubAuditLog)  { unsubAuditLog();  unsubAuditLog  = null; }
   if (unsubEmployees) { unsubEmployees(); unsubEmployees = null; }
   if (unsubCoaching)  { unsubCoaching();  unsubCoaching  = null; }
@@ -1382,13 +1395,29 @@ function renderAnalytics() {
 // ── FEEDBACK ──────────────────────────────────────────────────
 function listenFeedback() {
   if (unsubFeedback) unsubFeedback();
+  prevFeedbackCount = -1;
   const q = query(collection(db, "feedback"), orderBy("time", "desc"));
   unsubFeedback = onSnapshot(q, snap => {
     allFeedback = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const newCount = allFeedback.length;
+    if (prevFeedbackCount !== -1 && newCount > prevFeedbackCount) {
+      const added = newCount - prevFeedbackCount;
+      showNotif(`💬 ${added} new feedback item${added > 1 ? 's' : ''} received — tap to view`);
+    }
+    prevFeedbackCount = newCount;
     populateFbStoreFilter();
     filterFeedback();
   }, e => console.error("feedback snapshot:", e));
 }
+
+function showNotif(msg) {
+  el("notif-text").textContent = msg;
+  el("notif-banner").classList.add("show");
+}
+
+window.dismissNotif = function() {
+  el("notif-banner").classList.remove("show");
+};
 
 function populateFbStoreFilter() {
   const stores = [...new Set(allFeedback.map(f => f.store).filter(Boolean))].sort();
