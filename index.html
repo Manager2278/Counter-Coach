@@ -71,6 +71,11 @@
     .store-status { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 6px; display: inline-block; margin-bottom: 10px; }
     .store-status.new { background: #e8f5e9; color: #2e7d32; }
     .store-status.exists { background: #e3f2fd; color: #1565c0; }
+    /* ── LOCKED MANAGER FIELDS */
+    input.mgr-locked { background: #f5f5f5 !important; color: #9e9e9e !important; border-color: #e0e0e0 !important; cursor: default !important; }
+    #mgr-lock-notice { display: none; align-items: center; justify-content: space-between; gap: 8px; background: #f5f5f5; border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; font-size: 12px; color: #757575; }
+    #mgr-lock-notice.show { display: flex; }
+    .btn-unlock { font-size: 12px; font-weight: 700; color: #1565c0; background: none; border: 1.5px solid #1565c0; border-radius: 6px; padding: 4px 10px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -147,6 +152,11 @@
 
         <span class="field-label">Help Desk Phone</span>
         <input type="tel" id="mgr-helpdesk" placeholder="10-digit number">
+
+        <div id="mgr-lock-notice">
+          <span>🔒 Info locked — enter PIN below, then unlock to edit.</span>
+          <button class="btn-unlock" onclick="unlockMgrFields()">🔓 Unlock</button>
+        </div>
 
         <span class="field-label">Store PIN (4+ characters)</span>
         <input type="password" id="mgr-pin" placeholder="Create or enter existing PIN">
@@ -279,7 +289,15 @@ window.showManagerSetup = () => {
   storeExists = null;
   el("store-status-badge").innerHTML = "";
   el("reg-code-wrap").classList.remove("show");
+  el("mgr-lock-notice").classList.remove("show");
   el("setup-desc").textContent = "Enter your store number to check if it exists.";
+  // Reset lock state on all manager info fields
+  ["mgr-name", "mgr-phone", "mgr-helpdesk"].forEach(id => {
+    el(id).readOnly = false;
+    el(id).classList.remove("mgr-locked");
+    el(id).value = "";
+  });
+  el("mgr-pin").value = "";
   if (store) { el("mgr-store").value = store; onStoreInput(); }
   showScreen("screen-mgr-setup");
 };
@@ -314,8 +332,18 @@ async function checkStoreExists(s) {
     storeExists = snap.exists();
     if (storeExists) {
       el("store-status-badge").innerHTML = '<span class="store-status exists">&#x2714; Store found — enter your PIN below</span>';
-      el("setup-desc").textContent = "Store already registered. Enter your manager PIN to update settings.";
+      el("setup-desc").textContent = "Store already registered. Enter your PIN to log in, or unlock to edit manager info.";
       el("reg-code-wrap").classList.remove("show");
+      // Pre-fill and lock manager info fields with stored values
+      const d = snap.data();
+      el("mgr-name").value     = d.managerName   || "";
+      el("mgr-phone").value    = d.managerPhone   || "";
+      el("mgr-helpdesk").value = d.helpdeskPhone  || "";
+      ["mgr-name", "mgr-phone", "mgr-helpdesk"].forEach(id => {
+        el(id).readOnly = true;
+        el(id).classList.add("mgr-locked");
+      });
+      el("mgr-lock-notice").classList.add("show");
     } else {
       el("store-status-badge").innerHTML = '<span class="store-status new">&#x2795; New store — registration code required</span>';
       el("setup-desc").textContent = "New store. Enter the registration code from SM 2278 Justin to create it.";
@@ -427,6 +455,26 @@ window.guardedRecap = (e) => {
 };
 
 // ── MANAGER LOGIN
+window.unlockMgrFields = async () => {
+  const s   = val("mgr-store");
+  const pin = val("mgr-pin");
+  if (!pin) { showErr("mgr-err", "Enter your PIN first, then click Unlock."); return; }
+  try {
+    const snap = await getDoc(doc(db, "stores", s));
+    if (!snap.exists() || snap.data().pin !== pin) {
+      showErr("mgr-err", "Incorrect PIN — cannot unlock.");
+      return;
+    }
+    ["mgr-name", "mgr-phone", "mgr-helpdesk"].forEach(id => {
+      el(id).readOnly = false;
+      el(id).classList.remove("mgr-locked");
+    });
+    el("mgr-lock-notice").classList.remove("show");
+    el("mgr-err").classList.remove("show");
+    el("mgr-name").focus();
+  } catch(e) { showErr("mgr-err", "Error: " + e.message); }
+};
+
 window.mgrLogin = async () => {
   const s   = val("mgr-store");
   const n   = val("mgr-name");
