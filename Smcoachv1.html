@@ -123,7 +123,7 @@ line-height:1.4;
 
 <div id="cust4" class="hidden">
 <p>Is the customer still escalating AFTER policy + solution + manager involvement?</p>
-<button class="btn btn-yes" onclick="callDM('Customer escalation unresolved after full process')">YES</button>
+<button class="btn btn-yes" onclick="peerCheckDM('Customer escalation unresolved after full process')">YES</button>
 <button class="btn btn-no" onclick="noCall('Resolved through proper process')">NO</button>
 </div>
 
@@ -148,7 +148,7 @@ line-height:1.4;
 
 <div id="staff4" class="hidden">
 <p>Is the store unable to safely operate or serve customers effectively?</p>
-<button class="btn btn-yes" onclick="callDM('Staffing issue affecting business operations')">YES</button>
+<button class="btn btn-yes" onclick="peerCheckDM('Staffing issue affecting business operations')">YES</button>
 <button class="btn btn-no" onclick="noCall('Store still functional with adjustments')">NO</button>
 </div>
 
@@ -173,7 +173,7 @@ line-height:1.4;
 
 <div id="ops4" class="hidden">
 <p>Is the issue STILL causing lost sales or inability to operate?</p>
-<button class="btn btn-yes" onclick="callDM('Operational failure affecting revenue')">YES</button>
+<button class="btn btn-yes" onclick="peerCheckDM('Operational failure affecting revenue')">YES</button>
 <button class="btn btn-no" onclick="noCall('Issue resolved or controlled')">NO</button>
 </div>
 
@@ -192,7 +192,7 @@ line-height:1.4;
 
 <div id="cash3" class="hidden">
 <p>Is the variance still unexplained and significant?</p>
-<button class="btn btn-yes" onclick="callDM('Unresolved cash variance')">YES</button>
+<button class="btn btn-yes" onclick="peerCheckDM('Unresolved cash variance')">YES</button>
 <button class="btn btn-no" onclick="noCall('Variance accounted for')">NO</button>
 </div>
 
@@ -211,7 +211,7 @@ line-height:1.4;
 
 <div id="delivery3" class="hidden">
 <p>Is the issue still causing lost business or major disruption?</p>
-<button class="btn btn-yes" onclick="callDM('Delivery impacting business')">YES</button>
+<button class="btn btn-yes" onclick="peerCheckDM('Delivery impacting business')">YES</button>
 <button class="btn btn-no" onclick="noCall('Managed internally')">NO</button>
 </div>
 
@@ -230,8 +230,15 @@ line-height:1.4;
 
 <div id="policy3" class="hidden">
 <p>Is this decision high-risk (legal, financial, or customer impact)?</p>
-<button class="btn btn-yes" onclick="callDM('Policy clarification required')">YES</button>
+<button class="btn btn-yes" onclick="peerCheckDM('Policy clarification required')">YES</button>
 <button class="btn btn-no" onclick="noCall('Manager decision expected')">NO</button>
+</div>
+
+<!-- PEER CHECK -->
+<div id="peer1" class="hidden">
+<p>Could another store manager help resolve this before calling DM?</p>
+<button class="btn btn-yes" onclick="noCall('Peer manager support available — handle with team')">YES</button>
+<button class="btn btn-no" onclick="callDM(pendingReason)">NO</button>
 </div>
 
 <!-- RESULT -->
@@ -263,6 +270,7 @@ Manager Decision Coach © 2026 Justin Thomas • Internal Use Only • Unauthori
 
 
 let historyStack=[];
+let pendingReason="";
 
 
 function showScreen(id){
@@ -283,6 +291,11 @@ showScreen(id);
 function goHome(){
 historyStack=[];
 showScreen("home");
+}
+
+function peerCheckDM(reason){
+pendingReason=reason;
+nextQ('peer1');
 }
 
 function callEmergency(){
