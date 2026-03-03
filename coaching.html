@@ -432,6 +432,7 @@ const auth = getAuth(app);
 
 // ── SESSION ────────────────────────────────────────────────────
 let store = "", managerName = "", isMgr = false;
+let prefillEmpName = "", prefillEmpNum = "";
 
 function loadSession() {
   try {
@@ -523,6 +524,8 @@ function init() {
   const params    = new URLSearchParams(location.search);
   const signId    = params.get("sign");
   const kioskId   = params.get("kiosk");
+  prefillEmpName  = params.get("emp") || "";
+  prefillEmpNum   = params.get("num") || "";
 
   if (kioskId) {
     // Employee self-service kiosk view
@@ -1137,6 +1140,15 @@ function updateDropdown() {
   sel.innerHTML = '<option value="">— Select Employee —</option>' +
     roster.map(e => `<option value="${esc(e.name)}" data-num="${esc(e.memberNum||'')}">${esc(e.name)}${e.memberNum ? ' (' + esc(e.memberNum) + ')' : ''}</option>`).join("");
   if (cur) sel.value = cur;
+  if (prefillEmpName) {
+    sel.value = prefillEmpName;
+    const opt = sel.options[sel.selectedIndex];
+    const num = opt ? (opt.dataset.num || prefillEmpNum) : prefillEmpNum;
+    if (el("emp-counter")) el("emp-counter").value = num;
+    prefillEmpName = ""; // one-time use
+    prefillEmpNum  = "";
+    loadLevelPreview();
+  }
 }
 
 function renderRoster() {

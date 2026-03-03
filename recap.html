@@ -258,14 +258,28 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .fb-type-pill.on { background: var(--forest); color: white; border-color: var(--forest); }
 
 /* ── MANAGER ROSTER ──────────────────────────── */
-.roster-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--ruled); flex-wrap: wrap; }
+.roster-add-form { background: var(--paper); border: 1.5px solid var(--ruled); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+.roster-add-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; }
+@media (max-width: 480px) { .roster-add-grid { grid-template-columns: 1fr 1fr; } }
+.roster-field-input { width: 100%; padding: 7px 10px; border: 1.5px solid var(--ruled); border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 13px; background: var(--paper); color: var(--ink); }
+.roster-field-input:focus { outline: none; border-color: var(--forest-light); }
+.roster-item { padding: 10px 0; border-bottom: 1px solid var(--ruled); }
 .roster-item:last-child { border-bottom: none; }
+.roster-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .roster-name { font-weight: 700; font-size: 14px; flex: 1; min-width: 100px; }
 .roster-meta { font-size: 12px; color: var(--ink-faint); margin-top: 1px; }
 .roster-select { padding: 6px 10px; border: 1.5px solid var(--ruled); border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 13px; background: var(--paper); color: var(--ink); cursor: pointer; }
 .roster-select:focus { outline: none; border-color: var(--forest-light); }
-.roster-saved { font-size: 12px; color: #2e7d32; font-weight: 700; opacity: 0; transition: opacity .3s; min-width: 52px; }
+.roster-saved { font-size: 12px; color: #2e7d32; font-weight: 700; opacity: 0; transition: opacity .3s; min-width: 16px; }
 .roster-saved.show { opacity: 1; }
+.roster-edit-row { display: none; gap: 8px; padding: 8px 0 4px; flex-wrap: wrap; align-items: flex-end; }
+.roster-edit-row.open { display: flex; }
+.btn-icon { padding: 5px 8px; border: 1.5px solid var(--ruled); border-radius: 6px; background: var(--paper); font-size: 14px; cursor: pointer; line-height: 1; flex-shrink: 0; }
+.btn-icon:hover { border-color: var(--sage); }
+.btn-icon-red { border-color: var(--red-pale); }
+.btn-icon-red:hover { background: var(--red-pale); border-color: var(--red); }
+.btn-icon-coach { border-color: var(--mint); }
+.btn-icon-coach:hover { background: var(--mint); border-color: var(--sage); }
 
 .hidden { display: none !important; }
 #broadcast-banner { display: none; background: #1c3a2a; color: white; padding: 10px 16px; font-size: 13px; line-height: 1.5; }
@@ -406,7 +420,6 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 QR Code</button>
     <button class="mgr-tab"    onclick="setMgrTab('roster',this)">👥 Roster</button>
     <button class="mgr-tab"    onclick="setMgrTab('coaching',this)" id="mgr-tab-coaching-btn">📋 Coaching</button>
-    <button class="mgr-tab"    onclick="setMgrTab('feedback',this)" id="mgr-tab-feedback-btn">📣 Feedback</button>
   </div>
 
   <!-- INBOX -->
@@ -442,8 +455,36 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 
   <!-- ROSTER -->
   <div class="mgr-tab-pane" id="mgr-pane-roster">
-    <div class="section-head">Store Roster — Job Titles</div>
-    <p style="font-size:13px;color:var(--ink-faint);margin-bottom:14px;line-height:1.5;">Update job titles for your team. Changes save instantly.</p>
+    <div class="section-head">Store Roster</div>
+
+    <!-- Add Employee -->
+    <div class="roster-add-form">
+      <div class="roster-add-grid">
+        <div>
+          <div class="add-label">Name</div>
+          <input type="text" id="roster-add-name" placeholder="First Last"
+            class="roster-field-input" style="margin:0;">
+        </div>
+        <div>
+          <div class="add-label">Counter #</div>
+          <input type="text" id="roster-add-num" placeholder="Member #"
+            class="roster-field-input" style="margin:0;">
+        </div>
+        <div>
+          <div class="add-label">Title</div>
+          <select id="roster-add-title" class="roster-select" style="width:100%;">
+            <option>Parts Specialist</option><option>RSS</option>
+            <option>ISS</option><option>Assistant</option><option>Driver</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="btn-add" onclick="addMgrEmployee()"
+            style="padding:8px 18px;border-radius:8px;font-size:13px;white-space:nowrap;">+ Add</button>
+        </div>
+      </div>
+      <div class="err-box" id="roster-add-err" style="margin-top:8px;display:none;"></div>
+    </div>
+
     <div id="mgr-roster-list"><div class="empty">Loading…</div></div>
   </div>
 
@@ -545,6 +586,7 @@ let mgrViewingInbox    = false;
 let repliesEnabled     = false;
 let empDocMap          = {}; // name → Firestore doc ID for currently loaded store
 let allowTypeMyName    = true; // feature flag: show "Not listed" option in roster dropdown
+let mgrRosterData      = []; // local cache for coaching shortcut
 
 // ── SESSION ───────────────────────────────────────────────────
 function saveSession()    { localStorage.setItem("cc_v2_session", JSON.stringify({ store, name, role: "employee", managerPhone: "", helpdeskPhone: "" })); }
@@ -1405,43 +1447,130 @@ async function loadMgrRoster() {
     const snap = await getDocs(
       query(collection(db,"employees"), where("store","==",store), orderBy("name"))
     );
-    if (snap.empty) {
-      listEl.innerHTML = '<div class="empty">No employees on roster for Store ' + esc(store) + '.</div>';
+    mgrRosterData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!mgrRosterData.length) {
+      listEl.innerHTML = '<div class="empty">No employees on roster. Add one above.</div>';
       return;
     }
-    listEl.innerHTML = snap.docs.map(d => {
-      const e = { id: d.id, ...d.data() };
-      const opts = ROSTER_TITLES.map(t =>
-        `<option value="${t}"${e.role===t?' selected':''}>${t}</option>`
-      ).join("");
-      return `
-        <div class="roster-item">
-          <div style="flex:1;min-width:100px;">
-            <div class="roster-name">${esc(e.name || "—")}</div>
-            ${e.memberNum ? `<div class="roster-meta">#${esc(e.memberNum)}</div>` : ""}
-          </div>
-          <select class="roster-select" id="rs-title-${esc(e.id)}"
-            onchange="saveMgrTitle('${esc(e.id)}',this)">
-            ${opts}
-          </select>
-          <span class="roster-saved" id="rs-saved-${esc(e.id)}">✓ Saved</span>
-        </div>`;
-    }).join("");
+    renderMgrRoster();
   } catch(err) {
     listEl.innerHTML = `<div class="empty">Error: ${esc(err.message)}</div>`;
   }
 }
 
+function renderMgrRoster() {
+  const listEl = el("mgr-roster-list");
+  if (!listEl) return;
+  listEl.innerHTML = mgrRosterData.map(e => {
+    const opts = ROSTER_TITLES.map(t =>
+      `<option value="${t}"${e.role===t?' selected':''}>${t}</option>`
+    ).join("");
+    return `
+      <div class="roster-item">
+        <div class="roster-row">
+          <div style="flex:1;min-width:100px;">
+            <div class="roster-name">${esc(e.name || "—")}</div>
+            ${e.memberNum ? `<div class="roster-meta">#${esc(e.memberNum)}</div>` : ""}
+          </div>
+          <select class="roster-select" id="rs-title-${esc(e.id)}"
+            onchange="saveMgrTitle('${esc(e.id)}',this)">${opts}</select>
+          <span class="roster-saved" id="rs-saved-${esc(e.id)}">✓</span>
+          <button class="btn-icon btn-icon-coach" title="Open Coaching"
+            onclick="coachEmployee('${esc(e.id)}')">📋</button>
+          <button class="btn-icon" title="Edit name / counter #"
+            onclick="toggleRosterEdit('${esc(e.id)}')">✏️</button>
+          <button class="btn-icon btn-icon-red" title="Remove from roster"
+            onclick="deleteMgrEmployee('${esc(e.id)}','${esc(e.name||'')}')">🗑️</button>
+        </div>
+        <div class="roster-edit-row" id="re-row-${esc(e.id)}">
+          <div>
+            <div class="add-label">Name</div>
+            <input type="text" class="roster-field-input" id="re-name-${esc(e.id)}"
+              value="${esc(e.name||'')}" style="margin:0;width:140px;">
+          </div>
+          <div>
+            <div class="add-label">Counter #</div>
+            <input type="text" class="roster-field-input" id="re-num-${esc(e.id)}"
+              value="${esc(e.memberNum||'')}" style="margin:0;width:100px;">
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:6px;padding-bottom:2px;">
+            <button class="btn-add" onclick="saveMgrEmployee('${esc(e.id)}')"
+              style="padding:7px 14px;border-radius:8px;font-size:13px;">Save</button>
+            <button class="btn-done" onclick="toggleRosterEdit('${esc(e.id)}')"
+              style="padding:7px 14px;">Cancel</button>
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
 window.saveMgrTitle = async function(id, sel) {
   try {
     await updateDoc(doc(db,"employees",id), { role: sel.value });
-    const savedEl = el("rs-saved-" + id);
-    if (savedEl) {
-      savedEl.classList.add("show");
-      setTimeout(() => savedEl.classList.remove("show"), 2000);
-    }
+    const e = mgrRosterData.find(x => x.id === id);
+    if (e) e.role = sel.value;
+    flashRosterSaved(id);
   } catch(err) { alert("Error saving title: " + err.message); }
 };
+
+window.toggleRosterEdit = function(id) {
+  const row = document.getElementById("re-row-" + id);
+  if (row) row.classList.toggle("open");
+};
+
+window.saveMgrEmployee = async function(id) {
+  const newName = document.getElementById("re-name-" + id)?.value.trim();
+  const newNum  = document.getElementById("re-num-"  + id)?.value.trim();
+  if (!newName) { alert("Name is required."); return; }
+  await updateDoc(doc(db,"employees",id), {
+    name: newName, memberNum: newNum || null
+  }).catch(e => { alert("Error: " + e.message); return; });
+  const e = mgrRosterData.find(x => x.id === id);
+  if (e) { e.name = newName; e.memberNum = newNum || null; }
+  flashRosterSaved(id);
+  renderMgrRoster();
+};
+
+window.addMgrEmployee = async function() {
+  const n     = el("roster-add-name").value.trim();
+  const num   = el("roster-add-num").value.trim();
+  const title = el("roster-add-title").value;
+  const errEl = el("roster-add-err");
+  errEl.style.display = "none";
+  if (!n) { errEl.textContent = "Name is required."; errEl.style.display = "block"; return; }
+  try {
+    const ref = await addDoc(collection(db,"employees"), {
+      store, name: n, role: title, memberNum: num || null,
+      addedBy: "manager", addedAt: serverTimestamp()
+    });
+    mgrRosterData.push({ id: ref.id, store, name: n, role: title, memberNum: num || null });
+    mgrRosterData.sort((a,b) => a.name.localeCompare(b.name));
+    el("roster-add-name").value = "";
+    el("roster-add-num").value  = "";
+    renderMgrRoster();
+  } catch(e) { errEl.textContent = "Error: " + e.message; errEl.style.display = "block"; }
+};
+
+window.deleteMgrEmployee = async function(id, empName) {
+  if (!confirm(`Remove "${empName}" from the roster? This cannot be undone.`)) return;
+  await deleteDoc(doc(db,"employees",id)).catch(e => alert("Error: " + e.message));
+  mgrRosterData = mgrRosterData.filter(x => x.id !== id);
+  renderMgrRoster();
+};
+
+window.coachEmployee = function(id) {
+  const e = mgrRosterData.find(x => x.id === id);
+  if (!e) return;
+  location.href = "coaching.html?emp=" + encodeURIComponent(e.name||"")
+                + "&num=" + encodeURIComponent(e.memberNum||"");
+};
+
+function flashRosterSaved(id) {
+  const savedEl = el("rs-saved-" + id);
+  if (!savedEl) return;
+  savedEl.classList.add("show");
+  setTimeout(() => savedEl.classList.remove("show"), 2000);
+}
 
 // ── APP CONFIG CHECK (feature flags) ──────────────────────────
 async function checkAppConfig() {
