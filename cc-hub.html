@@ -692,6 +692,36 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-label">Employee Roster Dropdown</div>
+            <div class="config-sub">Show employees a name-select dropdown on login. When off, employees type their name freely.</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="cfg-roster-enabled" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-label">Allow Typing Name (Not on Roster)</div>
+            <div class="config-sub">Show "✏️ Not listed — type my name" option in the roster dropdown.</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="cfg-allow-type-name" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="config-row">
+          <div class="config-info">
+            <div class="config-label">Coaching Module</div>
+            <div class="config-sub">Enable the coaching tab for managers in the Daily Recap app.</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="cfg-coaching-enabled" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
         <div style="margin-top:14px;">
           <div class="ok-box" id="cfg-flags-ok"></div>
           <button class="btn btn-green" onclick="saveFeatureFlags()">Save Feature Flags</button>
@@ -1260,6 +1290,12 @@ window.refreshMessages = function() {
   listenAdminMsgs();
 };
 
+window.deleteMessage = async function(id) {
+  if (!confirm("Delete this message? This cannot be undone.")) return;
+  await deleteDoc(doc(db, "messages", id)).catch(e => alert("Error: " + e.message));
+  auditLog("Deleted private message", `ID: ${id}`);
+};
+
 function renderAdminMsgs() {
   const container = el("admin-msg-list");
   if (!filtAdminMsgs.length) {
@@ -1275,7 +1311,10 @@ function renderAdminMsgs() {
           <span style="margin:0 5px;color:var(--ink-faint)">·</span>
           <span class="admin-msg-from">From: ${esc(m.from || "?")}</span>
         </div>
-        <span class="${m.read ? 'badge-read' : 'badge-unread'}">${m.read ? "Read" : "Unread"}</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span class="${m.read ? 'badge-read' : 'badge-unread'}">${m.read ? "Read" : "Unread"}</span>
+          <button class="btn btn-sm btn-red" onclick="deleteMessage('${esc(m.id)}')">🗑️</button>
+        </div>
       </div>
       <div class="admin-msg-body">${esc(m.text || "")}</div>
       ${m.reply ? `<div class="admin-msg-reply">↩ <b>${esc(m.reply.from)}</b> replied: ${esc(m.reply.text)}</div>` : ""}
@@ -1526,6 +1565,9 @@ async function loadAppConfig() {
     el("cfg-footer").value   = data.appFooterNote    || "";
     el("cfg-feedback-enabled").checked = data.feedbackEnabled !== false;
     el("cfg-msgs-enabled").checked     = data.msgsEnabled     !== false;
+    el("cfg-roster-enabled").checked   = data.rosterEnabled   !== false;
+    el("cfg-allow-type-name").checked  = data.allowTypeMyName !== false;
+    el("cfg-coaching-enabled").checked = data.coachingEnabled !== false;
     // Branding fields
     el("cfg-app-name").value = data.appName || "";
     const color = data.brandColor || "#2d5a27";
@@ -1663,17 +1705,24 @@ window.saveAppConfig = async function() {
 window.saveFeatureFlags = async function() {
   const feedbackEnabled = el("cfg-feedback-enabled").checked;
   const msgsEnabled     = el("cfg-msgs-enabled").checked;
+  const rosterEnabled   = el("cfg-roster-enabled").checked;
+  const allowTypeMyName = el("cfg-allow-type-name").checked;
+  const coachingEnabled = el("cfg-coaching-enabled").checked;
   try {
     await setDoc(doc(db, "admin", "appConfig"), {
       feedbackEnabled,
       msgsEnabled,
+      rosterEnabled,
+      allowTypeMyName,
+      coachingEnabled,
       updatedAt: serverTimestamp()
     }, { merge: true });
     const okEl = el("cfg-flags-ok");
     okEl.textContent = "Feature flags saved.";
     okEl.classList.add("show");
     setTimeout(() => okEl.classList.remove("show"), 3000);
-    auditLog("Updated feature flags", `Feedback: ${feedbackEnabled}, Messages: ${msgsEnabled}`);
+    auditLog("Updated feature flags",
+      `Feedback: ${feedbackEnabled}, Messages: ${msgsEnabled}, Roster: ${rosterEnabled}, TypeName: ${allowTypeMyName}, Coaching: ${coachingEnabled}`);
   } catch(e) { alert("Error: " + e.message); }
 };
 
@@ -1790,6 +1839,12 @@ window.filterCoaching = function() {
   renderCoaching();
 };
 
+window.deleteCoaching = async function(id, name) {
+  if (!confirm(`Delete coaching record for "${name}"? This cannot be undone.`)) return;
+  await deleteDoc(doc(db, "coaching", id)).catch(e => alert("Error: " + e.message));
+  auditLog("Deleted coaching record", `Name: ${name} · ID: ${id}`);
+};
+
 function renderCoaching() {
   const container = el("coaching-list");
   if (!filtCoaching.length) {
@@ -1812,9 +1867,10 @@ function renderCoaching() {
           <span style="margin:0 5px;color:var(--ink-faint)">·</span>
           <span style="font-size:13px;font-weight:700;">${esc(c.name || "—")}</span>
         </div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
           <span class="${typeBadge[c.type] || 'badge-other'}">${typeLabel[c.type] || esc(c.type || "—")}</span>
           <span class="${c.status === 'complete' ? 'badge-coaching-complete' : 'badge-coaching-draft'}">${c.status === 'complete' ? 'Complete' : 'Draft'}</span>
+          <button class="btn btn-sm btn-red" onclick="deleteCoaching('${esc(c.id)}','${esc(c.name||'')}')">🗑️</button>
         </div>
       </div>
       <div class="coaching-body">

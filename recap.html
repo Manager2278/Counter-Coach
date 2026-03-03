@@ -394,7 +394,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <button class="mgr-tab on" onclick="setMgrTab('inbox',this)">📬 Inbox <span class="inbox-cnt hidden" id="inbox-cnt"></span></button>
     <button class="mgr-tab"    onclick="setMgrTab('all-log',this)">📋 All Entries</button>
     <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 QR Code</button>
-    <button class="mgr-tab"    onclick="setMgrTab('coaching',this)">📋 Coaching</button>
+    <button class="mgr-tab"    onclick="setMgrTab('coaching',this)" id="mgr-tab-coaching-btn">📋 Coaching</button>
     <button class="mgr-tab"    onclick="setMgrTab('feedback',this)" id="mgr-tab-feedback-btn">📣 Feedback</button>
   </div>
 
@@ -526,6 +526,7 @@ let pendingPhotoFiles  = []; // up to 4
 let mgrViewingInbox    = false;
 let repliesEnabled     = false;
 let empDocMap          = {}; // name → Firestore doc ID for currently loaded store
+let allowTypeMyName    = true; // feature flag: show "Not listed" option in roster dropdown
 
 // ── SESSION ───────────────────────────────────────────────────
 function saveSession()    { localStorage.setItem("cc_v2_session", JSON.stringify({ store, name, role: "employee", managerPhone: "", helpdeskPhone: "" })); }
@@ -641,6 +642,7 @@ async function loadNsRoster(s) {
       .filter(d => !d.data().loggedIn)
       .map(d => d.data().name)
       .sort((a, b) => a.localeCompare(b));
+    const typeOpt = allowTypeMyName ? '<option value="__type__">✏️ Not listed — type my name</option>' : '';
     if (!snap.docs.length) {
       sel.innerHTML = '<option value="">— No roster found —</option>'
                     + '<option value="__type__">✏️ Type my name…</option>';
@@ -650,7 +652,7 @@ async function loadNsRoster(s) {
     } else {
       sel.innerHTML = '<option value="">— Select your name —</option>'
         + available.map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join("")
-        + '<option value="__type__">✏️ Not listed — type my name</option>';
+        + typeOpt;
     }
   } catch (_) {
     sel.innerHTML = '<option value="">— Error loading roster —</option>'
@@ -681,7 +683,15 @@ window.noSessionLogin = () => {
   errEl.style.display = "none";
   // Claim this name — fire-and-forget, no delay for user
   const docId = empDocMap[n];
-  if (docId) updateDoc(doc(db, "employees", docId), { loggedIn: true }).catch(() => {});
+  if (docId) {
+    updateDoc(doc(db, "employees", docId), { loggedIn: true })
+      .catch(e => console.warn("loggedIn write failed:", e));
+  } else {
+    // Fallback: query by name in case empDocMap wasn't built (e.g. typed name before roster loaded)
+    getDocs(query(collection(db,"employees"), where("store","==",s), where("name","==",n)))
+      .then(snap => { if (!snap.empty) updateDoc(snap.docs[0].ref, { loggedIn: true }).catch(()=>{}); })
+      .catch(() => {});
+  }
   store = s; name = n;
   saveSession();
   el("no-session").classList.remove("show");
@@ -1377,7 +1387,23 @@ async function checkAppConfig() {
       const btn = el("mgr-tab-feedback-btn");
       if (btn) btn.style.display = "none";
     }
-  } catch(e) { /* non-fatal — show tab by default */ }
+    // Roster dropdown — if disabled, hide <select> and show plain text input
+    if (data.rosterEnabled === false) {
+      const sel = el("ns-name");
+      const fb  = el("ns-name-fallback");
+      if (sel) sel.style.display = "none";
+      if (fb)  { fb.style.display = "block"; fb.placeholder = "Enter your name"; }
+    }
+    // Allow typing name — suppress "Not listed" option (applied at roster load time)
+    if (data.allowTypeMyName === false) {
+      allowTypeMyName = false;
+    }
+    // Coaching module — hide coaching tab button in manager panel
+    if (data.coachingEnabled === false) {
+      const btn = el("mgr-tab-coaching-btn");
+      if (btn) btn.style.display = "none";
+    }
+  } catch(e) { /* non-fatal — show features by default */ }
 }
 
 checkAppConfig();
