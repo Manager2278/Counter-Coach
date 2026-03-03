@@ -1,0 +1,27 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── BRANDING ──────────────────────────────────────────────
+    // Admin logo upload — any authenticated user (anonymous auth
+    // is the app-level gate; PIN/password is the app guard).
+    match /branding/{fileName} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size <= 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
+    }
+
+    // ── ENTRY PHOTOS ──────────────────────────────────────────
+    // Photos attached to daily recap entries.
+    match /photos/{storeId}/{fileName} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size <= 10 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
+    }
+
+  }
+}
