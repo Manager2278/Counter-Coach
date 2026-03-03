@@ -223,14 +223,18 @@
     .config-label { font-size: 14px; font-weight: 700; color: var(--ink); }
     .config-sub   { font-size: 12px; color: var(--ink-faint); margin-top: 2px; line-height: 1.4; }
     /* ── LOGO UPLOAD */
-    .logo-upload-area { border: 2px dashed var(--ruled); border-radius: 10px; padding: 16px; text-align: center; transition: border-color .2s; margin-bottom: 12px; }
+    .logo-upload-area { border: 2px dashed var(--ruled); border-radius: 10px; padding: 20px 16px 14px; text-align: center; transition: border-color .2s; margin-bottom: 0; }
     .logo-upload-area:hover { border-color: var(--sage); }
-    .logo-preview { max-height: 60px; max-width: 200px; border-radius: 6px; display: none; }
-    .logo-preview.show { display: block; margin: 0 auto 8px; }
-    .logo-default-text { font-size: 13px; color: var(--ink-faint); margin-bottom: 8px; }
-    .logo-upload-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .logo-preview { max-height: 72px; max-width: 220px; border-radius: 6px; display: none; }
+    .logo-preview.show { display: block; margin: 0 auto 10px; }
+    .logo-default-text { font-size: 32px; margin-bottom: 6px; }
+    .logo-default-sub  { font-size: 12px; color: var(--ink-faint); margin-bottom: 12px; }
+    .logo-upload-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center; }
     .logo-progress-wrap { height: 4px; background: var(--mint); border-radius: 2px; margin-top: 10px; display: none; }
     .logo-progress-bar  { height: 100%; background: var(--forest); border-radius: 2px; width: 0%; transition: width .2s; }
+    /* ── LOGIN LOGO */
+    .login-logo { max-height: 72px; max-width: 200px; border-radius: 8px; display: none; margin: 0 auto 12px; }
+    .login-logo.show { display: block; }
     /* ── COLOR PICKER */
     .color-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
     input[type=color] { width: 44px; height: 36px; padding: 2px; border: 1.5px solid var(--ruled); border-radius: 6px; cursor: pointer; background: var(--paper); flex-shrink: 0; }
@@ -242,13 +246,16 @@
     .notif-dismiss:hover { opacity: 1; }
 
     /* ── EMPLOYEES */
-    .emp-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ruled); gap: 8px; }
-    .emp-item:last-child { border-bottom: none; }
+    .emp-wrap   { border-bottom: 1px solid var(--ruled); }
+    .emp-wrap:last-child { border-bottom: none; }
+    .emp-item   { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; gap: 8px; }
     .emp-name   { font-weight: 700; font-size: 14px; }
     .emp-detail { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
     .badge-role-mgr { background: #e8f5e9; color: #2e7d32; }
     .badge-role-key { background: #fff8e1; color: #7a5800; }
     .badge-role-emp { background: #f5f5f5; color: #555; }
+    .emp-edit { display: none; padding: 10px 0 12px; border-top: 1px dashed var(--ruled); }
+    .emp-edit.open { display: block; }
 
     /* ── COACHING RECORDS */
     .coaching-item { padding: 12px 0; border-bottom: 1px solid var(--ruled); }
@@ -283,8 +290,9 @@
 <div id="login-screen">
   <div class="login-wrap">
     <div class="login-card">
-      <div class="login-icon">🔐</div>
-      <div class="login-title">Counter Coach Admin</div>
+      <img id="login-logo-img" class="login-logo" src="" alt="Logo">
+      <div class="login-icon" id="login-lock-icon">🔐</div>
+      <div class="login-title" id="login-title-text">Counter Coach Admin</div>
       <div class="login-sub" id="login-sub">Enter master password to continue</div>
 
       <!-- First-run setup (shown if no admin config exists) -->
@@ -507,11 +515,12 @@
             <input type="text" id="emp-add-name" placeholder="First Last" style="margin:0;">
           </div>
           <div class="edit-field">
-            <label class="field-label">Role</label>
+            <label class="field-label">Title</label>
             <select id="emp-add-role" style="padding:8px 10px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:14px;background:var(--paper);color:var(--ink);width:100%;">
-              <option value="employee">Employee</option>
-              <option value="keyholder">Keyholder</option>
-              <option value="manager">Manager</option>
+              <option value="Parts Specialist">Parts Specialist</option>
+              <option value="RSS">RSS</option>
+              <option value="ISS Assistant">ISS Assistant</option>
+              <option value="Driver">Driver</option>
             </select>
           </div>
           <div class="edit-field">
@@ -524,23 +533,29 @@
       </div>
 
       <div class="card">
-        <div class="card-title">📋 Role Definitions</div>
+        <div class="card-title">📋 Job Titles</div>
         <div class="config-row" style="padding:10px 0;">
           <div class="config-info">
-            <div class="config-label"><span class="badge badge-role-emp" style="margin-right:6px;">Employee</span></div>
-            <div class="config-sub">Counter access only — can log in via QR or store number, submit check-ins, and send private messages. No managerial functions.</div>
+            <div class="config-label"><span class="badge badge-role-emp" style="margin-right:6px;">Parts Specialist</span></div>
+            <div class="config-sub">Counter associate responsible for parts lookup, customer service, and order fulfillment.</div>
           </div>
         </div>
         <div class="config-row" style="padding:10px 0;">
           <div class="config-info">
-            <div class="config-label"><span class="badge badge-role-key" style="margin-right:6px;">Keyholder</span></div>
-            <div class="config-sub">All employee access plus ability to open/close store and handle basic operational decisions in the manager's absence.</div>
+            <div class="config-label"><span class="badge badge-role-emp" style="margin-right:6px;">RSS</span></div>
+            <div class="config-sub">Retail Sales Specialist — focuses on retail sales, product recommendations, and upselling.</div>
+          </div>
+        </div>
+        <div class="config-row" style="padding:10px 0;">
+          <div class="config-info">
+            <div class="config-label"><span class="badge badge-role-key" style="margin-right:6px;">ISS Assistant</span></div>
+            <div class="config-sub">Inside Sales Support — assists with commercial accounts, phone orders, and B2B customer needs.</div>
           </div>
         </div>
         <div class="config-row" style="padding:10px 0;border-bottom:none;">
           <div class="config-info">
-            <div class="config-label"><span class="badge badge-role-mgr" style="margin-right:6px;">Manager</span></div>
-            <div class="config-sub">Full access — store PIN holder, coaching records, manager setup, logbook, and all Counter Coach features.</div>
+            <div class="config-label"><span class="badge badge-role-emp" style="margin-right:6px;">Driver</span></div>
+            <div class="config-sub">Handles delivery routes, commercial customer deliveries, and vehicle maintenance logs.</div>
           </div>
         </div>
       </div>
@@ -628,19 +643,20 @@
         <label class="field-label">App Logo</label>
         <div class="logo-upload-area">
           <img id="cfg-logo-preview" class="logo-preview" src="" alt="Logo preview">
-          <div class="logo-default-text" id="cfg-logo-default">No custom logo set — using default app icon</div>
+          <div class="logo-default-text" id="cfg-logo-default">🏪</div>
+          <div class="logo-default-sub"  id="cfg-logo-sub">No logo set — upload your store or company logo</div>
           <div class="logo-upload-actions">
-            <label class="btn btn-sm btn-outline" style="cursor:pointer;">
-              📁 Choose Image
+            <label class="btn btn-sm btn-outline" style="cursor:pointer;margin-bottom:0;">
+              📁 Upload Logo
               <input type="file" id="cfg-logo-input" accept="image/*" style="display:none;" onchange="uploadLogo(this)">
             </label>
-            <button class="btn btn-sm btn-red" id="cfg-logo-remove" onclick="removeLogo()" style="display:none;">🗑️ Remove</button>
+            <button class="btn btn-sm btn-red" id="cfg-logo-remove" onclick="removeLogo()" style="display:none;margin-bottom:0;">🗑️ Remove</button>
           </div>
           <div class="logo-progress-wrap" id="cfg-logo-progress-wrap">
             <div class="logo-progress-bar" id="cfg-logo-progress-bar"></div>
           </div>
-          <div class="ok-box" id="cfg-logo-ok" style="margin-top:8px;margin-bottom:0;"></div>
         </div>
+        <div class="ok-box" id="cfg-logo-ok" style="margin-top:8px;margin-bottom:0;"></div>
 
         <label class="field-label">App Name</label>
         <input type="text" id="cfg-app-name" placeholder="e.g. Store Coach  (leave blank for default)" style="margin-bottom:4px;">
@@ -1577,6 +1593,7 @@ async function loadAppConfig() {
       el("cfg-logo-preview").src = data.logoUrl;
       el("cfg-logo-preview").classList.add("show");
       el("cfg-logo-default").style.display  = "none";
+      el("cfg-logo-sub").style.display      = "none";
       el("cfg-logo-remove").style.display   = "inline-block";
     }
     applyBranding(data);
@@ -1590,19 +1607,27 @@ function applyBranding(data) {
     document.documentElement.style.setProperty("--forest", data.brandColor);
     document.documentElement.style.setProperty("--forest-mid", data.brandColor);
   }
-  // Apply app name to topbar title and page title
+  // Apply app name to topbar title, login title, and page title
   const name = data.appName || "Counter Coach";
   document.title = name + " — Admin";
   el("topbar-title-text").textContent = "⚙️ " + name + " Admin";
-  // Apply logo to topbar
-  const logoEl = el("topbar-logo-img");
+  el("login-title-text").textContent  = name + " Admin";
+  // Apply logo to topbar and login card
+  const topbarLogo = el("topbar-logo-img");
+  const loginLogo  = el("login-logo-img");
+  const lockIcon   = el("login-lock-icon");
   if (data.logoUrl) {
-    logoEl.src = data.logoUrl;
-    logoEl.style.display = "inline-block";
+    topbarLogo.src = data.logoUrl;
+    topbarLogo.style.display = "inline-block";
     el("topbar-title-text").style.display = "none";
+    loginLogo.src = data.logoUrl;
+    loginLogo.classList.add("show");
+    lockIcon.style.display = "none";
   } else {
-    logoEl.style.display = "none";
+    topbarLogo.style.display = "none";
     el("topbar-title-text").style.display = "";
+    loginLogo.classList.remove("show");
+    lockIcon.style.display = "";
   }
 }
 
@@ -1651,6 +1676,7 @@ window.uploadLogo = async function(input) {
           el("cfg-logo-preview").src = url;
           el("cfg-logo-preview").classList.add("show");
           el("cfg-logo-default").style.display  = "none";
+          el("cfg-logo-sub").style.display      = "none";
           el("cfg-logo-remove").style.display   = "inline-block";
           progressWrap.style.display = "none";
           okEl.textContent = "Logo uploaded successfully.";
@@ -1677,6 +1703,7 @@ window.removeLogo = async function() {
     el("cfg-logo-preview").src = "";
     el("cfg-logo-preview").classList.remove("show");
     el("cfg-logo-default").style.display = "";
+    el("cfg-logo-sub").style.display     = "";
     el("cfg-logo-remove").style.display  = "none";
     applyBranding({ logoUrl: "", appName: el("cfg-app-name").value.trim(), brandColor: el("cfg-brand-color").value });
     auditLog("Removed custom logo");
@@ -1758,22 +1785,74 @@ function renderEmployees() {
     container.innerHTML = '<div class="empty">No employees found.</div>';
     return;
   }
-  const roleLabel = { manager: "Manager", keyholder: "Keyholder", employee: "Employee" };
-  const roleBadge = { manager: "badge-role-mgr", keyholder: "badge-role-key", employee: "badge-role-emp" };
+  const titleOptions = ["Parts Specialist","RSS","ISS Assistant","Driver"];
   container.innerHTML = filtEmployees.map(e => `
-    <div class="emp-item">
-      <div style="flex:1;min-width:0;">
-        <div class="emp-name">${esc(e.name || "—")}</div>
-        <div class="emp-detail">Store ${esc(e.store || "?")}${e.memberNum ? ` · #${esc(e.memberNum)}` : ""}${e.addedAt ? ` · Added ${fmtDate(e.addedAt)}` : ""}</div>
+    <div class="emp-wrap">
+      <div class="emp-item">
+        <div style="flex:1;min-width:0;">
+          <div class="emp-name">${esc(e.name || "—")}</div>
+          <div class="emp-detail">Store ${esc(e.store || "?")}${e.memberNum ? ` · #${esc(e.memberNum)}` : ""}${e.addedAt ? ` · Added ${fmtDate(e.addedAt)}` : ""}</div>
+        </div>
+        ${e.loggedIn ? `<span class="badge badge-green" style="flex-shrink:0;">🟢 Active</span>` : ""}
+        <span class="badge badge-role-emp" style="flex-shrink:0;">${esc(e.role || "—")}</span>
+        ${e.loggedIn ? `<button class="btn btn-sm btn-outline" onclick="releaseEmployee('${esc(e.id)}','${esc(e.name||'')}')">Release</button>` : ""}
+        <button class="btn btn-sm btn-outline" onclick="editEmployee('${esc(e.id)}')">✏️</button>
+        <button class="btn btn-sm btn-red" onclick="deleteEmployee('${esc(e.id)}','${esc(e.name || '')}')">🗑️</button>
       </div>
-      ${e.loggedIn ? `<span class="badge badge-green" style="flex-shrink:0;">🟢 Active</span>` : ""}
-      <span class="badge ${roleBadge[e.role] || 'badge-role-emp'}" style="flex-shrink:0;">${roleLabel[e.role] || esc(e.role || "Employee")}</span>
-      ${e.loggedIn ? `<button class="btn btn-sm btn-outline" onclick="releaseEmployee('${esc(e.id)}','${esc(e.name||'')}')">Release</button>` : ""}
-      <button class="btn btn-sm btn-red" onclick="deleteEmployee('${esc(e.id)}','${esc(e.name || '')}')">🗑️</button>
+      <div class="emp-edit" id="emp-edit-${esc(e.id)}">
+        <div class="store-edit-grid">
+          <div class="edit-field">
+            <label class="field-label">Name</label>
+            <input type="text" id="ee-name-${esc(e.id)}" value="${esc(e.name||'')}" style="margin:0;">
+          </div>
+          <div class="edit-field">
+            <label class="field-label">Title</label>
+            <select id="ee-role-${esc(e.id)}" style="padding:8px 10px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:14px;background:var(--paper);color:var(--ink);width:100%;">
+              ${titleOptions.map(t => `<option value="${t}"${e.role===t?' selected':''}>${t}</option>`).join("")}
+            </select>
+          </div>
+          <div class="edit-field">
+            <label class="field-label">Member #</label>
+            <input type="text" id="ee-member-${esc(e.id)}" value="${esc(e.memberNum||'')}" style="margin:0;">
+          </div>
+          <div class="edit-field">
+            <label class="field-label">Store #</label>
+            <input type="text" id="ee-store-${esc(e.id)}" value="${esc(e.store||'')}" style="margin:0;">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn btn-sm btn-green" onclick="saveEmployee('${esc(e.id)}')">Save</button>
+          <button class="btn btn-sm btn-outline" onclick="editEmployee('${esc(e.id)}')">Cancel</button>
+        </div>
+      </div>
     </div>`).join("") +
     (allEmployees.length > filtEmployees.length
       ? `<div class="empty" style="padding:10px 0;">Filtered — ${filtEmployees.length} of ${allEmployees.length} employees</div>` : "");
 }
+
+window.editEmployee = function(id) {
+  const editEl = document.getElementById("emp-edit-" + id);
+  if (!editEl) return;
+  const isOpen = editEl.classList.contains("open");
+  // Close all open edit forms first
+  document.querySelectorAll(".emp-edit.open").forEach(el => el.classList.remove("open"));
+  if (!isOpen) editEl.classList.add("open");
+};
+
+window.saveEmployee = async function(id) {
+  const name      = (document.getElementById("ee-name-"   + id) || {}).value?.trim();
+  const role      = (document.getElementById("ee-role-"   + id) || {}).value;
+  const memberNum = (document.getElementById("ee-member-" + id) || {}).value?.trim();
+  const store     = (document.getElementById("ee-store-"  + id) || {}).value?.trim();
+  if (!name)  { alert("Name is required.");         return; }
+  if (!store) { alert("Store number is required."); return; }
+  await updateDoc(doc(db, "employees", id), {
+    name, role, memberNum: memberNum || null, store
+  }).catch(e => { alert("Error: " + e.message); return; });
+  auditLog("Updated employee", `ID: ${id} · Name: ${name} · Title: ${role} · Store: ${store}`);
+  const editEl = document.getElementById("emp-edit-" + id);
+  if (editEl) editEl.classList.remove("open");
+};
 
 window.addEmployee = async function() {
   const store     = el("emp-add-store").value.trim();
