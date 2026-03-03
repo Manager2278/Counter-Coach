@@ -1717,7 +1717,9 @@ function renderEmployees() {
         <div class="emp-name">${esc(e.name || "—")}</div>
         <div class="emp-detail">Store ${esc(e.store || "?")}${e.memberNum ? ` · #${esc(e.memberNum)}` : ""}${e.addedAt ? ` · Added ${fmtDate(e.addedAt)}` : ""}</div>
       </div>
+      ${e.loggedIn ? `<span class="badge badge-green" style="flex-shrink:0;">🟢 Active</span>` : ""}
       <span class="badge ${roleBadge[e.role] || 'badge-role-emp'}" style="flex-shrink:0;">${roleLabel[e.role] || esc(e.role || "Employee")}</span>
+      ${e.loggedIn ? `<button class="btn btn-sm btn-outline" onclick="releaseEmployee('${esc(e.id)}','${esc(e.name||'')}')">Release</button>` : ""}
       <button class="btn btn-sm btn-red" onclick="deleteEmployee('${esc(e.id)}','${esc(e.name || '')}')">🗑️</button>
     </div>`).join("") +
     (allEmployees.length > filtEmployees.length
@@ -1752,6 +1754,12 @@ window.deleteEmployee = async function(id, name) {
   if (!confirm(`Remove "${name}" from the roster? This cannot be undone.`)) return;
   await deleteDoc(doc(db, "employees", id)).catch(e => alert("Error: " + e.message));
   auditLog("Removed employee", `Name: ${name} · ID: ${id}`);
+};
+
+window.releaseEmployee = async function(id, name) {
+  if (!confirm(`Release session for "${name}"? They will be able to log in again.`)) return;
+  await updateDoc(doc(db, "employees", id), { loggedIn: false }).catch(e => alert("Error: " + e.message));
+  auditLog("Released employee session", `Name: ${name}`);
 };
 
 // ── COACHING RECORDS ──────────────────────────────────────────
