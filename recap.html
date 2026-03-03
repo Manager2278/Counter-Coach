@@ -257,6 +257,16 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .fb-type-pill { padding: 7px 14px; border: 1.5px solid var(--ruled); border-radius: 8px; background: transparent; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--ink-faint); transition: all 0.15s; }
 .fb-type-pill.on { background: var(--forest); color: white; border-color: var(--forest); }
 
+/* ── MANAGER ROSTER ──────────────────────────── */
+.roster-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--ruled); flex-wrap: wrap; }
+.roster-item:last-child { border-bottom: none; }
+.roster-name { font-weight: 700; font-size: 14px; flex: 1; min-width: 100px; }
+.roster-meta { font-size: 12px; color: var(--ink-faint); margin-top: 1px; }
+.roster-select { padding: 6px 10px; border: 1.5px solid var(--ruled); border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 13px; background: var(--paper); color: var(--ink); cursor: pointer; }
+.roster-select:focus { outline: none; border-color: var(--forest-light); }
+.roster-saved { font-size: 12px; color: #2e7d32; font-weight: 700; opacity: 0; transition: opacity .3s; min-width: 52px; }
+.roster-saved.show { opacity: 1; }
+
 .hidden { display: none !important; }
 #broadcast-banner { display: none; background: #1c3a2a; color: white; padding: 10px 16px; font-size: 13px; line-height: 1.5; }
 #broadcast-banner.show { display: block; }
@@ -394,6 +404,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <button class="mgr-tab on" onclick="setMgrTab('inbox',this)">📬 Inbox <span class="inbox-cnt hidden" id="inbox-cnt"></span></button>
     <button class="mgr-tab"    onclick="setMgrTab('all-log',this)">📋 All Entries</button>
     <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 QR Code</button>
+    <button class="mgr-tab"    onclick="setMgrTab('roster',this)">👥 Roster</button>
     <button class="mgr-tab"    onclick="setMgrTab('coaching',this)" id="mgr-tab-coaching-btn">📋 Coaching</button>
     <button class="mgr-tab"    onclick="setMgrTab('feedback',this)" id="mgr-tab-feedback-btn">📣 Feedback</button>
   </div>
@@ -427,6 +438,13 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
       <p>Employees scan this to go directly to Store <strong id="qr-store-lbl"></strong>.<br>They just enter their name — store is pre-filled.</p>
       <button class="btn-outline" onclick="copyLink()">📋 Copy Login Link</button>
     </div>
+  </div>
+
+  <!-- ROSTER -->
+  <div class="mgr-tab-pane" id="mgr-pane-roster">
+    <div class="section-head">Store Roster — Job Titles</div>
+    <p style="font-size:13px;color:var(--ink-faint);margin-bottom:14px;line-height:1.5;">Update job titles for your team. Changes save instantly.</p>
+    <div id="mgr-roster-list"><div class="empty">Loading…</div></div>
   </div>
 
   <!-- COACHING -->
@@ -792,7 +810,8 @@ window.setMgrTab = (tab, btn) => {
   btn.classList.add("on");
   el("mgr-pane-"+tab).classList.add("on");
   mgrViewingInbox = (tab === "inbox");
-  if (tab === "inbox") markMsgsRead(_lastInboxMsgs);
+  if (tab === "inbox")  markMsgsRead(_lastInboxMsgs);
+  if (tab === "roster") loadMgrRoster();
 };
 
 // ── MANAGER LOGIN (banner) ─────────────────────────────────────
@@ -1375,6 +1394,54 @@ async function loadBranding() {
     }
   } catch(e) { /* non-fatal — keep default styling */ }
 }
+
+// ── MANAGER ROSTER ─────────────────────────────────────────────
+const ROSTER_TITLES = ["Parts Specialist","RSS","ISS","Assistant","Driver"];
+
+async function loadMgrRoster() {
+  const listEl = el("mgr-roster-list");
+  listEl.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const snap = await getDocs(
+      query(collection(db,"employees"), where("store","==",store), orderBy("name"))
+    );
+    if (snap.empty) {
+      listEl.innerHTML = '<div class="empty">No employees on roster for Store ' + esc(store) + '.</div>';
+      return;
+    }
+    listEl.innerHTML = snap.docs.map(d => {
+      const e = { id: d.id, ...d.data() };
+      const opts = ROSTER_TITLES.map(t =>
+        `<option value="${t}"${e.role===t?' selected':''}>${t}</option>`
+      ).join("");
+      return `
+        <div class="roster-item">
+          <div style="flex:1;min-width:100px;">
+            <div class="roster-name">${esc(e.name || "—")}</div>
+            ${e.memberNum ? `<div class="roster-meta">#${esc(e.memberNum)}</div>` : ""}
+          </div>
+          <select class="roster-select" id="rs-title-${esc(e.id)}"
+            onchange="saveMgrTitle('${esc(e.id)}',this)">
+            ${opts}
+          </select>
+          <span class="roster-saved" id="rs-saved-${esc(e.id)}">✓ Saved</span>
+        </div>`;
+    }).join("");
+  } catch(err) {
+    listEl.innerHTML = `<div class="empty">Error: ${esc(err.message)}</div>`;
+  }
+}
+
+window.saveMgrTitle = async function(id, sel) {
+  try {
+    await updateDoc(doc(db,"employees",id), { role: sel.value });
+    const savedEl = el("rs-saved-" + id);
+    if (savedEl) {
+      savedEl.classList.add("show");
+      setTimeout(() => savedEl.classList.remove("show"), 2000);
+    }
+  } catch(err) { alert("Error saving title: " + err.message); }
+};
 
 // ── APP CONFIG CHECK (feature flags) ──────────────────────────
 async function checkAppConfig() {

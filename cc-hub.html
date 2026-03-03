@@ -519,7 +519,8 @@
             <select id="emp-add-role" style="padding:8px 10px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:14px;background:var(--paper);color:var(--ink);width:100%;">
               <option value="Parts Specialist">Parts Specialist</option>
               <option value="RSS">RSS</option>
-              <option value="ISS Assistant">ISS Assistant</option>
+              <option value="ISS">ISS</option>
+              <option value="Assistant">Assistant</option>
               <option value="Driver">Driver</option>
             </select>
           </div>
@@ -548,8 +549,14 @@
         </div>
         <div class="config-row" style="padding:10px 0;">
           <div class="config-info">
-            <div class="config-label"><span class="badge badge-role-key" style="margin-right:6px;">ISS Assistant</span></div>
-            <div class="config-sub">Inside Sales Support — assists with commercial accounts, phone orders, and B2B customer needs.</div>
+            <div class="config-label"><span class="badge badge-role-key" style="margin-right:6px;">ISS</span></div>
+            <div class="config-sub">Inside Sales Specialist — manages commercial accounts, phone orders, and B2B customer needs.</div>
+          </div>
+        </div>
+        <div class="config-row" style="padding:10px 0;">
+          <div class="config-info">
+            <div class="config-label"><span class="badge badge-role-emp" style="margin-right:6px;">Assistant</span></div>
+            <div class="config-sub">Assistant — supports store operations, covers multiple areas, and assists specialists as needed.</div>
           </div>
         </div>
         <div class="config-row" style="padding:10px 0;border-bottom:none;">
@@ -1785,7 +1792,7 @@ function renderEmployees() {
     container.innerHTML = '<div class="empty">No employees found.</div>';
     return;
   }
-  const titleOptions = ["Parts Specialist","RSS","ISS Assistant","Driver"];
+  const titleOptions = ["Parts Specialist","RSS","ISS","Assistant","Driver"];
   container.innerHTML = filtEmployees.map(e => `
     <div class="emp-wrap">
       <div class="emp-item">
