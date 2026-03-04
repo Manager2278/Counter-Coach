@@ -695,13 +695,36 @@
       </div>
       <div class="card">
         <div class="card-title">📧 Mail Settings</div>
-        <p style="font-size:13px;color:var(--ink-faint);margin-bottom:12px;line-height:1.5;">
-          IONOS email credentials used to send coaching PDFs and recap notifications.
+        <p style="font-size:13px;color:var(--ink-faint);margin-bottom:14px;line-height:1.5;">
+          IONOS SMTP credentials used to send coaching PDFs and recap notifications.
+          Default settings work for standard IONOS accounts.
         </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">SMTP Host</label>
+            <input type="text" id="cfg-smtp-host" placeholder="smtp.ionos.com">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">SMTP Port</label>
+            <input type="number" id="cfg-smtp-port" placeholder="587" min="1" max="65535">
+          </div>
+        </div>
+
         <label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">IONOS Email Address</label>
-        <input type="email" id="cfg-smtp-user" placeholder="store@yourdomain.com" style="margin-bottom:8px;">
+        <input type="email" id="cfg-smtp-user" placeholder="store@yourdomain.com" style="margin-bottom:10px;">
+
         <label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">IONOS Password</label>
         <input type="password" id="cfg-smtp-pass" placeholder="Email account password" style="margin-bottom:10px;">
+
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">Sender Display Name</label>
+        <input type="text" id="cfg-smtp-from-name" placeholder="Counter Coach" style="margin-bottom:10px;">
+
+        <label style="display:flex;align-items:center;gap:10px;margin-bottom:14px;cursor:pointer;">
+          <input type="checkbox" id="cfg-smtp-secure" style="width:16px;height:16px;">
+          <span style="font-size:13px;color:var(--ink);">Use SSL/TLS (port 465) — leave unchecked for STARTTLS (port 587)</span>
+        </label>
+
         <button class="btn btn-green" onclick="saveMailConfig()">Save Mail Settings</button>
         <span class="ok-inline" id="cfg-mail-ok" style="opacity:0;transition:opacity .3s;margin-left:8px;font-size:13px;color:#2e7d32;font-weight:700;">✓ Saved</span>
       </div>
@@ -1624,17 +1647,29 @@ async function loadMailConfig() {
   try {
     const snap = await getDoc(doc(db, "admin", "mailConfig"));
     if (snap.exists()) {
-      el("cfg-smtp-user").value = snap.data().smtpUser || "";
-      el("cfg-smtp-pass").value = snap.data().smtpPass || "";
+      const d = snap.data();
+      el("cfg-smtp-host").value      = d.smtpHost      || "";
+      el("cfg-smtp-port").value      = d.smtpPort      || "";
+      el("cfg-smtp-user").value      = d.smtpUser      || "";
+      el("cfg-smtp-pass").value      = d.smtpPass      || "";
+      el("cfg-smtp-from-name").value = d.smtpFromName  || "";
+      el("cfg-smtp-secure").checked  = d.smtpSecure    || false;
     }
   } catch(e) { console.error("loadMailConfig:", e); }
 }
 
 window.saveMailConfig = async function() {
-  const smtpUser = el("cfg-smtp-user").value.trim();
-  const smtpPass = el("cfg-smtp-pass").value.trim();
+  const smtpHost     = el("cfg-smtp-host").value.trim()      || "smtp.ionos.com";
+  const smtpPort     = parseInt(el("cfg-smtp-port").value)   || 587;
+  const smtpUser     = el("cfg-smtp-user").value.trim();
+  const smtpPass     = el("cfg-smtp-pass").value.trim();
+  const smtpFromName = el("cfg-smtp-from-name").value.trim() || "Counter Coach";
+  const smtpSecure   = el("cfg-smtp-secure").checked;
   try {
-    await setDoc(doc(db, "admin", "mailConfig"), { smtpUser, smtpPass }, { merge: true });
+    await setDoc(doc(db, "admin", "mailConfig"),
+      { smtpHost, smtpPort, smtpUser, smtpPass, smtpFromName, smtpSecure },
+      { merge: true }
+    );
     const ok = el("cfg-mail-ok");
     ok.style.opacity = "1";
     setTimeout(() => { ok.style.opacity = "0"; }, 3000);

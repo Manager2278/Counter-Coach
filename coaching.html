@@ -114,11 +114,6 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
 .sig-hint { font-size: 11px; color: var(--ink-faint); margin-top: 4px; font-style: italic; }
 .sig-actions { margin-top: 8px; }
 
-/* ── SHARE BOX */
-.share-box { background: #e6f4ea; border: 1.5px solid var(--sage); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
-.share-box p { font-size: 13px; font-weight: 700; color: var(--forest); margin-bottom: 8px; }
-.share-url { font-family: 'Courier Prime', monospace; font-size: 11px; color: var(--forest-mid); background: white; border: 1px solid var(--ruled); border-radius: 6px; padding: 8px 10px; word-break: break-all; margin-bottom: 8px; }
-
 /* ── DASHBOARD CARDS */
 .emp-card { background: white; border: 1.5px solid var(--ruled); border-radius: 10px; padding: 13px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: box-shadow .15s; }
 .emp-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); border-color: var(--sage); }
@@ -151,11 +146,6 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
 .btn-remove { background: none; border: none; color: var(--red); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
 .btn-remove:hover { background: var(--red-pale); }
 
-/* ── SIGN VIEW */
-.sign-field { margin-bottom: 12px; }
-.sign-field-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); margin-bottom: 4px; }
-.sign-field-value { font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--ruled); border-radius: 8px; padding: 10px 13px; line-height: 1.6; font-family: 'Courier Prime', monospace; }
-
 /* ── EMPTY STATE */
 .empty { text-align: center; padding: 36px 0; color: var(--ink-faint); font-size: 14px; }
 .empty-icon { font-size: 38px; margin-bottom: 8px; }
@@ -183,31 +173,6 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
       <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;">Tap your name to view and sign any pending coaching records.</p>
       <div id="kiosk-roster"><div class="empty">Loading…</div></div>
     </div>
-  </div>
-</div>
-
-<!-- ═══════════════ EMPLOYEE SIGN VIEW (shown when ?sign=docId) ═══════════════ -->
-<div id="sign-view" style="display:none;">
-  <div class="wrap">
-    <div class="card" style="margin-top:8px;">
-      <div class="card-title" id="sv-card-title">Coaching Review &amp; Sign</div>
-      <div id="sv-fields"></div>
-    </div>
-    <div class="card" id="sv-sig-card">
-      <div class="card-title">&#x270D;&#xFE0F; Your Signature</div>
-      <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;line-height:1.6;">
-        By signing below you acknowledge receipt of this coaching record.
-        Signing does <strong>not</strong> imply agreement — it confirms you received this document.
-      </p>
-      <canvas class="sig-canvas" id="sv-sig"></canvas>
-      <p class="sig-hint">Sign above with your finger or mouse</p>
-      <div class="sig-actions">
-        <button class="btn btn-outline btn-sm" onclick="clearSvSig()">Clear</button>
-      </div>
-    </div>
-    <div class="err-box" id="sv-err"></div>
-    <div class="ok-box"  id="sv-ok"></div>
-    <button class="btn btn-green" id="sv-btn" onclick="submitSignature()">Submit My Signature</button>
   </div>
 </div>
 
@@ -313,10 +278,10 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
         <div class="card">
           <div class="card-title">&#x270D;&#xFE0F; Employee Signature</div>
           <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;line-height:1.6;">
-            Have the employee sign in person below, <strong>or</strong> save the record first and send them a secure link to sign on their own device.
+            Have the employee sign below in person before saving this record.
           </p>
           <canvas class="sig-canvas" id="emp-sig"></canvas>
-          <p class="sig-hint">Optional — employee may sign via link after saving</p>
+          <p class="sig-hint">Optional — employee signs here in person</p>
           <div class="sig-actions">
             <button class="btn btn-outline btn-sm" onclick="clearEmpSig()">Clear</button>
           </div>
@@ -324,7 +289,7 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
 
         <div class="err-box" id="save-err"></div>
 
-        <button class="btn btn-green" onclick="saveCoaching(false)">&#x1F4BE; Save</button>
+        <button class="btn btn-green" onclick="saveCoaching()">&#x1F4BE; Save</button>
 
       </div><!-- /screen-new -->
 
@@ -334,12 +299,6 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
           <div class="ok-box show" style="margin-bottom:12px;">Coaching record saved successfully.</div>
           <div id="saved-level" style="margin-bottom:10px;"></div>
           <div id="saved-details" style="font-size:14px;color:var(--ink-soft);line-height:1.8;"></div>
-        </div>
-
-        <div class="share-box" id="share-box" style="display:none;">
-          <p>&#x1F517; Share this link with the employee to sign:</p>
-          <div class="share-url" id="share-url-text"></div>
-          <button class="btn btn-sm btn-outline" onclick="copyShareLink()">&#x1F4CB; Copy Link</button>
         </div>
 
         <button class="btn btn-green"   onclick="downloadLastPDF()">&#x1F4C4; Download PDF</button>
@@ -510,11 +469,10 @@ class SigPad {
   get()     { return this.canvas.toDataURL("image/png"); }
 }
 
-let empPad, mgrPad, svPad;
+let empPad, mgrPad;
 
 window.clearMgrSig = () => { if (mgrPad) mgrPad.clear(); };
 window.clearEmpSig = () => { if (empPad) empPad.clear(); };
-window.clearSvSig  = () => { if (svPad)  svPad.clear();  };
 
 // ── INIT ───────────────────────────────────────────────────────
 signInAnonymously(auth)
@@ -524,7 +482,6 @@ signInAnonymously(auth)
 function init() {
   loadSession();
   const params    = new URLSearchParams(location.search);
-  const signId    = params.get("sign");
   const kioskId   = params.get("kiosk");
   prefillEmpName  = params.get("emp") || "";
   prefillEmpNum   = params.get("num") || "";
@@ -533,13 +490,6 @@ function init() {
     // Employee self-service kiosk view
     el("kiosk-view").style.display = "block";
     loadKiosk(kioskId);
-    return;
-  }
-
-  if (signId) {
-    // Employee remote signing view
-    el("sign-view").style.display = "block";
-    loadSignView(signId);
     return;
   }
 
@@ -562,90 +512,6 @@ function init() {
   loadDashData();
   loadLevelPreview();
 }
-
-// ── EMPLOYEE REMOTE SIGN VIEW ──────────────────────────────────
-async function loadSignView(docId) {
-  try {
-    const snap = await getDoc(doc(db, "coaching", docId));
-    if (!snap.exists()) {
-      el("sv-ok").textContent = "This link is invalid or the record no longer exists.";
-      el("sv-ok").classList.add("show");
-      el("sv-btn").style.display = "none";
-      el("sv-sig-card").style.display = "none";
-      return;
-    }
-    const d = snap.data();
-
-    // Update topbar with store info from record
-    el("topbar-store").style.display = "inline-block";
-    el("topbar-store").textContent   = "Store " + (d.store || "");
-
-    if (d.empSig) {
-      el("sv-ok").textContent = "You have already signed this coaching record. Thank you.";
-      el("sv-ok").classList.add("show");
-      el("sv-btn").style.display     = "none";
-      el("sv-sig-card").style.display = "none";
-      renderSignFields(d);
-      return;
-    }
-
-    el("sv-card-title").textContent = (d.type || "Coaching") + " — Review &amp; Sign";
-    renderSignFields(d);
-    svPad = new SigPad(el("sv-sig"));
-    el("_sv_doc_id") || Object.assign(window, { _svDocId: docId });
-    window._svDocId = docId;
-  } catch(e) {
-    showErr("sv-err", "Error loading record: " + e.message);
-  }
-}
-
-function renderSignFields(d) {
-  const fields = [
-    ["Employee",          d.name],
-    ["Manager",           d.manager],
-    ["Store",             d.store],
-    ["Date",              d.date],
-    ["Coaching Level",    d.type],
-    ["Issue",             d.issue],
-    ["Incident",          d.incident],
-    ["Expected Behavior", d.expected],
-    ["Counter / Employee #", d.empCounter],
-    ["Corrective Action",     d.action],
-  ];
-  el("sv-fields").innerHTML = fields
-    .filter(([, v]) => v)
-    .map(([l, v]) => `
-      <div class="sign-field">
-        <div class="sign-field-label">${esc(l)}</div>
-        <div class="sign-field-value">${esc(v)}</div>
-      </div>
-    `).join("");
-}
-
-window.submitSignature = async function() {
-  hideErr("sv-err");
-  if (!svPad || svPad.isEmpty()) {
-    showErr("sv-err", "Please sign before submitting.");
-    return;
-  }
-  el("sv-btn").disabled    = true;
-  el("sv-btn").textContent = "Submitting…";
-  try {
-    await updateDoc(doc(db, "coaching", window._svDocId), {
-      empSig:   svPad.get(),
-      signedAt: serverTimestamp(),
-      status:   "complete"
-    });
-    el("sv-ok").textContent = "Signature submitted successfully. You may close this page.";
-    el("sv-ok").classList.add("show");
-    el("sv-btn").style.display      = "none";
-    el("sv-sig-card").style.display = "none";
-  } catch(e) {
-    el("sv-btn").disabled    = false;
-    el("sv-btn").textContent = "Submit My Signature";
-    showErr("sv-err", "Submission error: " + e.message);
-  }
-};
 
 // ── TABS ───────────────────────────────────────────────────────
 window.switchTab = function(tab) {
@@ -796,9 +662,8 @@ el("emp-name") && el("emp-name").addEventListener("change", () => {
 
 // ── SAVE ───────────────────────────────────────────────────────
 let lastDoc = null, lastId = null;
-window._shareUrl = null;
 
-window.saveCoaching = async function(sendLink) {
+window.saveCoaching = async function() {
   hideErr("save-err");
   const empName  = el("emp-name").value.trim();
   const issue    = el("issue").value;
@@ -836,7 +701,7 @@ window.saveCoaching = async function(sendLink) {
     mgrSig:   mgrPad.get(),
     empSig:   empSigData,
     date:     new Date().toLocaleString("en-US",{ month:"short", day:"numeric", year:"numeric", hour:"numeric", minute:"2-digit" }),
-    status:   (sendLink || !empSigData) ? "pending_employee" : "complete",
+    status:   !empSigData ? "pending_employee" : "complete",
     systemWriteupDone: isFinal,
     systemRef: isFinal ? (el("fw-ref").value.trim() || null) : null,
     savedAt:  serverTimestamp()
@@ -863,27 +728,9 @@ window.saveCoaching = async function(sendLink) {
       <strong>Signature status:</strong> ${data.status === "complete" ? "Fully signed" : "Awaiting employee signature"}
     `;
 
-    if (sendLink || !empSigData) {
-      const shareUrl = `${location.origin}${location.pathname}?sign=${ref.id}`;
-      el("share-url-text").textContent = shareUrl;
-      el("share-box").style.display    = "block";
-      window._shareUrl = shareUrl;
-    } else {
-      el("share-box").style.display = "none";
-      window._shareUrl = null;
-    }
-
     loadDashData();
   } catch(e) {
     showErr("save-err","Error saving: " + e.message);
-  }
-};
-
-window.copyShareLink = function() {
-  if (window._shareUrl) {
-    navigator.clipboard.writeText(window._shareUrl)
-      .then(() => alert("Link copied to clipboard!"))
-      .catch(() => prompt("Copy this link:", window._shareUrl));
   }
 };
 
@@ -1125,7 +972,6 @@ window.showEmpDetail = function(name) {
         <div style="margin-top:6px;">${sig}</div>
         <div class="hist-actions">
           <button class="btn btn-sm btn-outline" onclick="pdfById('${r.id}')">&#x1F4C4; PDF</button>
-          ${!r.empSig ? `<button class="btn btn-sm btn-amber-outline" onclick="shareLinkById('${r.id}')">&#x1F517; Share Link</button>` : ""}
         </div>
       </div>
     `;
@@ -1139,12 +985,6 @@ window.showEmpDetail = function(name) {
 window.pdfById = function(id) {
   const r = allCoachings.find(c => c.id === id);
   if (r) generatePDF(r);
-};
-window.shareLinkById = function(id) {
-  const url = `${location.origin}${location.pathname}?sign=${id}`;
-  navigator.clipboard.writeText(url)
-    .then(() => alert("Link copied to clipboard!"))
-    .catch(() => prompt("Copy this link:", url));
 };
 
 // ── EMPLOYEE ROSTER ────────────────────────────────────────────
