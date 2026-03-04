@@ -1,6 +1,7 @@
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { initializeApp }     = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const nodemailer             = require("nodemailer");
 
 // ── Environment variables ──────────────────────────────────────────────────
 // For secrets (API keys etc.), define them with defineSecret and pass via the
@@ -144,6 +145,114 @@ exports.redeemRegCode = onCall(async (request) => {
       helpdeskPhone: helpdeskPhone || "",
       created:       FieldValue.serverTimestamp(),
     });
+  });
+
+  return { success: true };
+});
+
+// ── SHARED SMTP HELPER ────────────────────────────────────────────────────
+async function getMailTransport() {
+  const snap = await db.doc("admin/mailConfig").get();
+  if (!snap.exists) throw new Error("Mail not configured. Add IONOS credentials in CC Hub → Mail Settings.");
+  const { smtpUser, smtpPass } = snap.data();
+  if (!smtpUser || !smtpPass) throw new Error("SMTP credentials incomplete in CC Hub → Mail Settings.");
+  const transport = nodemailer.createTransport({
+    host:   "smtp.ionos.com",
+    port:   587,
+    secure: false, // STARTTLS
+    auth:   { user: smtpUser, pass: smtpPass }
+  });
+  return { transport, from: `"Counter Coach" <${smtpUser}>` };
+}
+
+/**
+ * sendCoachingEmail
+ * Emails a coaching PDF to the store's configured District Manager address.
+ *
+ * Request data: { storeId, coachingId, employeeName, date, type, pdfBase64 }
+ * Returns: { success: true }
+ */
+exports.sendCoachingEmail = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Must be signed in.");
+
+  const { storeId, coachingId, employeeName, date, type, pdfBase64 } = request.data;
+  if (!storeId || !pdfBase64) {
+    throw new HttpsError("invalid-argument", "storeId and pdfBase64 are required.");
+  }
+
+  const storeSnap = await db.doc(`stores/${storeId}`).get();
+  if (!storeSnap.exists) throw new HttpsError("not-found", "Store not found.");
+  const dmEmail = storeSnap.data().dmEmail;
+  if (!dmEmail) {
+    throw new HttpsError(
+      "failed-precondition",
+      "No DM email set for this store. Add it in ⚙️ Store Setup tab."
+    );
+  }
+
+  const { transport, from } = await getMailTransport().catch(e => {
+    throw new HttpsError("failed-precondition", e.message);
+  });
+
+  const fname = `Coaching_${(employeeName||"Employee").replace(/\s+/g,"_")}_${(date||"").replace(/[/:,\s]/g,"")}.pdf`;
+  await transport.sendMail({
+    from,
+    to:      dmEmail,
+    subject: `${type||"Coaching"} — ${employeeName} — Store ${storeId}`,
+    text:    `A ${type||"Coaching"} record for ${employeeName} was saved on ${date}.\n\nStore: ${storeId}\nRecord ID: ${coachingId}\n\nThe coaching PDF is attached.`,
+    attachments: [{
+      filename:    fname,
+      content:     Buffer.from(pdfBase64, "base64"),
+      contentType: "application/pdf"
+    }]
+  });
+
+  return { success: true };
+});
+
+/**
+ * sendRecapNotification
+ * Sends a real-time notification email when a log entry or message is created.
+ * Checks store notification preferences before sending.
+ *
+ * Request data: { storeId, type ("entry"|"flagged"|"message"), data }
+ * Returns: { success: true } or { skipped: true }
+ */
+exports.sendRecapNotification = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError("unauthenticated", "Must be signed in.");
+
+  const { storeId, type, data } = request.data;
+  if (!storeId || !type) {
+    throw new HttpsError("invalid-argument", "storeId and type are required.");
+  }
+
+  const storeSnap = await db.doc(`stores/${storeId}`).get();
+  if (!storeSnap.exists) return { skipped: true };
+  const s = storeSnap.data();
+  if (!s.recapEmail)                        return { skipped: true };
+  if (type === "entry"   && !s.notifyEntry)    return { skipped: true };
+  if (type === "flagged" && !s.notifyFlagged)  return { skipped: true };
+  if (type === "message" && !s.notifyMessages) return { skipped: true };
+
+  const { transport, from } = await getMailTransport().catch(() => ({ transport: null, from: null }));
+  if (!transport) return { skipped: true };
+
+  const subjects = {
+    entry:   `📝 New Log Entry — Store ${storeId}`,
+    flagged: `⚠️ Issue Entry — Store ${storeId}`,
+    message: `📬 New Message — Store ${storeId}`
+  };
+  const bodies = {
+    entry:   `Employee: ${data.author||"?"}\nEntry: ${data.text||""}\nTime: ${new Date(data.time||Date.now()).toLocaleString()}`,
+    flagged: `Employee: ${data.author||"?"}\nIssue: ${data.text||""}\nTime: ${new Date(data.time||Date.now()).toLocaleString()}`,
+    message: `From: ${data.from||"?"}\nMessage: ${data.text||""}\nTime: ${new Date(data.time||Date.now()).toLocaleString()}`
+  };
+
+  await transport.sendMail({
+    from,
+    to:      s.recapEmail,
+    subject: subjects[type] || `Counter Coach Notification — Store ${storeId}`,
+    text:    bodies[type]   || JSON.stringify(data)
   });
 
   return { success: true };

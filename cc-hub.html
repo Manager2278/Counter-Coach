@@ -694,6 +694,18 @@
         <button class="btn btn-green" onclick="saveAppConfig()">Save Settings</button>
       </div>
       <div class="card">
+        <div class="card-title">📧 Mail Settings</div>
+        <p style="font-size:13px;color:var(--ink-faint);margin-bottom:12px;line-height:1.5;">
+          IONOS email credentials used to send coaching PDFs and recap notifications.
+        </p>
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">IONOS Email Address</label>
+        <input type="email" id="cfg-smtp-user" placeholder="store@yourdomain.com" style="margin-bottom:8px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px;">IONOS Password</label>
+        <input type="password" id="cfg-smtp-pass" placeholder="Email account password" style="margin-bottom:10px;">
+        <button class="btn btn-green" onclick="saveMailConfig()">Save Mail Settings</button>
+        <span class="ok-inline" id="cfg-mail-ok" style="opacity:0;transition:opacity .3s;margin-left:8px;font-size:13px;color:#2e7d32;font-weight:700;">✓ Saved</span>
+      </div>
+      <div class="card">
         <div class="card-title">🎛️ Feature Flags</div>
         <div class="config-row">
           <div class="config-info">
@@ -1604,8 +1616,30 @@ async function loadAppConfig() {
       el("cfg-logo-remove").style.display   = "inline-block";
     }
     applyBranding(data);
+    loadMailConfig();
   } catch(e) { console.error("loadAppConfig:", e); }
 }
+
+async function loadMailConfig() {
+  try {
+    const snap = await getDoc(doc(db, "admin", "mailConfig"));
+    if (snap.exists()) {
+      el("cfg-smtp-user").value = snap.data().smtpUser || "";
+      el("cfg-smtp-pass").value = snap.data().smtpPass || "";
+    }
+  } catch(e) { console.error("loadMailConfig:", e); }
+}
+
+window.saveMailConfig = async function() {
+  const smtpUser = el("cfg-smtp-user").value.trim();
+  const smtpPass = el("cfg-smtp-pass").value.trim();
+  try {
+    await setDoc(doc(db, "admin", "mailConfig"), { smtpUser, smtpPass }, { merge: true });
+    const ok = el("cfg-mail-ok");
+    ok.style.opacity = "1";
+    setTimeout(() => { ok.style.opacity = "0"; }, 3000);
+  } catch(e) { alert("Error: " + e.message); }
+};
 
 function applyBranding(data) {
   if (!data) return;

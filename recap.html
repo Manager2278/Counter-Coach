@@ -419,7 +419,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <button class="mgr-tab"    onclick="setMgrTab('all-log',this)">📋 All Entries</button>
     <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 QR Code</button>
     <button class="mgr-tab"    onclick="setMgrTab('roster',this)">👥 Roster</button>
-    <button class="mgr-tab"    onclick="setMgrTab('coaching',this)" id="mgr-tab-coaching-btn">📋 Coaching</button>
+    <button class="mgr-tab"    onclick="setMgrTab('settings',this)">⚙️ Store Setup</button>
   </div>
 
   <!-- INBOX -->
@@ -488,6 +488,41 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <div id="mgr-roster-list"><div class="empty">Loading…</div></div>
   </div>
 
+  <!-- STORE SETUP -->
+  <div class="mgr-tab-pane" id="mgr-pane-settings">
+    <div class="section-head">Store Setup</div>
+
+    <div style="margin-bottom:14px;">
+      <div class="add-label">District Manager Email</div>
+      <input type="email" id="mgr-dm-email-disp" placeholder="dm@example.com"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;">
+      <div class="add-label" style="margin-top:10px;">Recap Notification Email</div>
+      <input type="email" id="mgr-recap-email-disp" placeholder="recap@example.com"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;">
+    </div>
+
+    <div class="section-head" style="margin-top:4px;">Email Notifications</div>
+    <div style="font-size:12px;color:var(--ink-faint);margin-bottom:10px;">
+      Choose which events send an email to the Recap Notification address.
+    </div>
+    <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;">
+      <input type="checkbox" id="notify-entry" style="width:16px;height:16px;">
+      <span style="font-size:14px;">📝 Log book entries</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;">
+      <input type="checkbox" id="notify-flagged" style="width:16px;height:16px;">
+      <span style="font-size:14px;">⚠️ Issue / flagged entries</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;">
+      <input type="checkbox" id="notify-messages" style="width:16px;height:16px;">
+      <span style="font-size:14px;">📬 Private messages</span>
+    </label>
+
+    <button class="btn btn-green" onclick="saveStoreSettings()"
+      style="padding:8px 20px;font-size:13px;">Save</button>
+    <span class="roster-saved" id="settings-ok" style="margin-left:8px;">✓ Saved</span>
+  </div>
+
   <!-- COACHING -->
   <div class="mgr-tab-pane" id="mgr-pane-coaching">
     <div class="section-head">Employee Coaching</div>
@@ -551,6 +586,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
 const cfg = {
   apiKey:            "AIzaSyC50q5eXaWnLykZHOuZOVOo_r6nK4kSno8",
@@ -561,9 +597,10 @@ const cfg = {
   appId:             "1:476802421766:web:171eccca066feb711bdf87"
 };
 
-const app     = initializeApp(cfg);
-const db      = getFirestore(app);
-const auth    = getAuth(app);
+const app       = initializeApp(cfg);
+const db        = getFirestore(app);
+const auth      = getAuth(app);
+const functions = getFunctions(app);
 const storage = getStorage(app);
 
 // ── HELPERS ───────────────────────────────────────────────────
@@ -584,6 +621,11 @@ let unsubEntries = null, unsubMgrEntries = null, unsubMsgs = null, unsubMgrMsgs 
 let pendingPhotoFiles  = []; // up to 4
 let mgrViewingInbox    = false;
 let repliesEnabled     = false;
+let dmEmail            = "";
+let recapEmail         = "";
+let notifyEntry        = true;
+let notifyFlagged      = true;
+let notifyMessages     = true;
 let empDocMap          = {}; // name → Firestore doc ID for currently loaded store
 let allowTypeMyName    = true; // feature flag: show "Not listed" option in roster dropdown
 let mgrRosterData      = []; // local cache for coaching shortcut
@@ -808,10 +850,54 @@ async function loadStorePin() {
   try {
     const snap = await getDoc(doc(db,"stores",store));
     if (snap.exists()) {
-      storePin       = snap.data().pin            || "";
-      repliesEnabled = snap.data().repliesEnabled || false;
+      const d     = snap.data();
+      storePin        = d.pin            || "";
+      repliesEnabled  = d.repliesEnabled || false;
+      dmEmail         = d.dmEmail        || "";
+      recapEmail      = d.recapEmail     || "";
+      notifyEntry     = d.notifyEntry    !== false;
+      notifyFlagged   = d.notifyFlagged  !== false;
+      notifyMessages  = d.notifyMessages !== false;
     }
   } catch(e) { console.error("loadStorePin:", e); }
+}
+
+async function loadStoreSettings() {
+  await loadStorePin();
+  el("mgr-dm-email-disp").value    = dmEmail;
+  el("mgr-recap-email-disp").value = recapEmail;
+  el("notify-entry").checked       = notifyEntry;
+  el("notify-flagged").checked     = notifyFlagged;
+  el("notify-messages").checked    = notifyMessages;
+}
+
+window.saveStoreSettings = async function() {
+  const newDm    = el("mgr-dm-email-disp").value.trim();
+  const newRecap = el("mgr-recap-email-disp").value.trim();
+  const newNE    = el("notify-entry").checked;
+  const newNF    = el("notify-flagged").checked;
+  const newNM    = el("notify-messages").checked;
+  try {
+    await updateDoc(doc(db,"stores",store), {
+      dmEmail: newDm, recapEmail: newRecap,
+      notifyEntry: newNE, notifyFlagged: newNF, notifyMessages: newNM
+    });
+    dmEmail = newDm; recapEmail = newRecap;
+    notifyEntry = newNE; notifyFlagged = newNF; notifyMessages = newNM;
+    const ok = el("settings-ok");
+    ok.classList.add("show");
+    setTimeout(() => ok.classList.remove("show"), 2500);
+  } catch(e) { alert("Error saving settings: " + e.message); }
+};
+
+function fireRecapNotif(type, payload) {
+  if (!recapEmail) return;
+  if (type === "entry"   && !notifyEntry)    return;
+  if (type === "flagged" && !notifyFlagged)  return;
+  if (type === "message" && !notifyMessages) return;
+  httpsCallable(functions, "sendRecapNotification")({
+    storeId: store, type, data: payload
+  }).catch(e => console.warn("Recap notif:", e));
 }
 
 // ── NAVIGATION ────────────────────────────────────────────────
@@ -852,8 +938,9 @@ window.setMgrTab = (tab, btn) => {
   btn.classList.add("on");
   el("mgr-pane-"+tab).classList.add("on");
   mgrViewingInbox = (tab === "inbox");
-  if (tab === "inbox")  markMsgsRead(_lastInboxMsgs);
-  if (tab === "roster") loadMgrRoster();
+  if (tab === "inbox")    markMsgsRead(_lastInboxMsgs);
+  if (tab === "roster")   loadMgrRoster();
+  if (tab === "settings") loadStoreSettings();
 };
 
 // ── MANAGER LOGIN (banner) ─────────────────────────────────────
@@ -1022,6 +1109,9 @@ window.addEntry = async () => {
 
     el("new-text").value = "";
     removePhoto(); // clears all pending
+    // Recap email notification (fire-and-forget)
+    const notifType = (type === "issue") ? "flagged" : "entry";
+    fireRecapNotif(notifType, { author: name, text: txt, type, time: Date.now() });
   } catch(e) {
     alert("Save error: " + e.message);
   } finally {
@@ -1205,6 +1295,7 @@ window.sendMsg = async () => {
       time: Date.now(), ts: serverTimestamp(), read: false
     });
     el("msg-text").value = "";
+    fireRecapNotif("message", { from: name, text: txt, time: Date.now() });
   } catch(e) { alert("Send error: " + e.message); }
 };
 
