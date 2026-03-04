@@ -975,10 +975,8 @@ window.attachPhotoToEntry = async (entryId, input) => {
     const slots   = 4 - existing.length;
     if (slots <= 0) { alert("This entry already has 4 photos."); input.disabled = false; label.textContent = "📷 Add Photo"; return; }
     const toUpload = files.slice(0, slots);
-    const urls = [...existing];
-    for (let i = 0; i < toUpload.length; i++) {
-      urls.push(await uploadPhoto(toUpload[i], entryId, existing.length + i));
-    }
+    const newUrls = await Promise.all(toUpload.map((f, i) => uploadPhoto(f, entryId, existing.length + i)));
+    const urls = [...existing, ...newUrls];
     await updateDoc(doc(db,"entries",entryId), { photos: urls, photoURL: urls[0] });
   } catch(e) {
     alert("Upload error: " + e.message);
@@ -1044,12 +1042,34 @@ function renderPhotoPreview() {
   label.textContent = count >= 4 ? "📷 4 / 4" : `📷 Add Photos (${count}/4)`;
 }
 
+// Compress + resize image client-side before upload (huge speed boost on mobile)
+async function compressImage(file, maxPx = 1280, quality = 0.82) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width: w, height: h } = img;
+      if (w > maxPx || h > maxPx) {
+        if (w >= h) { h = Math.round(h * maxPx / w); w = maxPx; }
+        else        { w = Math.round(w * maxPx / h); h = maxPx; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(blob || file), "image/jpeg", quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function uploadPhoto(file, entryId, index = 0) {
-  const ext  = file.name.split(".").pop();
-  const path = `entries/${store}/${entryId}_${index}.${ext}`;
+  const compressed = await compressImage(file);
+  const path = `entries/${store}/${entryId}_${index}.jpg`;
   const sRef = ref(storage, path);
   return new Promise((resolve, reject) => {
-    const task = uploadBytesResumable(sRef, file);
+    const task = uploadBytesResumable(sRef, compressed, { contentType: "image/jpeg" });
     task.on("state_changed", null, reject,
       async () => { resolve(await getDownloadURL(task.snapshot.ref)); }
     );
@@ -1076,11 +1096,9 @@ window.addEntry = async () => {
 
     if (pendingPhotoFiles.length) {
       const files = [...pendingPhotoFiles];
-      const urls  = [];
-      for (let i = 0; i < files.length; i++) {
-        urls.push(await uploadPhoto(files[i], docRef.id, i));
-        bar.style.width = ((i + 1) / files.length * 100) + "%";
-      }
+      barWrap.classList.add("show"); bar.style.width = "10%";
+      const urls = await Promise.all(files.map((f, i) => uploadPhoto(f, docRef.id, i)));
+      bar.style.width = "100%";
       await updateDoc(docRef, { photos: urls, photoURL: urls[0] });
     }
 
