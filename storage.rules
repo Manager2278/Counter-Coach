@@ -15,7 +15,8 @@ service firebase.storage {
 
     // ── ENTRY PHOTOS ──────────────────────────────────────────
     // Photos attached to daily recap entries.
-    match /photos/{storeId}/{fileName} {
+    // Upload path: entries/{store}/{entryId}_{index}.{ext}
+    match /entries/{storeId}/{fileName} {
       allow read:  if request.auth != null;
       allow write: if request.auth != null
                    && request.resource.size <= 10 * 1024 * 1024
