@@ -158,14 +158,16 @@ async function getMailTransport() {
   const { smtpUser, smtpPass } = d;
   if (!smtpUser || !smtpPass) throw new Error("SMTP credentials incomplete in CC Hub → Mail Settings.");
   const host     = d.smtpHost     || "smtp.ionos.com";
-  const port     = d.smtpPort     || 587;
-  const secure   = d.smtpSecure   || false;
+  const port     = Number(d.smtpPort) || 587;
+  const secure   = d.smtpSecure   || false;   // true = SSL/TLS (465), false = STARTTLS (587)
   const fromName = d.smtpFromName || "Counter Coach";
   const transport = nodemailer.createTransport({
     host,
     port,
-    secure, // true = SSL/TLS (465), false = STARTTLS (587)
-    auth: { user: smtpUser, pass: smtpPass }
+    secure,
+    requireTLS: !secure,   // require STARTTLS upgrade on plain connections (port 587)
+    auth: { user: smtpUser, pass: smtpPass },
+    tls:  { rejectUnauthorized: true }
   });
   return { transport, from: `"${fromName}" <${smtpUser}>` };
 }
