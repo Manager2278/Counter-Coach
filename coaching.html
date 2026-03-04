@@ -326,6 +326,43 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
         </div>
       </div>
 
+      <!-- ══ RECORD REVIEW & SIGN ══ -->
+      <div class="screen" id="screen-review">
+        <div class="card" style="margin-top:8px;">
+          <button class="btn btn-sm btn-outline" onclick="closeReview()" style="margin-bottom:14px;">&#x2190; Back</button>
+          <div class="card-title" id="rv-title"></div>
+          <div id="rv-fields"></div>
+        </div>
+
+        <div class="card" id="rv-mgr-sig-card">
+          <div class="card-title">&#x270F;&#xFE0F; Manager Signature</div>
+          <img id="rv-mgr-sig-img" src="" alt="Manager signature"
+            style="max-width:100%;max-height:90px;object-fit:contain;border:1px solid var(--ruled);border-radius:8px;background:white;display:block;">
+          <div id="rv-mgr-name" style="font-size:12px;color:var(--ink-faint);margin-top:6px;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">&#x270D;&#xFE0F; Employee Signature</div>
+          <div id="rv-emp-sig-display"></div>
+          <div id="rv-sig-pad-area" style="display:none;">
+            <p style="font-size:13px;color:var(--ink-soft);margin-bottom:12px;line-height:1.6;">
+              Have the employee sign below to acknowledge this coaching record.
+            </p>
+            <canvas class="sig-canvas" id="rv-emp-sig"></canvas>
+            <p class="sig-hint">Employee signs here in person</p>
+            <div class="sig-actions">
+              <button class="btn btn-outline btn-sm" onclick="clearRvSig()">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="err-box" id="rv-err"></div>
+        <div class="ok-box"  id="rv-ok"></div>
+        <button class="btn btn-green"   id="rv-sign-btn"  onclick="saveRvSignature()" style="display:none;">&#x270D;&#xFE0F; Save Employee Signature</button>
+        <button class="btn btn-outline" id="rv-email-btn" onclick="rvEmailPDF()">&#x1F4E7; Email to DM</button>
+        <button class="btn btn-outline" onclick="rvDownloadPDF()">&#x1F4C4; Download PDF</button>
+      </div>
+
       <!-- ══ EMPLOYEES ══ -->
       <div class="screen" id="screen-emp">
         <div class="card" style="margin-top:8px;">
@@ -515,7 +552,7 @@ function init() {
 
 // ── TABS ───────────────────────────────────────────────────────
 window.switchTab = function(tab) {
-  ["new","dash","emp","saved","emp-detail"].forEach(t => {
+  ["new","dash","emp","saved","emp-detail","review"].forEach(t => {
     el("screen-" + t)?.classList.remove("on");
   });
   ["new","dash","emp"].forEach(t => {
@@ -972,19 +1009,175 @@ window.showEmpDetail = function(name) {
         <div style="margin-top:6px;">${sig}</div>
         <div class="hist-actions">
           <button class="btn btn-sm btn-outline" onclick="pdfById('${r.id}')">&#x1F4C4; PDF</button>
+          <button class="btn btn-sm btn-outline" onclick="openReview('${r.id}')">&#x1F4CB; Review &amp; Sign</button>
+          ${r.empSig ? `<button class="btn btn-sm btn-outline" data-eid="${r.id}" onclick="emailById('${r.id}', this)">&#x1F4E7; Email DM</button>` : ""}
         </div>
       </div>
     `;
   }).join("");
 
   // Switch to detail screen
-  ["screen-new","screen-dash","screen-emp","screen-saved"].forEach(id => el(id)?.classList.remove("on"));
+  ["screen-new","screen-dash","screen-emp","screen-saved","screen-review"].forEach(id => el(id)?.classList.remove("on"));
   el("screen-emp-detail").classList.add("on");
 };
 
 window.pdfById = function(id) {
   const r = allCoachings.find(c => c.id === id);
   if (r) generatePDF(r);
+};
+
+// Email from dashboard list (signed records only)
+window.emailById = async function(id, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = "Sending…"; }
+  const r = allCoachings.find(c => c.id === id);
+  if (!r) { if (btn) { btn.disabled = false; btn.textContent = "📧 Email DM"; } return; }
+  try {
+    const pdfBase64 = generatePDFDoc(r).output("datauristring").split(",")[1];
+    await httpsCallable(functions, "sendCoachingEmail")({
+      storeId: store, coachingId: id,
+      employeeName: r.name || "", date: r.date || "",
+      type: r.type || "Coaching", pdfBase64
+    });
+    if (btn) { btn.textContent = "✓ Sent!"; }
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = "📧 Email DM"; }
+    alert("Email failed: " + (e.message || String(e)));
+  }
+};
+
+// ── RECORD REVIEW & SIGN ────────────────────────────────────────
+let rvDoc = null, rvId = null, rvPad = null, rvEmpName = "";
+
+window.openReview = async function(id) {
+  let rec = allCoachings.find(c => c.id === id);
+  if (!rec) {
+    try {
+      const snap = await getDoc(doc(db, "coaching", id));
+      if (!snap.exists()) { alert("Record not found."); return; }
+      rec = { id, ...snap.data() };
+    } catch(e) { alert("Error loading record: " + e.message); return; }
+  }
+  rvDoc = rec; rvId = id; rvEmpName = rec.name || "";
+
+  // Title
+  el("rv-title").textContent = `${rec.type || "Coaching"} — ${rec.name || ""}`;
+
+  // Fields
+  const fields = [
+    ["Date",                 rec.date],
+    ["Manager",              rec.manager],
+    ["Store",                rec.store],
+    ["Counter / Employee #", rec.empCounter],
+    ["Issue Type",           rec.issue],
+    ["Incident",             rec.incident],
+    ["Expected Behavior",    rec.expected],
+    ["Corrective Action",    rec.action],
+  ];
+  el("rv-fields").innerHTML = fields
+    .filter(([, v]) => v)
+    .map(([l, v]) => `
+      <div style="margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);margin-bottom:3px;">${esc(l)}</div>
+        <div style="font-size:13px;color:var(--ink);background:var(--paper);border:1px solid var(--ruled);border-radius:8px;padding:9px 12px;line-height:1.6;">${esc(v)}</div>
+      </div>
+    `).join("");
+
+  // Manager sig
+  if (rec.mgrSig) {
+    el("rv-mgr-sig-img").src = rec.mgrSig;
+    el("rv-mgr-sig-card").style.display = "block";
+    el("rv-mgr-name").textContent = "Signed by " + (rec.manager || "Manager");
+  } else {
+    el("rv-mgr-sig-card").style.display = "none";
+  }
+
+  // Employee sig
+  if (rec.empSig) {
+    el("rv-emp-sig-display").innerHTML = `
+      <img src="${rec.empSig}" style="max-width:100%;max-height:90px;object-fit:contain;border:1px solid var(--ruled);border-radius:8px;background:white;display:block;margin-bottom:6px;">
+      <div style="font-size:12px;color:var(--ink-faint);">Signed by ${esc(rec.name || "employee")}</div>
+    `;
+    el("rv-sig-pad-area").style.display = "none";
+    el("rv-sign-btn").style.display     = "none";
+  } else {
+    el("rv-emp-sig-display").innerHTML = `<div style="font-size:13px;color:var(--amber);font-weight:700;margin-bottom:10px;">&#x26A0;&#xFE0F; No employee signature yet</div>`;
+    el("rv-sig-pad-area").style.display = "block";
+    el("rv-sign-btn").style.display     = "block";
+    el("rv-sign-btn").disabled          = false;
+    el("rv-sign-btn").textContent       = "✍️ Save Employee Signature";
+    if (!rvPad) rvPad = new SigPad(el("rv-emp-sig"));
+    else rvPad.clear();
+  }
+
+  // Reset state
+  el("rv-err").classList.remove("show");
+  el("rv-ok").classList.remove("show");
+  el("rv-email-btn").disabled    = false;
+  el("rv-email-btn").textContent = "📧 Email to DM";
+
+  // Show screen
+  ["screen-new","screen-dash","screen-emp","screen-saved","screen-emp-detail"].forEach(s => el(s)?.classList.remove("on"));
+  el("screen-review").classList.add("on");
+  ["new","dash","emp"].forEach(t => el("tab-" + t + "-btn")?.classList.remove("on"));
+};
+
+window.closeReview = function() {
+  el("screen-review").classList.remove("on");
+  if (rvEmpName) showEmpDetail(rvEmpName);
+  else { el("screen-dash").classList.add("on"); el("tab-dash-btn").classList.add("on"); }
+};
+
+window.clearRvSig = function() { if (rvPad) rvPad.clear(); };
+
+window.saveRvSignature = async function() {
+  if (!rvPad || rvPad.isEmpty()) { showErr("rv-err", "Please have the employee sign before saving."); return; }
+  el("rv-sign-btn").disabled = true;
+  el("rv-sign-btn").textContent = "Saving…";
+  try {
+    const empSig = rvPad.get();
+    await updateDoc(doc(db, "coaching", rvId), {
+      empSig, signedAt: serverTimestamp(), status: "complete"
+    });
+    // Update local cache
+    const idx = allCoachings.findIndex(c => c.id === rvId);
+    if (idx >= 0) Object.assign(allCoachings[idx], { empSig, status: "complete" });
+    rvDoc = { ...rvDoc, empSig, status: "complete" };
+
+    // Show sig image, hide pad
+    el("rv-emp-sig-display").innerHTML = `
+      <img src="${empSig}" style="max-width:100%;max-height:90px;object-fit:contain;border:1px solid var(--ruled);border-radius:8px;background:white;display:block;margin-bottom:6px;">
+      <div style="font-size:12px;color:var(--ink-faint);">Signed by ${esc(rvDoc.name || "employee")}</div>
+    `;
+    el("rv-sig-pad-area").style.display = "none";
+    el("rv-sign-btn").style.display     = "none";
+    el("rv-ok").textContent = "Signature saved successfully.";
+    el("rv-ok").classList.add("show");
+  } catch(e) {
+    el("rv-sign-btn").disabled    = false;
+    el("rv-sign-btn").textContent = "✍️ Save Employee Signature";
+    showErr("rv-err", "Error saving: " + e.message);
+  }
+};
+
+window.rvDownloadPDF = function() { if (rvDoc) generatePDF(rvDoc); };
+
+window.rvEmailPDF = async function() {
+  if (!rvDoc || !rvId) return;
+  const btn = el("rv-email-btn");
+  btn.disabled = true; btn.textContent = "Sending…";
+  try {
+    const pdfBase64 = generatePDFDoc(rvDoc).output("datauristring").split(",")[1];
+    await httpsCallable(functions, "sendCoachingEmail")({
+      storeId: store, coachingId: rvId,
+      employeeName: rvDoc.name || "", date: rvDoc.date || "",
+      type: rvDoc.type || "Coaching", pdfBase64
+    });
+    btn.textContent = "✓ Sent!";
+    setTimeout(() => { btn.disabled = false; btn.textContent = "📧 Email to DM"; }, 3000);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = "📧 Email to DM";
+    alert("Email failed: " + (e.message || String(e)));
+  }
 };
 
 // ── EMPLOYEE ROSTER ────────────────────────────────────────────
