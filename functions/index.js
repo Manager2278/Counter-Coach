@@ -154,15 +154,20 @@ exports.redeemRegCode = onCall(async (request) => {
 async function getMailTransport() {
   const snap = await db.doc("admin/mailConfig").get();
   if (!snap.exists) throw new Error("Mail not configured. Add IONOS credentials in CC Hub → Mail Settings.");
-  const { smtpUser, smtpPass } = snap.data();
+  const d = snap.data();
+  const { smtpUser, smtpPass } = d;
   if (!smtpUser || !smtpPass) throw new Error("SMTP credentials incomplete in CC Hub → Mail Settings.");
+  const host     = d.smtpHost     || "smtp.ionos.com";
+  const port     = d.smtpPort     || 587;
+  const secure   = d.smtpSecure   || false;
+  const fromName = d.smtpFromName || "Counter Coach";
   const transport = nodemailer.createTransport({
-    host:   "smtp.ionos.com",
-    port:   587,
-    secure: false, // STARTTLS
-    auth:   { user: smtpUser, pass: smtpPass }
+    host,
+    port,
+    secure, // true = SSL/TLS (465), false = STARTTLS (587)
+    auth: { user: smtpUser, pass: smtpPass }
   });
-  return { transport, from: `"Counter Coach" <${smtpUser}>` };
+  return { transport, from: `"${fromName}" <${smtpUser}>` };
 }
 
 /**
