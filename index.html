@@ -374,39 +374,21 @@ async function loadNbRoster(s) {
   const sel = el("nb-name");
   try {
     const snap = await getDocs(query(collection(db,"employees"), where("store","==",s)));
+    const available = snap.docs.filter(d => !d.data().loggedIn).map(d => d.data().name).sort((a,b) => a.localeCompare(b));
     if (snap.empty) {
-      sel.innerHTML = '<option value="">— No roster found —</option><option value="__type__">\u270F\uFE0F Type my name\u2026</option>';
+      sel.innerHTML = '<option value="">— No roster found — ask your manager to add you —</option>';
+    } else if (!available.length) {
+      sel.innerHTML = '<option value="">— All employees are currently logged in —</option>';
     } else {
-      const names = snap.docs.map(d => d.data().name).sort((a,b) => a.localeCompare(b));
       sel.innerHTML = '<option value="">— Select your name —</option>' +
-        names.map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join("") +
-        '<option value="__type__">\u270F\uFE0F Not listed \u2014 type my name</option>';
+        available.map(n => `<option value="${n.replace(/"/g,'&quot;')}">${n}</option>`).join("");
     }
     sel.disabled = false;
   } catch(_) {
-    sel.innerHTML = '<option value="">— Error loading names —</option><option value="__type__">\u270F\uFE0F Type my name\u2026</option>';
+    sel.innerHTML = '<option value="">— Error loading names —</option>';
     sel.disabled = false;
   }
 }
-
-// Show/hide text fallback when "type my name" option is chosen
-function onNbNameChange() {
-  const sel = el("nb-name");
-  let fb = el("nb-name-fallback");
-  if (sel.value === "__type__") {
-    if (!fb) {
-      fb = document.createElement("input");
-      fb.type = "text"; fb.id = "nb-name-fallback"; fb.placeholder = "Type your name";
-      fb.style.cssText = "flex:1;padding:8px 11px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);font-family:Arial,sans-serif;font-size:14px;background:rgba(255,255,255,0.15);color:white;min-width:100px;margin-top:6px;";
-      fb.addEventListener("keydown", e => { if (e.key === "Enter") submitNameBanner(); });
-      sel.parentNode.insertBefore(fb, sel.nextSibling);
-    }
-    setTimeout(() => fb.focus(), 50);
-  } else {
-    if (fb) fb.remove();
-  }
-}
-el("nb-name").addEventListener("change", onNbNameChange);
 
 // ── NAME BANNER
 function showNameBanner(title) {
@@ -420,11 +402,9 @@ function showNameBanner(title) {
   }
 }
 window.submitNameBanner = async () => {
-  const s   = val("nb-store") || store;
-  const sel = el("nb-name");
-  const fb  = el("nb-name-fallback");
-  const n   = fb ? fb.value.trim() : sel.value;
-  if (!s || !n || n === "__type__") { el("nb-err").classList.add("show"); return; }
+  const s = val("nb-store") || store;
+  const n = el("nb-name").value;
+  if (!s || !n) { el("nb-err").classList.add("show"); return; }
   try {
     const snap = await getDoc(doc(db, "stores", s));
     if (snap.exists()) {
