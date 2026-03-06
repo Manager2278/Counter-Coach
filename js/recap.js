@@ -5,9 +5,13 @@ import { el, v, esc, ts, compressImage,
 import { saveSession, loadSession,
          saveMgrSession, loadMgrSession,
          clearMgrSession }                             from "./session.js";
+import { isPushSupported, getPushPermission,
+         enablePush, disablePush,
+         refreshToken, subscribeForeground }            from "./fcm.js";
 import { collection, addDoc, onSnapshot, deleteDoc,
          query, where, orderBy, limit, updateDoc, doc, getDoc,
-         getDocs, serverTimestamp, writeBatch }         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+         getDocs, serverTimestamp, writeBatch,
+         arrayUnion, arrayRemove }                      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { signInAnonymously }                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { uploadBytesResumable, getDownloadURL, ref }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { httpsCallable }                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
@@ -27,6 +31,10 @@ let notifyFlagged      = true;
 let notifyMessages     = true;
 let empDocMap          = {};
 let mgrRosterData      = [];
+let unsubFcmForeground = null;
+let empPushDocId       = null;
+let pushNotifyEntries  = true;
+let pushNotifyMessages = true;
 
 // ── INIT ──────────────────────────────────────────────────────
 (function preShowQR() {
@@ -63,7 +71,12 @@ function init() {
     store = saved.store;
     name  = saved.name;
     getDocs(query(collection(db,"employees"), where("store","==",store), where("name","==",name)))
-      .then(snap => { if (!snap.empty) updateDoc(snap.docs[0].ref, { loggedIn: true }).catch(()=>{}); })
+      .then(snap => {
+        if (!snap.empty) {
+          empPushDocId = snap.docs[0].id;
+          updateDoc(snap.docs[0].ref, { loggedIn: true }).catch(()=>{});
+        }
+      })
       .catch(() => {});
     bootApp();
     return;
@@ -131,11 +144,17 @@ window.noSessionLogin = () => {
   errEl.style.display = "none";
   const docId = empDocMap[n];
   if (docId) {
+    empPushDocId = docId;
     updateDoc(doc(db, "employees", docId), { loggedIn: true })
       .catch(e => console.warn("loggedIn write failed:", e));
   } else {
     getDocs(query(collection(db,"employees"), where("store","==",s), where("name","==",n)))
-      .then(snap => { if (!snap.empty) updateDoc(snap.docs[0].ref, { loggedIn: true }).catch(()=>{}); })
+      .then(snap => {
+        if (!snap.empty) {
+          empPushDocId = snap.docs[0].id;
+          updateDoc(snap.docs[0].ref, { loggedIn: true }).catch(()=>{});
+        }
+      })
       .catch(() => {});
   }
   store = s; name = n;
@@ -193,9 +212,11 @@ async function loadStorePin() {
       repliesEnabled  = d.repliesEnabled || false;
       dmEmail         = d.dmEmail        || "";
       recapEmail      = d.recapEmail     || "";
-      notifyEntry     = d.notifyEntry    !== false;
-      notifyFlagged   = d.notifyFlagged  !== false;
-      notifyMessages  = d.notifyMessages !== false;
+      notifyEntry       = d.notifyEntry    !== false;
+      notifyFlagged     = d.notifyFlagged  !== false;
+      notifyMessages    = d.notifyMessages !== false;
+      pushNotifyEntries  = d.pushNotifyEntries  !== false;
+      pushNotifyMessages = d.pushNotifyMessages !== false;
     }
   } catch(e) { console.error("loadStorePin:", e); }
 }
@@ -207,6 +228,9 @@ async function loadStoreSettings() {
   el("notify-entry").checked       = notifyEntry;
   el("notify-flagged").checked     = notifyFlagged;
   el("notify-messages").checked    = notifyMessages;
+  if (el("notif-pref-entries"))  el("notif-pref-entries").checked  = pushNotifyEntries;
+  if (el("notif-pref-messages")) el("notif-pref-messages").checked = pushNotifyMessages;
+  _updateMgrPushToggle();
 }
 
 window.saveStoreSettings = async function() {
@@ -263,6 +287,18 @@ window.navTo = (dest) => {
     el("nav-mgr").classList.add("on");
     el("mgr-banner").classList.add("show");
     setTimeout(() => el("b-pin").focus(), 100);
+  } else if (dest === "feedback" && !mgrLoggedIn) {
+    // Feedback requires manager login — redirect to manager panel first
+    document.querySelectorAll(".screen").forEach(x => x.classList.remove("active"));
+    document.querySelectorAll(".nav-btn").forEach(x => x.classList.remove("on"));
+    el("nav-mgr").classList.add("on");
+    el("mgr-banner").classList.add("show");
+    setTimeout(() => el("b-pin").focus(), 100);
+  } else if (dest === "feedback") {
+    // Feedback lives inside the manager panel — switch to mgr screen, then select the feedback sub-tab
+    goScreen("mgr");
+    const feedbackBtn = el("mgr-tab-feedback-btn");
+    if (feedbackBtn) feedbackBtn.click();
   } else {
     goScreen(dest);
     if (dest === "coaching") loadMyCoaching();
@@ -309,16 +345,70 @@ function activateMgrPanel() {
   buildQR();
   listenMgrEntries();
   listenMgrInbox();
+
+  // FCM: refresh token + subscribe foreground
+  const _saveMgr = t => updateDoc(doc(db,"stores",store), { mgrPushTokens: arrayUnion(t) });
+  refreshToken(_saveMgr).catch(() => {});
+  if (unsubFcmForeground) { unsubFcmForeground(); unsubFcmForeground = null; }
+  unsubFcmForeground = subscribeForeground(p => {
+    const b = p.notification?.body  || p.data?.body  || "";
+    const t = p.notification?.title || p.data?.title || "Counter Coach";
+    console.log("FCM foreground:", t, b);
+  });
+  _updateMgrPushToggle();
 }
 
 window.logoutMgr = () => {
   mgrLoggedIn = false;
   clearMgrSession();
   el("tb-user").textContent = name;
-  if (unsubMgrEntries) { unsubMgrEntries(); unsubMgrEntries = null; }
-  if (unsubMgrMsgs)    { unsubMgrMsgs();   unsubMgrMsgs    = null; }
+  if (unsubMgrEntries)    { unsubMgrEntries();    unsubMgrEntries    = null; }
+  if (unsubMgrMsgs)       { unsubMgrMsgs();       unsubMgrMsgs       = null; }
+  if (unsubFcmForeground) { unsubFcmForeground(); unsubFcmForeground = null; }
   el("mgr-dot").classList.remove("show");
   goScreen("log");
+};
+
+// ── MANAGER PUSH NOTIFICATION HELPERS ────────────────────────
+function _updateMgrPushToggle() {
+  const row = el("mgr-push-toggle-row");
+  if (!row) return;
+  if (!isPushSupported()) { row.style.display = "none"; return; }
+  const perm = getPushPermission();
+  const cb = el("mgr-push-toggle-cb");
+  if (cb) cb.checked = perm === "granted";
+  const statusEl = el("mgr-push-status");
+  if (statusEl) statusEl.textContent =
+    perm === "granted" ? "Enabled" :
+    perm === "denied"  ? "Blocked in browser settings" : "Off";
+}
+
+window.toggleMgrPush = async function() {
+  const cb      = el("mgr-push-toggle-cb");
+  const _save   = t => updateDoc(doc(db,"stores",store), { mgrPushTokens: arrayUnion(t)  });
+  const _remove = t => updateDoc(doc(db,"stores",store), { mgrPushTokens: arrayRemove(t) });
+  if (cb.checked) {
+    const r = await enablePush(_save);
+    if (r !== "granted") {
+      cb.checked = false;
+      if (r === "denied") alert("Allow notifications in browser settings then try again.");
+    }
+  } else {
+    await disablePush(_remove);
+  }
+  _updateMgrPushToggle();
+};
+
+window.saveMgrNotifPrefs = async function() {
+  const entries  = el("notif-pref-entries")?.checked  ?? true;
+  const messages = el("notif-pref-messages")?.checked ?? true;
+  try {
+    await updateDoc(doc(db,"stores",store), { pushNotifyEntries: entries, pushNotifyMessages: messages });
+    pushNotifyEntries  = entries;
+    pushNotifyMessages = messages;
+    const ok = el("notif-prefs-ok");
+    if (ok) { ok.style.display = "block"; setTimeout(() => ok.style.display = "none", 2500); }
+  } catch(e) { console.error("saveMgrNotifPrefs:", e); }
 };
 
 // ── PHOTO ATTACH TO EXISTING ENTRY ───────────────────────────
@@ -961,6 +1051,62 @@ function flashRosterSaved(id) {
   savedEl.classList.add("show");
   setTimeout(() => savedEl.classList.remove("show"), 2000);
 }
+
+// ── EMPLOYEE PUSH NOTIFICATION HELPERS ───────────────────────
+function _updateEmpPushBtn() {
+  const cb = el("emp-push-cb");
+  if (!cb || !isPushSupported()) return;
+  cb.checked = getPushPermission() === "granted";
+}
+
+window.toggleEmpPush = async function() {
+  const cb      = el("emp-push-cb");
+  const _save   = t => empPushDocId
+    ? updateDoc(doc(db,"employees",empPushDocId), { pushToken: t }) : Promise.resolve();
+  const _remove = () => empPushDocId
+    ? updateDoc(doc(db,"employees",empPushDocId), { pushToken: "" }) : Promise.resolve();
+  if (cb.checked) {
+    const r = await enablePush(_save);
+    if (r !== "granted") {
+      cb.checked = false;
+      if (r === "denied") alert("Allow notifications in browser settings to receive replies and coaching alerts.");
+    }
+  } else {
+    await disablePush(_remove);
+  }
+  _updateEmpPushBtn();
+};
+
+window.saveEmpNotifPrefs = async function() {
+  if (!empPushDocId) return;
+  const notifyEntries = el("emp-notif-entries")?.checked ?? false;
+  try {
+    await updateDoc(doc(db,"employees",empPushDocId), { empPushNotifyEntries: notifyEntries });
+    const ok = el("emp-notif-prefs-ok");
+    if (ok) { ok.style.display = "block"; setTimeout(() => ok.style.display = "none", 2000); }
+  } catch(e) { console.error("saveEmpNotifPrefs:", e); }
+};
+
+async function _loadEmpPushPrefs() {
+  if (!empPushDocId) return;
+  try {
+    const snap = await getDoc(doc(db,"employees",empPushDocId));
+    if (!snap.exists()) return;
+    const d = snap.data();
+    const cb = el("emp-push-cb");
+    if (cb) cb.checked = !!d.pushToken && getPushPermission() === "granted";
+    const entCb = el("emp-notif-entries");
+    if (entCb) entCb.checked = d.empPushNotifyEntries !== false;
+  } catch(e) { console.warn("_loadEmpPushPrefs:", e); }
+}
+
+window.toggleEmpNotifPanel = function() {
+  const panel = el("emp-notif-panel");
+  if (!panel) return;
+  const shown = panel.style.display === "block";
+  panel.style.display = shown ? "none" : "block";
+  if (!shown) { _updateEmpPushBtn(); _loadEmpPushPrefs(); }
+};
 
 // ── APP CONFIG CHECK ──────────────────────────────────────────
 async function checkAppConfig() {

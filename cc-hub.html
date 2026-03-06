@@ -472,6 +472,23 @@
         <button class="btn btn-green" onclick="changePwd()">Update Password</button>
       </div>
 
+      <div class="card" id="push-toggle-row">
+        <div class="card-title">🔔 Push Notifications</div>
+        <p style="font-size:13px;color:var(--ink-faint);margin-bottom:14px;line-height:1.5;">
+          Get a browser notification when new feedback or a failed store setup occurs — even when this tab is closed.
+        </p>
+        <div class="config-row" style="border-bottom:none;padding-bottom:0;">
+          <div class="config-info">
+            <div class="config-label">Enable Push Notifications</div>
+            <div class="config-sub" id="push-toggle-status">Off</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="push-toggle-cb" onchange="togglePushNotifs()">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">🗑️ Maintenance</div>
         <button class="btn btn-red" onclick="clearUsedCodes()" style="margin-bottom:0;">

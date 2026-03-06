@@ -240,10 +240,10 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .section-head { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-faint); margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--ruled); }
 
 /* ── BOTTOM NAV ──────────────────────────── */
-.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1.5px solid var(--ruled); display: none; z-index: 100; box-shadow: 0 -2px 14px rgba(0,0,0,0.08); }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1.5px solid var(--ruled); display: none; z-index: 100; box-shadow: 0 -2px 14px rgba(0,0,0,0.08); flex-wrap: wrap; height: auto; }
 .bottom-nav.show { display: flex; }
-.nav-btn { flex: 1; padding: 10px 8px 8px; text-align: center; cursor: pointer; border: none; background: none; font-family: 'Karla', sans-serif; color: var(--ink-faint); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; transition: color .15s; position: relative; }
-.nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+.nav-btn { flex: 1 1 calc(33.33% - 2px); padding: 7px 4px 6px; text-align: center; cursor: pointer; border: none; background: none; font-family: 'Karla', sans-serif; color: var(--ink-faint); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; transition: color .15s; position: relative; }
+.nav-icon { font-size: 18px; display: block; margin-bottom: 1px; }
 .nav-btn.on { color: var(--forest); }
 .nav-dot { position: absolute; top: 8px; right: calc(50% - 20px); width: 8px; height: 8px; background: var(--red); border-radius: 50%; display: none; border: 2px solid white; }
 .nav-dot.show { display: block; }
@@ -336,10 +336,36 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 
 <!-- ═══════════════════ LOGBOOK ═════════════════ -->
 <div class="screen" id="screen-log">
-  <div class="page-header">
-    <div class="page-title">📋 Daily Logbook</div>
-    <div class="page-date" id="log-date"></div>
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div class="page-title">📋 Daily Logbook</div>
+      <div class="page-date" id="log-date"></div>
+    </div>
+    <button title="Notification Settings" onclick="toggleEmpNotifPanel()"
+      style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px 6px;line-height:1;">🔔</button>
   </div>
+
+  <!-- Employee push notification panel -->
+  <div id="emp-notif-panel" class="compose-box" style="display:none;margin:0 0 10px;">
+    <div class="compose-title">🔔 Push Notifications</div>
+    <label class="replies-toggle-row" style="margin-top:8px;">
+      <input type="checkbox" id="emp-push-cb" onchange="toggleEmpPush()">
+      Enable push notifications on this device
+    </label>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--ruled);">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--ink-faint);">Notify me about:</div>
+      <label class="replies-toggle-row">
+        <input type="checkbox" id="emp-notif-entries" checked>
+        New log entries at my store
+      </label>
+      <div style="font-size:11px;color:var(--ink-faint);margin:4px 0 8px 24px;">
+        Manager replies and coaching records are always included.
+      </div>
+      <button class="btn btn-sm btn-green" onclick="saveEmpNotifPrefs()">Save Preferences</button>
+      <div id="emp-notif-prefs-ok" style="display:none;font-size:13px;color:#2e7d32;font-weight:700;margin-top:6px;">✅ Saved</div>
+    </div>
+  </div>
+
   <div class="stats-row">
     <div class="stat-box"><div class="stat-num s-open"  id="s-open">0</div><div class="stat-lbl">Open</div></div>
     <div class="stat-box"><div class="stat-num s-done"  id="s-done">0</div><div class="stat-lbl">Done</div></div>
@@ -416,9 +442,11 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   <div class="mgr-tabs">
     <button class="mgr-tab on" onclick="setMgrTab('inbox',this)">📬 Inbox <span class="inbox-cnt hidden" id="inbox-cnt"></span></button>
     <button class="mgr-tab"    onclick="setMgrTab('all-log',this)">📋 All Entries</button>
-    <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 QR Code</button>
+    <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 Setup QR</button>
     <button class="mgr-tab"    onclick="setMgrTab('roster',this)">👥 Roster</button>
     <button class="mgr-tab"    onclick="setMgrTab('settings',this)">⚙️ Store Setup</button>
+    <button class="mgr-tab" id="mgr-tab-feedback-btn" onclick="setMgrTab('feedback',this)">💬 Feedback</button>
+    <button class="mgr-tab" id="mgr-tab-notif-btn"   onclick="setMgrTab('notif',this)">🔔 Notifications</button>
   </div>
 
   <!-- INBOX -->
@@ -444,7 +472,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 
   <!-- QR CODE -->
   <div class="mgr-tab-pane" id="mgr-pane-qr">
-    <div class="section-head">Employee Login QR Code</div>
+    <div class="section-head">Employee Setup QR</div>
     <div class="qr-box">
       <div id="qr-canvas"></div>
       <p>Employees scan this to go directly to Store <strong id="qr-store-lbl"></strong>.<br>They just enter their name — store is pre-filled.</p>
@@ -550,6 +578,36 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
       <button class="btn-send" style="background:var(--forest);" onclick="sendFeedback()">Send Feedback</button>
     </div>
   </div>
+
+  <!-- NOTIFICATIONS -->
+  <div class="mgr-tab-pane" id="mgr-pane-notif">
+    <div class="section-head">Push Notification Settings</div>
+
+    <div id="mgr-push-toggle-row" style="margin-bottom:16px;">
+      <label style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div>
+          <div style="font-weight:700;font-size:14px;">Enable Push Notifications</div>
+          <div id="mgr-push-status" style="font-size:12px;color:var(--ink-faint);margin-top:2px;">Off</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="mgr-push-toggle-cb" onchange="toggleMgrPush()">
+          <span class="toggle-slider"></span>
+        </label>
+      </label>
+    </div>
+
+    <div class="section-head" style="margin-top:0;">Notify me about:</div>
+    <label class="replies-toggle-row">
+      <input type="checkbox" id="notif-pref-entries" checked>
+      New log entries from employees
+    </label>
+    <label class="replies-toggle-row" style="margin-top:8px;">
+      <input type="checkbox" id="notif-pref-messages" checked>
+      New private messages from employees
+    </label>
+    <button class="btn btn-sm btn-green" style="margin-top:12px;" onclick="saveMgrNotifPrefs()">Save Preferences</button>
+    <div id="notif-prefs-ok" style="display:none;font-size:13px;color:#2e7d32;font-weight:700;margin-top:8px;">✅ Saved</div>
+  </div>
 </div>
 
 <!-- ═══════════════════ LIGHTBOX ══════════════════ -->
@@ -570,6 +628,9 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   <button class="nav-btn" id="nav-coaching" onclick="navTo('coaching')">
     <span class="nav-icon">&#x1F4CB;</span>Coaching
     <span class="nav-dot" id="coaching-dot" style="display:none;"></span>
+  </button>
+  <button class="nav-btn" id="nav-feedback" onclick="navTo('feedback')">
+    <span class="nav-icon">💬</span>Feedback
   </button>
   <button class="nav-btn" id="nav-mgr" onclick="navTo('mgr')">
     <span class="nav-icon">🔑</span>Manager
