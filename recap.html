@@ -223,8 +223,8 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .mgr-panel-header-left p  { font-size: 12px; opacity: 0.8; margin-top: 3px; }
 .btn-mgr-logout { padding: 6px 14px; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
 
-.mgr-tabs { display: flex; background: white; border: 1.5px solid var(--ruled); border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
-.mgr-tab  { flex: 1; padding: 11px 6px; text-align: center; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--ink-faint); border: none; background: none; border-bottom: 3px solid transparent; transition: all .2s; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Karla', sans-serif; position: relative; }
+.mgr-tabs { display: flex; flex-wrap: wrap; background: white; border: 1.5px solid var(--ruled); border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
+.mgr-tab  { flex: 1 1 calc(33.33% - 2px); padding: 9px 4px; text-align: center; font-size: 10px; font-weight: 700; cursor: pointer; color: var(--ink-faint); border: none; background: none; border-bottom: 3px solid transparent; transition: all .2s; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Karla', sans-serif; position: relative; }
 .mgr-tab.on { color: var(--forest); border-bottom-color: var(--forest); background: var(--paper); }
 .mgr-tab-pane { display: none; }
 .mgr-tab-pane.on { display: block; }
@@ -240,10 +240,10 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .section-head { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-faint); margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--ruled); }
 
 /* ── BOTTOM NAV ──────────────────────────── */
-.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1.5px solid var(--ruled); display: none; z-index: 100; box-shadow: 0 -2px 14px rgba(0,0,0,0.08); flex-wrap: wrap; height: auto; }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1.5px solid var(--ruled); display: none; z-index: 100; box-shadow: 0 -2px 14px rgba(0,0,0,0.08); }
 .bottom-nav.show { display: flex; }
-.nav-btn { flex: 1 1 calc(33.33% - 2px); padding: 7px 4px 6px; text-align: center; cursor: pointer; border: none; background: none; font-family: 'Karla', sans-serif; color: var(--ink-faint); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; transition: color .15s; position: relative; }
-.nav-icon { font-size: 18px; display: block; margin-bottom: 1px; }
+.nav-btn { flex: 1; padding: 10px 8px 8px; text-align: center; cursor: pointer; border: none; background: none; font-family: 'Karla', sans-serif; color: var(--ink-faint); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; transition: color .15s; position: relative; }
+.nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
 .nav-btn.on { color: var(--forest); }
 .nav-dot { position: absolute; top: 8px; right: calc(50% - 20px); width: 8px; height: 8px; background: var(--red); border-radius: 50%; display: none; border: 2px solid white; }
 .nav-dot.show { display: block; }
@@ -629,10 +629,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <span class="nav-icon">&#x1F4CB;</span>Coaching
     <span class="nav-dot" id="coaching-dot" style="display:none;"></span>
   </button>
-  <button class="nav-btn" id="nav-feedback" onclick="navTo('feedback')">
-    <span class="nav-icon">💬</span>Feedback
-  </button>
-  <button class="nav-btn" id="nav-mgr" onclick="navTo('mgr')">
+  <button class="nav-btn" id="nav-mgr" onclick="navTo('mgr')" style="display:none;">
     <span class="nav-icon">🔑</span>Manager
     <span class="nav-dot" id="mgr-dot"></span>
   </button>
