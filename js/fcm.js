@@ -11,9 +11,7 @@ import { getApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.
 import { getMessaging, getToken, onMessage, deleteToken }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
-// ⚠️  Paste your VAPID public key from Firebase Console →
-//     Project Settings → Cloud Messaging → Web Push certificates
-const VAPID_KEY = "REPLACE_WITH_YOUR_VAPID_PUBLIC_KEY";
+const VAPID_KEY = "BNx3MMJSQVNx3DGj4NqkqUvqhGrm7LGy5rtsks9kumKPFesGOaY5FpxNi9qxq-piMVsQYlWk8WueNsHofXOiGcM";
 
 let _messaging = null;
 
