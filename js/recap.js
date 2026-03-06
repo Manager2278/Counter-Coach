@@ -35,6 +35,7 @@ let unsubFcmForeground = null;
 let empPushDocId       = null;
 let pushNotifyEntries  = true;
 let pushNotifyMessages = true;
+let isManagerUser      = false;
 
 // ── INIT ──────────────────────────────────────────────────────
 (function preShowQR() {
@@ -195,11 +196,11 @@ async function bootApp() {
   listenEntries();
   listenMyMsgs();
 
+  await loadStorePin();
+  _updateMgrNavBtn();
+
   if (mgrLoggedIn) {
-    await loadStorePin();
     activateMgrPanel();
-  } else {
-    loadStorePin();
   }
 }
 
@@ -217,8 +218,18 @@ async function loadStorePin() {
       notifyMessages    = d.notifyMessages !== false;
       pushNotifyEntries  = d.pushNotifyEntries  !== false;
       pushNotifyMessages = d.pushNotifyMessages !== false;
+      // Show Manager nav button only for the manager (or if no managerName set, show for all)
+      const mgrName = (d.managerName || "").trim().toLowerCase();
+      isManagerUser = !mgrName || mgrName === name.trim().toLowerCase();
     }
   } catch(e) { console.error("loadStorePin:", e); }
+}
+
+/** Show/hide the 🔑 Manager nav button based on whether this user is the manager */
+function _updateMgrNavBtn() {
+  const btn = el("nav-mgr");
+  if (!btn) return;
+  btn.style.display = (isManagerUser || mgrLoggedIn) ? "" : "none";
 }
 
 async function loadStoreSettings() {
@@ -331,8 +342,10 @@ window.bannerLogin = async () => {
   el("b-err").classList.remove("show");
   el("b-pin").value = "";
   mgrLoggedIn = true;
+  isManagerUser = true;
   saveMgrSession({ store, on: true });
   el("tb-user").textContent = name + " 🔑";
+  _updateMgrNavBtn();
   activateMgrPanel();
   goScreen("mgr");
 };
@@ -366,6 +379,7 @@ window.logoutMgr = () => {
   if (unsubMgrMsgs)       { unsubMgrMsgs();       unsubMgrMsgs       = null; }
   if (unsubFcmForeground) { unsubFcmForeground(); unsubFcmForeground = null; }
   el("mgr-dot").classList.remove("show");
+  _updateMgrNavBtn();
   goScreen("log");
 };
 
