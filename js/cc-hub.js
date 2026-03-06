@@ -1,11 +1,14 @@
 // ── CC-HUB ADMIN MODULE ───────────────────────────────────────
 import { db, auth, storage }           from "./firebase.js";
 import { el, v, esc }                  from "./utils.js";
+import { isPushSupported, getPushPermission,
+         enablePush, disablePush,
+         refreshToken, subscribeForeground } from "./fcm.js";
 import { signInAnonymously }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc,
   collection, onSnapshot, writeBatch, serverTimestamp, Timestamp,
-  query, orderBy, limit
+  query, orderBy, limit, arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
@@ -80,9 +83,10 @@ let unsubAuditLog   = null;
 let allEmployees    = [];
 let filtEmployees   = [];
 let unsubEmployees  = null;
-let allCoaching     = [];
-let filtCoaching    = [];
-let unsubCoaching   = null;
+let allCoaching       = [];
+let filtCoaching      = [];
+let unsubCoaching     = null;
+let unsubFcmForeground = null;
 
 // ── ADMIN AUTH ────────────────────────────────────────────────
 (async function checkSetup() {
@@ -142,6 +146,20 @@ function enterAdmin() {
   listenAuditLog();
   listenEmployees();
   listenCoaching();
+
+  // FCM: refresh token, subscribe foreground, read ?tab= from notification click
+  const _saveAdminToken = t =>
+    setDoc(doc(db, "admin", "pushTokens"), { tokens: arrayUnion(t) }, { merge: true });
+  refreshToken(_saveAdminToken).catch(() => {});
+  unsubFcmForeground = subscribeForeground(p => {
+    const b = p.notification?.body  || p.data?.body  || "";
+    const t = p.notification?.title || p.data?.title || "Counter Coach";
+    showNotif("🔔 " + (b || t));
+  });
+  _updatePushToggle();
+
+  const tabParam = new URLSearchParams(window.location.search).get("tab");
+  if (tabParam && TAB_LABELS[tabParam]) setTimeout(() => goTab(tabParam), 100);
 }
 
 window.adminLogout = function() {
@@ -154,7 +172,8 @@ window.adminLogout = function() {
   dismissNotif();
   if (unsubAuditLog)  { unsubAuditLog();  unsubAuditLog  = null; }
   if (unsubEmployees) { unsubEmployees(); unsubEmployees = null; }
-  if (unsubCoaching)  { unsubCoaching();  unsubCoaching  = null; }
+  if (unsubCoaching)      { unsubCoaching();      unsubCoaching      = null; }
+  if (unsubFcmForeground) { unsubFcmForeground(); unsubFcmForeground = null; }
   loggedIn = false;
   el("login-screen").classList.remove("hidden");
   el("admin-app").classList.remove("show");
@@ -867,6 +886,35 @@ window.saveMailConfig = async function() {
     ok.style.opacity = "1";
     setTimeout(() => { ok.style.opacity = "0"; }, 3000);
   } catch(e) { alert("Error: " + e.message); }
+};
+
+// ── PUSH NOTIFICATION TOGGLE (Admin Settings) ─────────────────
+function _updatePushToggle() {
+  const row = el("push-toggle-row");
+  if (!row) return;
+  if (!isPushSupported()) { row.style.display = "none"; return; }
+  const perm = getPushPermission();
+  el("push-toggle-cb").checked = perm === "granted";
+  el("push-toggle-status").textContent =
+    perm === "granted" ? "Enabled — fires even when tab is closed" :
+    perm === "denied"  ? "Blocked — allow in browser site settings" :
+                         "Off — click to enable";
+}
+
+window.togglePushNotifs = async function() {
+  const cb      = el("push-toggle-cb");
+  const _save   = t => setDoc(doc(db,"admin","pushTokens"), { tokens: arrayUnion(t)  }, { merge: true });
+  const _remove = t => setDoc(doc(db,"admin","pushTokens"), { tokens: arrayRemove(t) }, { merge: true });
+  if (cb.checked) {
+    const r = await enablePush(_save);
+    if (r !== "granted") {
+      cb.checked = false;
+      if (r === "denied") alert("Notifications were denied. Allow them in browser settings then try again.");
+    }
+  } else {
+    await disablePush(_remove);
+  }
+  _updatePushToggle();
 };
 
 function applyBranding(data) {
