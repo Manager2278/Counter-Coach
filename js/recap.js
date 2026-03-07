@@ -240,26 +240,45 @@ function _updateMgrNavBtn() {
 
 async function loadStoreSettings() {
   await loadStorePin();
+  try {
+    const snap = await getDoc(doc(db,"stores",store));
+    if (snap.exists()) {
+      const d = snap.data();
+      el("mgr-name-disp").value     = d.managerName   || "";
+      el("mgr-phone-disp").value    = d.managerPhone   || "";
+      el("mgr-helpdesk-disp").value = d.helpdeskPhone  || "";
+    }
+  } catch(_) {}
   el("mgr-dm-email-disp").value    = dmEmail;
   el("mgr-recap-email-disp").value = recapEmail;
   el("notify-entry").checked       = notifyEntry;
   el("notify-flagged").checked     = notifyFlagged;
   el("notify-messages").checked    = notifyMessages;
+  el("mgr-new-pin").value = "";
 }
 
 window.saveStoreSettings = async function() {
-  const newDm    = el("mgr-dm-email-disp").value.trim();
-  const newRecap = el("mgr-recap-email-disp").value.trim();
-  const newNE    = el("notify-entry").checked;
-  const newNF    = el("notify-flagged").checked;
-  const newNM    = el("notify-messages").checked;
+  const newMgrName  = el("mgr-name-disp").value.trim();
+  const newMgrPhone = el("mgr-phone-disp").value.trim();
+  const newHelpdesk = el("mgr-helpdesk-disp").value.trim();
+  const newDm       = el("mgr-dm-email-disp").value.trim();
+  const newRecap    = el("mgr-recap-email-disp").value.trim();
+  const newNE       = el("notify-entry").checked;
+  const newNF       = el("notify-flagged").checked;
+  const newNM       = el("notify-messages").checked;
+  const newPin      = el("mgr-new-pin").value.trim();
+  if (newPin && newPin.length < 4) { alert("PIN must be at least 4 characters."); return; }
   try {
-    await updateDoc(doc(db,"stores",store), {
+    const updates = {
+      managerName: newMgrName, managerPhone: newMgrPhone, helpdeskPhone: newHelpdesk,
       dmEmail: newDm, recapEmail: newRecap,
       notifyEntry: newNE, notifyFlagged: newNF, notifyMessages: newNM
-    });
+    };
+    if (newPin) { updates.pin = newPin; storePin = newPin; }
+    await updateDoc(doc(db,"stores",store), updates);
     dmEmail = newDm; recapEmail = newRecap;
     notifyEntry = newNE; notifyFlagged = newNF; notifyMessages = newNM;
+    el("mgr-new-pin").value = "";
     const ok = el("settings-ok");
     ok.classList.add("show");
     setTimeout(() => ok.classList.remove("show"), 2500);
@@ -901,13 +920,14 @@ async function loadBranding() {
     if (!data) return;
     if (data.appName) {
       document.title = "Daily Recap · " + data.appName;
-      el("topbar-back-btn").textContent = "← " + data.appName;
-      el("topbar-back-btn").href = "/coach";
+      const brandEl = el("topbar-brand-text");
+      if (brandEl) brandEl.textContent = data.appName;
     }
     if (data.logoUrl) {
       el("topbar-logo-img").src = data.logoUrl;
       el("topbar-logo-img").style.display = "inline-block";
-      el("topbar-brand-text").style.display = "none";
+      const brandEl = el("topbar-brand-text");
+      if (brandEl) brandEl.style.display = "none";
     }
     if (data.brandColor) {
       document.documentElement.style.setProperty("--forest",       data.brandColor);

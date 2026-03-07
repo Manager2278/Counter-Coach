@@ -320,9 +320,8 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 <body>
 
 <header class="topbar" id="recap-topbar">
-  <a class="topbar-back" id="topbar-back-btn" href="/coach">&#x2190; Counter Coach</a>
   <div class="topbar-brand" id="topbar-brand-text">Daily Recap</div>
-  <img id="topbar-logo-img" src="" alt="Logo" style="max-height:30px;vertical-align:middle;border-radius:4px;position:absolute;left:50%;transform:translateX(-50%);display:none;">
+  <img id="topbar-logo-img" src="" alt="Logo" style="max-height:30px;vertical-align:middle;border-radius:4px;display:none;">
   <div class="topbar-right">
     <span class="topbar-store hidden" id="tb-store"></span>
     <span class="topbar-user  hidden" id="tb-user"></span>
@@ -542,8 +541,20 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 
   <!-- STORE SETUP -->
   <div class="mgr-tab-pane" id="mgr-pane-settings">
-    <div class="section-head">Store Setup</div>
+    <div class="section-head">Manager Info</div>
+    <div style="margin-bottom:14px;">
+      <div class="add-label">Manager Name</div>
+      <input type="text" id="mgr-name-disp" placeholder="Your name"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;">
+      <div class="add-label" style="margin-top:8px;">Manager Phone</div>
+      <input type="tel" id="mgr-phone-disp" placeholder="10-digit number"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;">
+      <div class="add-label" style="margin-top:8px;">Help Desk Phone</div>
+      <input type="tel" id="mgr-helpdesk-disp" placeholder="10-digit number"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;">
+    </div>
 
+    <div class="section-head" style="margin-top:4px;">Store Setup</div>
     <div style="margin-bottom:14px;">
       <div class="add-label">District Manager Email</div>
       <input type="email" id="mgr-dm-email-disp" placeholder="dm@example.com"
@@ -570,8 +581,15 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
       <span style="font-size:14px;">📬 Private messages</span>
     </label>
 
+    <div class="section-head" style="margin-top:4px;">Change PIN</div>
+    <div style="margin-bottom:14px;">
+      <div class="add-label">New PIN (4+ characters)</div>
+      <input type="password" id="mgr-new-pin" placeholder="Leave blank to keep current PIN"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;" autocomplete="new-password">
+    </div>
+
     <button class="btn btn-green" onclick="saveStoreSettings()"
-      style="padding:8px 20px;font-size:13px;">Save</button>
+      style="padding:8px 20px;font-size:13px;">Save Settings</button>
     <span class="roster-saved" id="settings-ok" style="margin-left:8px;">✓ Saved</span>
   </div>
 
@@ -666,7 +684,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 <!-- ═══════════════════ BOTTOM NAV ══════════════════ -->
 <nav class="bottom-nav" id="bottom-nav">
   <a class="nav-btn-cc" href="/coach" title="Counter Coach Decision Tool">
-    <span class="nav-icon">🏪</span>CC
+    <img src="icon-192.png" alt="CC" style="width:22px;height:22px;border-radius:4px;object-fit:cover;display:block;margin:0 auto 2px;">CC
   </a>
   <button class="nav-btn on" id="nav-log" onclick="navTo('log')">
     <span class="nav-icon">📋</span>Logbook
