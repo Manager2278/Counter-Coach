@@ -153,7 +153,7 @@ async function loadBranding() {
     if (!data) return;
     if (data.appName) {
       document.title = data.appName;
-      el("header-brand-text").textContent = "🏪 " + data.appName;
+      el("header-brand-text").innerHTML = `<img src="icon-192.png" alt="" style="height:20px;width:20px;border-radius:3px;vertical-align:middle;margin-right:6px;object-fit:cover;"> ${data.appName}`;
     }
     if (data.logoUrl) {
       el("header-logo-img").src = data.logoUrl;

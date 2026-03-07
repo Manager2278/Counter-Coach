@@ -93,11 +93,41 @@ function init() {
 // ── ROSTER-BACKED NAME DROPDOWN ───────────────────────────────
 let nsRosterTimer = null;
 
+function nsStoreStatus(msg, color) {
+  const d = el("ns-store-status");
+  if (!d) return;
+  if (!msg) { d.style.display = "none"; d.textContent = ""; return; }
+  d.textContent = msg;
+  d.style.color = color || "var(--ink-faint)";
+  d.style.display = "block";
+}
+
 function onNsStoreInput() {
   const s = el("ns-store").value.trim();
   clearTimeout(nsRosterTimer);
-  if (s.length >= 3) nsRosterTimer = setTimeout(() => loadNsRoster(s), 600);
-  else el("ns-name").innerHTML = '<option value="">— Enter store # first —</option>';
+  nsStoreStatus("");
+  if (s.length >= 3) {
+    nsStoreStatus("Checking…", "var(--ink-faint)");
+    nsRosterTimer = setTimeout(() => checkNsStore(s), 600);
+  } else {
+    el("ns-name").innerHTML = '<option value="">— Enter store # first —</option>';
+  }
+}
+
+async function checkNsStore(s) {
+  try {
+    const snap = await getDoc(doc(db, "stores", s));
+    if (snap.exists()) {
+      nsStoreStatus("✓ Store " + s + " found", "#2e7d32");
+      loadNsRoster(s);
+    } else {
+      nsStoreStatus("⚠ Store not registered — visit /register to set up", "#c62828");
+      el("ns-name").innerHTML = '<option value="">— Store not registered —</option>';
+    }
+  } catch (_) {
+    nsStoreStatus("");
+    loadNsRoster(s); // fallback on error
+  }
 }
 
 async function loadNsRoster(s) {
