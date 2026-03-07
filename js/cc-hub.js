@@ -1,14 +1,11 @@
 // ── CC-HUB ADMIN MODULE ───────────────────────────────────────
 import { db, auth, storage }           from "./firebase.js";
 import { el, v, esc }                  from "./utils.js";
-import { isPushSupported, getPushPermission,
-         enablePush, disablePush,
-         refreshToken, subscribeForeground } from "./fcm.js";
 import { signInAnonymously }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc,
-  collection, onSnapshot, writeBatch, serverTimestamp, Timestamp,
-  query, orderBy, limit, arrayUnion, arrayRemove
+  collection, collectionGroup, onSnapshot, writeBatch, serverTimestamp, Timestamp,
+  query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { ref as storageRef, uploadBytesResumable, getDownloadURL }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
@@ -86,7 +83,6 @@ let unsubEmployees  = null;
 let allCoaching       = [];
 let filtCoaching      = [];
 let unsubCoaching     = null;
-let unsubFcmForeground = null;
 
 // ── ADMIN AUTH ────────────────────────────────────────────────
 (async function checkSetup() {
@@ -147,17 +143,6 @@ function enterAdmin() {
   listenEmployees();
   listenCoaching();
 
-  // FCM: refresh token, subscribe foreground, read ?tab= from notification click
-  const _saveAdminToken = t =>
-    setDoc(doc(db, "admin", "pushTokens"), { tokens: arrayUnion(t) }, { merge: true });
-  refreshToken(_saveAdminToken).catch(() => {});
-  unsubFcmForeground = subscribeForeground(p => {
-    const b = p.notification?.body  || p.data?.body  || "";
-    const t = p.notification?.title || p.data?.title || "Counter Coach";
-    showNotif("🔔 " + (b || t));
-  });
-  _updatePushToggle();
-
   const tabParam = new URLSearchParams(window.location.search).get("tab");
   if (tabParam && TAB_LABELS[tabParam]) setTimeout(() => goTab(tabParam), 100);
 }
@@ -173,7 +158,6 @@ window.adminLogout = function() {
   if (unsubAuditLog)  { unsubAuditLog();  unsubAuditLog  = null; }
   if (unsubEmployees) { unsubEmployees(); unsubEmployees = null; }
   if (unsubCoaching)      { unsubCoaching();      unsubCoaching      = null; }
-  if (unsubFcmForeground) { unsubFcmForeground(); unsubFcmForeground = null; }
   loggedIn = false;
   el("login-screen").classList.remove("hidden");
   el("admin-app").classList.remove("show");
@@ -470,7 +454,7 @@ window.resetPIN = async function(storeId) {
 // ── LOGBOOK ────────────────────────────────────────────────────
 function listenEntries() {
   if (unsubEntries) unsubEntries();
-  const q = query(collection(db, "entries"), orderBy("time", "desc"));
+  const q = query(collectionGroup(db, "entries"), orderBy("time", "desc"));
   unsubEntries = onSnapshot(q, snap => {
     allEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     populateStoreFilter();
@@ -526,13 +510,15 @@ function renderEntries() {
 
 window.deleteEntry = async function(id) {
   if (!confirm("Delete this logbook entry? This cannot be undone.")) return;
-  await deleteDoc(doc(db, "entries", id)).catch(e => alert("Error: " + e.message));
+  const entry = allEntries.find(e => e.id === id);
+  if (!entry) { alert("Entry not found."); return; }
+  await deleteDoc(doc(db, "stores", entry.store, "entries", id)).catch(e => alert("Error: " + e.message));
 };
 
 // ── ADMIN MESSAGES ─────────────────────────────────────────────
 function listenAdminMsgs() {
   if (unsubAdminMsgs) unsubAdminMsgs();
-  const q = query(collection(db, "messages"), orderBy("time", "desc"));
+  const q = query(collectionGroup(db, "messages"), orderBy("time", "desc"));
   unsubAdminMsgs = onSnapshot(q, snap => {
     allAdminMsgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     populateMsgStoreFilter();
@@ -562,7 +548,9 @@ window.refreshMessages = function() {
 
 window.deleteMessage = async function(id) {
   if (!confirm("Delete this message? This cannot be undone.")) return;
-  await deleteDoc(doc(db, "messages", id)).catch(e => alert("Error: " + e.message));
+  const msg = allAdminMsgs.find(m => m.id === id);
+  if (!msg) { alert("Message not found."); return; }
+  await deleteDoc(doc(db, "stores", msg.store, "messages", id)).catch(e => alert("Error: " + e.message));
   auditLog("Deleted private message", `ID: ${id}`);
 };
 
@@ -888,35 +876,6 @@ window.saveMailConfig = async function() {
   } catch(e) { alert("Error: " + e.message); }
 };
 
-// ── PUSH NOTIFICATION TOGGLE (Admin Settings) ─────────────────
-function _updatePushToggle() {
-  const row = el("push-toggle-row");
-  if (!row) return;
-  if (!isPushSupported()) { row.style.display = "none"; return; }
-  const perm = getPushPermission();
-  el("push-toggle-cb").checked = perm === "granted";
-  el("push-toggle-status").textContent =
-    perm === "granted" ? "Enabled — fires even when tab is closed" :
-    perm === "denied"  ? "Blocked — allow in browser site settings" :
-                         "Off — click to enable";
-}
-
-window.togglePushNotifs = async function() {
-  const cb      = el("push-toggle-cb");
-  const _save   = t => setDoc(doc(db,"admin","pushTokens"), { tokens: arrayUnion(t)  }, { merge: true });
-  const _remove = t => setDoc(doc(db,"admin","pushTokens"), { tokens: arrayRemove(t) }, { merge: true });
-  if (cb.checked) {
-    const r = await enablePush(_save);
-    if (r !== "granted") {
-      cb.checked = false;
-      if (r === "denied") alert("Notifications were denied. Allow them in browser settings then try again.");
-    }
-  } else {
-    await disablePush(_remove);
-  }
-  _updatePushToggle();
-};
-
 function applyBranding(data) {
   if (!data) return;
   // Apply brand color to this page's CSS variables
@@ -1073,7 +1032,7 @@ window.saveFeatureFlags = async function() {
 // ── EMPLOYEES ─────────────────────────────────────────────────
 function listenEmployees() {
   if (unsubEmployees) unsubEmployees();
-  const q = query(collection(db, "employees"), orderBy("name"));
+  const q = query(collectionGroup(db, "employees"), orderBy("name"));
   unsubEmployees = onSnapshot(q, snap => {
     allEmployees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     populateEmpStoreFilter();
@@ -1163,7 +1122,9 @@ window.saveEmployee = async function(id) {
   const store     = (document.getElementById("ee-store-"  + id) || {}).value?.trim();
   if (!name)  { alert("Name is required.");         return; }
   if (!store) { alert("Store number is required."); return; }
-  await updateDoc(doc(db, "employees", id), {
+  const emp = allEmployees.find(e => e.id === id);
+  if (!emp) { alert("Employee not found."); return; }
+  await updateDoc(doc(db, "stores", emp.store, "employees", id), {
     name, role, memberNum: memberNum || null, store
   }).catch(e => { alert("Error: " + e.message); return; });
   auditLog("Updated employee", `ID: ${id} · Name: ${name} · Title: ${role} · Store: ${store}`);
@@ -1181,7 +1142,7 @@ window.addEmployee = async function() {
   if (!store) { errEl.textContent = "Store number is required."; errEl.classList.add("show"); return; }
   if (!name)  { errEl.textContent = "Employee name is required."; errEl.classList.add("show"); return; }
   try {
-    await addDoc(collection(db, "employees"), {
+    await addDoc(collection(db, "stores", store, "employees"), {
       store,
       name,
       role,
@@ -1197,20 +1158,24 @@ window.addEmployee = async function() {
 
 window.deleteEmployee = async function(id, name) {
   if (!confirm(`Remove "${name}" from the roster? This cannot be undone.`)) return;
-  await deleteDoc(doc(db, "employees", id)).catch(e => alert("Error: " + e.message));
+  const emp = allEmployees.find(e => e.id === id);
+  if (!emp) { alert("Employee not found."); return; }
+  await deleteDoc(doc(db, "stores", emp.store, "employees", id)).catch(e => alert("Error: " + e.message));
   auditLog("Removed employee", `Name: ${name} · ID: ${id}`);
 };
 
 window.releaseEmployee = async function(id, name) {
   if (!confirm(`Release session for "${name}"? They will be able to log in again.`)) return;
-  await updateDoc(doc(db, "employees", id), { loggedIn: false }).catch(e => alert("Error: " + e.message));
+  const emp = allEmployees.find(e => e.id === id);
+  if (!emp) { alert("Employee not found."); return; }
+  await updateDoc(doc(db, "stores", emp.store, "employees", id), { loggedIn: false }).catch(e => alert("Error: " + e.message));
   auditLog("Released employee session", `Name: ${name}`);
 };
 
 // ── COACHING RECORDS ──────────────────────────────────────────
 function listenCoaching() {
   if (unsubCoaching) unsubCoaching();
-  const q = query(collection(db, "coaching"), orderBy("savedAt", "desc"), limit(200));
+  const q = query(collectionGroup(db, "coaching"), orderBy("savedAt", "desc"), limit(200));
   unsubCoaching = onSnapshot(q, snap => {
     allCoaching = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     populateCoachingStoreFilter();
@@ -1237,7 +1202,9 @@ window.filterCoaching = function() {
 
 window.deleteCoaching = async function(id, name) {
   if (!confirm(`Delete coaching record for "${name}"? This cannot be undone.`)) return;
-  await deleteDoc(doc(db, "coaching", id)).catch(e => alert("Error: " + e.message));
+  const coaching = allCoaching.find(c => c.id === id);
+  if (!coaching) { alert("Coaching record not found."); return; }
+  await deleteDoc(doc(db, "stores", coaching.store, "coaching", id)).catch(e => alert("Error: " + e.message));
   auditLog("Deleted coaching record", `Name: ${name} · ID: ${id}`);
 };
 

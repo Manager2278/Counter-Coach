@@ -2,26 +2,26 @@
   "indexes": [
     {
       "collectionGroup": "entries",
-      "queryScope": "COLLECTION",
+      "queryScope": "COLLECTION_GROUP",
       "fields": [
         { "fieldPath": "store", "order": "ASCENDING" },
         { "fieldPath": "time",  "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "coaching",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "store", "order": "ASCENDING" },
-        { "fieldPath": "name",  "order": "ASCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "messages",
-      "queryScope": "COLLECTION",
+      "queryScope": "COLLECTION_GROUP",
       "fields": [
         { "fieldPath": "store", "order": "ASCENDING" },
         { "fieldPath": "from",  "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "coaching",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "store", "order": "ASCENDING" },
+        { "fieldPath": "name",  "order": "ASCENDING" }
       ]
     }
   ],

@@ -3,7 +3,6 @@ const { onDocumentCreated,
         onDocumentUpdated }             = require("firebase-functions/v2/firestore");
 const { initializeApp }                 = require("firebase-admin/app");
 const { getFirestore, FieldValue }      = require("firebase-admin/firestore");
-const { getMessaging }                  = require("firebase-admin/messaging");
 const nodemailer                        = require("nodemailer");
 
 // ── Environment variables ──────────────────────────────────────────────────
@@ -85,7 +84,6 @@ exports.verifyAdminPassword = onCall(async (request) => {
  * redeemRegCode
  * Atomically validates a registration code and creates the store document
  * in a single Firestore transaction, preventing race-condition double-use.
- * Also notifies admin via push if the redemption fails.
  *
  * Request data: {
  *   code:           string,
@@ -114,55 +112,44 @@ exports.redeemRegCode = onCall(async (request) => {
   const codeRef  = db.doc(`reg_codes/${codeKey}`);
   const storeRef = db.doc(`stores/${storeId}`);
 
-  try {
-    await db.runTransaction(async (txn) => {
-      const codeSnap = await txn.get(codeRef);
+  await db.runTransaction(async (txn) => {
+    const codeSnap = await txn.get(codeRef);
 
-      if (!codeSnap.exists) {
-        throw new HttpsError("not-found", "Invalid registration code.");
-      }
+    if (!codeSnap.exists) {
+      throw new HttpsError("not-found", "Invalid registration code.");
+    }
 
-      const cd = codeSnap.data();
+    const cd = codeSnap.data();
 
-      if (cd.used) {
-        throw new HttpsError("already-exists", "This registration code has already been used.");
-      }
-      if (cd.expires && cd.expires.toDate() < new Date()) {
-        throw new HttpsError("deadline-exceeded", "This registration code has expired.");
-      }
-      if (cd.storeNumber && cd.storeNumber !== storeId) {
-        throw new HttpsError(
-          "failed-precondition",
-          `This code is for store ${cd.storeNumber}, not store ${storeId}.`
-        );
-      }
+    if (cd.used) {
+      throw new HttpsError("already-exists", "This registration code has already been used.");
+    }
+    if (cd.expires && cd.expires.toDate() < new Date()) {
+      throw new HttpsError("deadline-exceeded", "This registration code has expired.");
+    }
+    if (cd.storeNumber && cd.storeNumber !== storeId) {
+      throw new HttpsError(
+        "failed-precondition",
+        `This code is for store ${cd.storeNumber}, not store ${storeId}.`
+      );
+    }
 
-      txn.update(codeRef, {
-        used:        true,
-        usedAt:      FieldValue.serverTimestamp(),
-        usedByStore: storeId,
-      });
-
-      txn.set(storeRef, {
-        pin,
-        managerName,
-        managerPhone:  managerPhone  || "",
-        helpdeskPhone: helpdeskPhone || "",
-        created:       FieldValue.serverTimestamp(),
-      });
+    txn.update(codeRef, {
+      used:        true,
+      usedAt:      FieldValue.serverTimestamp(),
+      usedByStore: storeId,
     });
 
-    return { success: true };
+    txn.set(storeRef, {
+      pin,
+      managerName,
+      managerPhone:  managerPhone  || "",
+      helpdeskPhone: helpdeskPhone || "",
+      created:       FieldValue.serverTimestamp(),
+    });
+  });
 
-  } catch(e) {
-    // Notify admin via push about the failed setup attempt
-    sendPushToAdmin(
-      `❌ Store Setup Failed — Store ${storeId}`,
-      e.message || "Registration code redemption failed",
-      "codes"
-    ).catch(() => {}); // fire-and-forget; don't block the error response
-    throw e; // re-throw so client receives the proper error
-  }
+  return { success: true };
 });
 
 // ── SHARED SMTP HELPER ────────────────────────────────────────────────────
@@ -187,90 +174,13 @@ async function getMailTransport() {
   return { transport, from: `"${fromName}" <${smtpUser}>` };
 }
 
-// ── SHARED FCM PUSH HELPERS ───────────────────────────────────────────────
-
 /**
- * sendPushToAdmin
- * Reads FCM tokens from admin/pushTokens and sends a multicast push.
- * Automatically prunes stale/unregistered tokens.
+ * sendEmail
+ * Shared helper for sending plain-text emails via SMTP mailConfig.
  */
-async function sendPushToAdmin(title, body, tab = "messages") {
-  const snap = await db.doc("admin/pushTokens").get();
-  if (!snap.exists) return;
-  const tokens = (snap.data().tokens || []).filter(Boolean);
-  if (!tokens.length) return;
-
-  const url  = "/hub?tab=" + tab;
-  const resp = await getMessaging().sendEachForMulticast({
-    tokens,
-    notification: { title, body },
-    data: { title, body, tab, url, tag: "admin-" + tab }
-  });
-
-  // Prune stale tokens automatically
-  const stale = resp.responses
-    .map((r, i) => (!r.success && (
-      r.error?.code === "messaging/registration-token-not-registered" ||
-      r.error?.code === "messaging/invalid-registration-token"
-    )) ? tokens[i] : null)
-    .filter(Boolean);
-  if (stale.length) {
-    await db.doc("admin/pushTokens").update({ tokens: FieldValue.arrayRemove(...stale) });
-  }
-}
-
-/**
- * sendPushToStore
- * Sends push to all FCM tokens stored in stores/{storeId}.mgrPushTokens.
- * Automatically prunes stale tokens.
- */
-async function sendPushToStore(storeId, title, body, tab = "log") {
-  const snap = await db.doc(`stores/${storeId}`).get();
-  if (!snap.exists) return;
-  const tokens = (snap.data().mgrPushTokens || []).filter(Boolean);
-  if (!tokens.length) return;
-
-  const resp = await getMessaging().sendEachForMulticast({
-    tokens,
-    notification: { title, body },
-    data: { title, body, tab, url: "/recap", tag: "mgr-" + tab }
-  });
-
-  const stale = resp.responses
-    .map((r, i) => (!r.success && (
-      r.error?.code === "messaging/registration-token-not-registered" ||
-      r.error?.code === "messaging/invalid-registration-token"
-    )) ? tokens[i] : null)
-    .filter(Boolean);
-  if (stale.length) {
-    await db.doc(`stores/${storeId}`).update({ mgrPushTokens: FieldValue.arrayRemove(...stale) });
-  }
-}
-
-/**
- * sendPushToEmployee
- * Sends push to a single employee FCM token.
- * Clears stale tokens from their Firestore document automatically.
- */
-async function sendPushToEmployee(pushToken, title, body) {
-  if (!pushToken) return;
-  try {
-    await getMessaging().send({
-      token: pushToken,
-      notification: { title, body },
-      data: { title, body, url: "/recap", tag: "emp-notif" }
-    });
-  } catch(e) {
-    if (
-      e.code === "messaging/registration-token-not-registered" ||
-      e.code === "messaging/invalid-registration-token"
-    ) {
-      // Find the employee document with this stale token and clear it
-      const snap = await db.collection("employees")
-        .where("pushToken", "==", pushToken).limit(1).get();
-      if (!snap.empty) await snap.docs[0].ref.update({ pushToken: "" });
-    }
-  }
+async function sendEmail(to, subject, body) {
+  const { transport, from } = await getMailTransport();
+  await transport.sendMail({ from, to, subject, text: body });
 }
 
 /**
@@ -366,161 +276,64 @@ exports.sendRecapNotification = onCall(async (request) => {
   return { success: true };
 });
 
-// ── FCM PUSH TRIGGERS ─────────────────────────────────────────────────────
+// ── EMPLOYEE EMAIL TRIGGERS ───────────────────────────────────────────────
 
 /**
- * onNewFeedback
- * Pushes admin when a manager submits new feedback.
+ * onEmployeeMessageReplied
+ * When a manager replies to an employee's private message, email the employee.
+ * Listens on the new subcollection path: stores/{storeId}/messages/{msgId}
  */
-exports.onNewFeedback = onDocumentCreated("feedback/{id}", async event => {
-  const d     = event.data?.data() || {};
-  const label = d.type === "bug" ? "Bug Report" : d.type === "idea" ? "Idea" : "Feedback";
-  const text  = (d.text || "").slice(0, 80) + ((d.text || "").length > 80 ? "…" : "");
-  await sendPushToAdmin(
-    `💬 New ${label} — Store ${d.store || "?"}`,
-    `${d.from || "Manager"}: ${text}`,
-    "feedback"
-  );
-});
+exports.onEmployeeMessageReplied = onDocumentUpdated(
+  "stores/{storeId}/messages/{msgId}", async event => {
+    const before = event.data.before.data() || {};
+    const after  = event.data.after.data()  || {};
+    // Only fire when a reply is first added (not on subsequent updates)
+    if (before.reply || !after.reply) return;
 
-/**
- * onStoreCreated
- * Pushes admin when a new store is registered, flagging any incomplete fields.
- */
-exports.onStoreCreated = onDocumentCreated("stores/{storeId}", async event => {
-  const d       = event.data?.data() || {};
-  const storeId = event.params.storeId;
-  const missing = [];
-  if (!d.managerName)   missing.push("Manager Name");
-  if (!d.pin)           missing.push("PIN");
-  if (!d.helpdeskPhone) missing.push("Helpdesk Phone");
-  if (missing.length) {
-    await sendPushToAdmin(
-      `⚠️ Incomplete Setup — Store ${storeId}`,
-      `Missing: ${missing.join(", ")}. Store registered but setup may be incomplete.`,
-      "stores"
-    );
+    const storeId = event.params.storeId;
+    const empSnap = await db.collection("stores").doc(storeId)
+      .collection("employees").where("name", "==", after.from).limit(1).get();
+    if (empSnap.empty) return;
+
+    const empEmail = empSnap.docs[0].data().empEmail;
+    if (!empEmail) return;
+
+    const replyText = (after.reply?.text || "").slice(0, 200);
+    await sendEmail(
+      empEmail,
+      "Counter Coach — Manager replied to your message",
+      `Your manager replied to your message:\n\n"${replyText}"\n\nLog in at countercoach.app to view the full reply.`
+    ).catch(e => console.error("onEmployeeMessageReplied email error:", e));
   }
-});
+);
 
 /**
- * onNewEntry
- * Pushes to the store manager (if preference allows) and to any employees
- * who have opted into log entry notifications at that store.
+ * onEmployeeCoachingCreated
+ * When a coaching record is created, email the named employee.
+ * Listens on the new subcollection path: stores/{storeId}/coaching/{coachId}
  */
-exports.onNewEntry = onDocumentCreated("entries/{id}", async event => {
-  const d = event.data?.data() || {};
-  if (!d.store) return;
+exports.onEmployeeCoachingCreated = onDocumentCreated(
+  "stores/{storeId}/coaching/{coachId}", async event => {
+    const d       = event.data?.data() || {};
+    const storeId = event.params.storeId;
+    if (!d.name || !storeId) return;
 
-  const emoji = d.type === "issue" ? "⚠️" : d.type === "progress" ? "📈" : "📝";
-  const text  = (d.text || "").slice(0, 80) + ((d.text || "").length > 80 ? "…" : "");
-  const title = `${emoji} New Entry — Store ${d.store}`;
-  const body  = `${d.author || "Employee"}: ${text}`;
+    const empSnap = await db.collection("stores").doc(storeId)
+      .collection("employees").where("name", "==", d.name).limit(1).get();
+    if (empSnap.empty) return;
 
-  // Push to store manager (check preference)
-  const storeSnap = await db.doc(`stores/${d.store}`).get();
-  if (storeSnap.exists && storeSnap.data().pushNotifyEntries !== false) {
-    await sendPushToStore(d.store, title, body, "log");
+    const empEmail = empSnap.docs[0].data().empEmail;
+    if (!empEmail) return;
+
+    const typeLabel = {
+      verbal: "Verbal", written: "Written", final: "Final Written",
+      pip: "PIP", termination: "Termination"
+    };
+    const label = typeLabel[d.type] || d.type || "Coaching";
+    await sendEmail(
+      empEmail,
+      "Counter Coach — Coaching Record",
+      `A ${label} coaching document has been created for you at Store ${storeId}.\n\nPlease log in at countercoach.app to review and sign the document.`
+    ).catch(e => console.error("onEmployeeCoachingCreated email error:", e));
   }
-
-  // Push to employees who opted into log notifications at this store
-  const empSnap = await db.collection("employees")
-    .where("store", "==", d.store)
-    .where("empPushNotifyEntries", "==", true)
-    .get();
-  const empTokens = empSnap.docs
-    .map(doc => doc.data().pushToken)
-    .filter(t => !!t); // skip empty/null tokens
-  if (empTokens.length) {
-    await getMessaging().sendEachForMulticast({
-      tokens: empTokens,
-      notification: { title, body },
-      data: { title, body, url: "/recap", tag: "emp-entry" }
-    });
-  }
-});
-
-/**
- * onNewMessage
- * Pushes to admin (overview) and to the store manager (if preference allows).
- */
-exports.onNewMessage = onDocumentCreated("messages/{id}", async event => {
-  const d    = event.data?.data() || {};
-  if (!d.store) return;
-  const text = (d.text || "").slice(0, 80) + ((d.text || "").length > 80 ? "…" : "");
-
-  // Always push to admin
-  await sendPushToAdmin(
-    `📬 New Message — Store ${d.store}`,
-    `${d.from || "Employee"}: ${text}`,
-    "messages"
-  );
-
-  // Push to store manager (check preference)
-  const storeSnap = await db.doc(`stores/${d.store}`).get();
-  if (storeSnap.exists && storeSnap.data().pushNotifyMessages !== false) {
-    await sendPushToStore(
-      d.store,
-      `📬 New Message`,
-      `${d.from || "Employee"}: ${text}`,
-      "msg"
-    );
-  }
-});
-
-/**
- * onMessageReplied
- * Pushes to the employee when a manager replies to their private message.
- */
-exports.onMessageReplied = onDocumentUpdated("messages/{id}", async event => {
-  const before = event.data.before.data() || {};
-  const after  = event.data.after.data()  || {};
-  // Only fire when a reply is first added (not on subsequent updates)
-  if (before.reply || !after.reply) return;
-
-  const employeeName = after.from;
-  const storeId      = after.store;
-  if (!employeeName || !storeId) return;
-
-  const empSnap = await db.collection("employees")
-    .where("store", "==", storeId)
-    .where("name",  "==", employeeName)
-    .limit(1).get();
-  if (empSnap.empty) return;
-
-  const pushToken = empSnap.docs[0].data().pushToken;
-  const replyText = (after.reply?.text || "").slice(0, 80);
-  await sendPushToEmployee(
-    pushToken,
-    `💬 Manager replied to your message`,
-    `${after.reply?.from || "Manager"}: ${replyText}`
-  );
-});
-
-/**
- * onNewCoaching
- * Pushes to the employee named in a newly created coaching record.
- */
-exports.onNewCoaching = onDocumentCreated("coaching/{id}", async event => {
-  const d       = event.data?.data() || {};
-  const empName = d.name;
-  const storeId = d.store;
-  if (!empName || !storeId) return;
-
-  const empSnap = await db.collection("employees")
-    .where("store", "==", storeId)
-    .where("name",  "==", empName)
-    .limit(1).get();
-  if (empSnap.empty) return;
-
-  const pushToken = empSnap.docs[0].data().pushToken;
-  const typeLabel = {
-    verbal: "Verbal", written: "Written", final: "Final Written",
-    pip: "PIP", termination: "Termination"
-  };
-  await sendPushToEmployee(
-    pushToken,
-    `📋 Coaching Record`,
-    `A ${typeLabel[d.type] || d.type || "coaching"} document has been created for you.`
-  );
-});
+);
