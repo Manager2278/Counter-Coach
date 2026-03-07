@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Counter Coach</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <meta name="theme-color" content="#006400">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f0f4f0; min-height: 100vh; }
+    .header { background: #006400; color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .header h2 { font-size: 18px; letter-spacing: 0.5px; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    #header-info { font-size: 12px; opacity: 0.85; text-align: right; line-height: 1.4; }
+    .btn-mgr-setup { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.75); background: none; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 4px 9px; cursor: pointer; white-space: nowrap; }
+    .btn-mgr-setup:hover { color: white; border-color: rgba(255,255,255,0.7); }
+    .wrap { max-width: 540px; margin: 0 auto; padding: 20px 16px 40px; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    /* ── NAME PROMPT BANNER */
+    #name-banner { background: #1b5e20; color: white; padding: 14px 16px; display: none; }
+    #name-banner.show { display: block; }
+    .nb-inner { max-width: 540px; margin: 0 auto; }
+    .nb-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; opacity: 0.9; }
+    .nb-fields { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .nb-fields input { padding: 8px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); font-family: Arial, sans-serif; font-size: 14px; background: rgba(255,255,255,0.15); color: white; flex: 1; min-width: 100px; }
+    .nb-fields input::placeholder { color: rgba(255,255,255,0.5); }
+    .nb-fields input:focus { outline: none; background: rgba(255,255,255,0.22); }
+    .nb-fields select { padding: 8px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); font-family: Arial, sans-serif; font-size: 14px; background: rgba(255,255,255,0.15); color: white; flex: 1; min-width: 120px; cursor: pointer; }
+    .nb-fields select option { color: #1a1a1a; background: white; }
+    .btn-nb { padding: 8px 16px; background: white; color: #1b5e20; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .nb-err { font-size: 12px; color: #ffb3b3; margin-top: 6px; display: none; }
+    .nb-err.show { display: block; }
+    /* ── CARDS */
+    .setup-box, .home-box, .q-box { background: white; border-radius: 14px; padding: 28px 24px; box-shadow: 0 3px 16px rgba(0,0,0,0.1); margin-top: 16px; }
+    .setup-box h3 { font-size: 20px; color: #1a3a1a; margin-bottom: 6px; }
+    .setup-box > p { font-size: 13px; color: #666; margin-bottom: 20px; line-height: 1.5; }
+    input[type=text], input[type=tel], input[type=password] { width: 100%; padding: 11px 14px; margin: 6px 0 14px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 15px; font-family: Arial, sans-serif; background: #fafafa; transition: border .2s; }
+    input:focus { outline: none; border-color: #006400; background: white; }
+    .field-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #888; display: block; }
+    .btn { display: block; width: 100%; padding: 14px; margin: 8px 0; font-weight: bold; font-size: 15px; border: none; border-radius: 10px; cursor: pointer; transition: filter .15s, transform .1s; text-align: center; text-decoration: none; }
+    .btn:active { transform: scale(0.98); }
+    .btn-green { background: #2e7d32; color: white; }
+    .btn-blue { background: #1b5e20; color: white; }
+    .btn-red { background: #c62828; color: white; }
+    .btn-gray { background: #757575; color: white; }
+    .btn-emergency { background: #b71c1c; color: white; }
+    .btn-navy { background: #1565c0; color: white; }
+    .btn-amber { background: #e65100; color: white; }
+    .err-box { background: #ffebee; border: 1px solid #ffcdd2; color: #c62828; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: none; }
+    .err-box.show { display: block; }
+    .home-box p { font-size: 16px; font-weight: bold; color: #1a3a1a; margin-bottom: 14px; }
+    hr { border: none; border-top: 1px solid #e8e8e8; margin: 10px 0; }
+    .q-box p { font-size: 18px; font-weight: bold; color: #1a2a1a; margin-bottom: 18px; line-height: 1.4; }
+    .result { padding: 18px; border-radius: 10px; font-size: 20px; font-weight: bold; }
+    .call { background: #ffebee; color: #c62828; }
+    .nocall { background: #e8f5e9; color: #2e7d32; }
+    .why { color: #b71c1c; margin-top: 12px; font-weight: bold; font-size: 15px; line-height: 1.5; }
+    .ask { margin-top: 10px; font-size: 14px; line-height: 1.5; }
+    .expect { color: #1b5e20; margin-top: 12px; font-weight: bold; font-style: italic; font-size: 15px; line-height: 1.5; }
+    #error-banner { display: none; background: #ffcccc; color: #900; padding: 10px 14px; border-radius: 8px; margin: 12px 16px; font-size: 13px; }
+    #broadcast-banner { display: none; background: #1b5e20; color: white; padding: 10px 16px; font-size: 13px; line-height: 1.5; }
+    #broadcast-banner.show { display: block; }
+    #broadcast-banner strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    /* ── REG CODE FIELD — hidden by default, shown only for new stores */
+    .reg-code-wrap { display: none; background: #fff8e1; border: 1.5px solid #ffe082; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+    .reg-code-wrap.show { display: block; }
+    .reg-code-wrap p { font-size: 12px; color: #7a5800; margin-bottom: 8px; line-height: 1.5; }
+    .reg-code-wrap input { margin: 0; background: white; }
+    .store-status { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 6px; display: inline-block; margin-bottom: 10px; }
+    .store-status.new { background: #e8f5e9; color: #2e7d32; }
+    .store-status.exists { background: #e3f2fd; color: #1565c0; }
+    /* ── LOCKED MANAGER FIELDS */
+    input.mgr-locked { background: #f5f5f5 !important; color: #9e9e9e !important; border-color: #e0e0e0 !important; cursor: default !important; }
+    #mgr-lock-notice { display: none; align-items: center; justify-content: space-between; gap: 8px; background: #f5f5f5; border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; font-size: 12px; color: #757575; }
+    #mgr-lock-notice.show { display: flex; }
+    .btn-unlock { font-size: 12px; font-weight: 700; color: #1565c0; background: none; border: 1.5px solid #1565c0; border-radius: 6px; padding: 4px 10px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <div class="header" id="main-header">
+    <h2 id="header-brand">
+      <img id="header-logo-img" src="" alt="Logo" style="max-height:30px;vertical-align:middle;border-radius:4px;display:none;">
+      <span id="header-brand-text">&#x1F3EA; Counter Coach</span>
+    </h2>
+    <div class="header-right">
+      <div id="header-info"></div>
+      <button class="btn-mgr-setup" onclick="showManagerSetup()">&#x1F511; Manager</button>
+    </div>
+  </div>
+
+  <!-- Broadcast banner -->
+  <div id="broadcast-banner"></div>
+
+  <!-- Name prompt banner -->
+  <div id="name-banner">
+    <div class="nb-inner">
+      <div class="nb-title" id="nb-title">Enter your name to continue</div>
+      <div class="nb-fields">
+        <input type="text" id="nb-store" placeholder="Store #" style="max-width:90px;" inputmode="numeric" oninput="onNbStoreInput()">
+        <select id="nb-name">
+          <option value="">— Enter store # first —</option>
+        </select>
+        <button class="btn-nb" onclick="submitNameBanner()">Go</button>
+      </div>
+      <div class="nb-err" id="nb-err">Please enter your store number and select your name.</div>
+    </div>
+  </div>
+
+  <div id="error-banner"></div>
+
+  <div class="wrap">
+    <!-- HOME -->
+    <div class="screen active" id="screen-home">
+      <div class="home-box">
+        <p>What is the situation?</p>
+        <button class="btn btn-emergency" onclick="guardedAction('emergency')">&#x1F6A8; Emergency</button>
+        <button class="btn btn-blue" onclick="nextQ('cust1')">Customer Escalation</button>
+        <button class="btn btn-blue" onclick="nextQ('staff1')">Staffing Issue</button>
+        <button class="btn btn-blue" onclick="nextQ('driver1')">Drivers / Delivery</button>
+        <button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
+        <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
+        <a class="btn btn-amber" href="rules.html">&#x1F4D6; Counter Rules &amp; Training</a>
+        <hr>
+        <a id="recap-link" class="btn btn-navy" href="/">&#x1F4CB; Daily Recap &amp; Log</a>
+      </div>
+    </div>
+
+    <!-- MANAGER SETUP -->
+    <div class="screen" id="screen-mgr-setup">
+      <div class="setup-box">
+        <h3>&#x1F511; Manager Setup</h3>
+        <p id="setup-desc">Enter your store number to get started.</p>
+
+        <span class="field-label">Store Number</span>
+        <input type="text" id="mgr-store" placeholder="e.g. 2278" inputmode="numeric" oninput="onStoreInput()">
+
+        <div id="store-status-badge"></div>
+
+        <!-- Registration code — only shown for brand-new stores -->
+        <div class="reg-code-wrap" id="reg-code-wrap">
+          <p>&#x1F512; This store hasn't been set up yet. Enter your <strong>registration code</strong> to create it. Contact SM 2278 Justin if you don't have one.</p>
+          <input type="password" id="mgr-regcode" placeholder="Registration code" autocomplete="off">
+        </div>
+
+        <span class="field-label">Manager Name</span>
+        <input type="text" id="mgr-name" placeholder="Your name">
+
+        <span class="field-label">Manager Phone (used for call buttons)</span>
+        <input type="tel" id="mgr-phone" placeholder="10-digit number">
+
+        <span class="field-label">Help Desk Phone</span>
+        <input type="tel" id="mgr-helpdesk" placeholder="10-digit number">
+
+        <div id="mgr-lock-notice">
+          <span>🔒 Info locked — enter PIN below, then unlock to edit.</span>
+          <button class="btn-unlock" onclick="unlockMgrFields()">🔓 Unlock</button>
+        </div>
+
+        <span class="field-label">Store PIN (4+ characters)</span>
+        <input type="password" id="mgr-pin" placeholder="Create or enter existing PIN">
+
+        <div class="err-box" id="mgr-err"></div>
+        <button class="btn btn-green" onclick="mgrLogin()">Save &amp; Enter &#x2192;</button>
+        <button class="btn btn-gray" onclick="goHome()">&#x2190; Back</button>
+      </div>
+    </div>
+
+    <!-- QUESTION SCREEN -->
+    <div class="screen" id="screen-q">
+      <div class="q-box" id="q-inner"></div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div class="screen" id="screen-result">
+      <div class="q-box">
+        <div id="resultText" class="result"></div>
+        <div id="why" class="why"></div>
+        <div id="ask" class="ask"></div>
+        <div id="expect" class="expect"></div>
+        <div id="actionBtn" style="margin-top:14px;"></div>
+        <button class="btn btn-gray" style="margin-top:12px;" onclick="goHome()">&#x2190; Home</button>
+      </div>
+    </div>
+  </div>
+  <footer style="text-align:center; font-size:10px; margin-top:20px; color:#555;">
+   Counter Coach © 2026 Justin Thomas • Internal Use Only • Unauthorized commercial use prohibited
+  </footer>
+
+<script type="module" src="js/index.js"></script>
+</body>
+</html>
