@@ -73,7 +73,6 @@
     </h2>
     <div class="header-right">
       <div id="header-info"></div>
-      <button class="btn-mgr-setup" onclick="showManagerSetup()">&#x1F511; Manager</button>
     </div>
   </div>
 
@@ -96,46 +95,6 @@
         <a class="btn btn-amber" href="rules.html">&#x1F4D6; Counter Rules &amp; Training</a>
         <hr>
         <a class="btn btn-navy" href="/">&#x1F4CB; Daily Recap &amp; Log</a>
-      </div>
-    </div>
-
-    <!-- MANAGER SETUP -->
-    <div class="screen" id="screen-mgr-setup">
-      <div class="setup-box">
-        <h3>&#x1F511; Manager Setup</h3>
-        <p id="setup-desc">Enter your store number to get started.</p>
-
-        <span class="field-label">Store Number</span>
-        <input type="text" id="mgr-store" placeholder="e.g. 2278" inputmode="numeric" oninput="onStoreInput()">
-
-        <div id="store-status-badge"></div>
-
-        <!-- Registration code — only shown for brand-new stores -->
-        <div class="reg-code-wrap" id="reg-code-wrap">
-          <p>&#x1F512; This store hasn't been set up yet. Enter your <strong>registration code</strong> to create it. Contact SM 2278 Justin if you don't have one.</p>
-          <input type="password" id="mgr-regcode" placeholder="Registration code" autocomplete="off">
-        </div>
-
-        <span class="field-label">Manager Name</span>
-        <input type="text" id="mgr-name" placeholder="Your name">
-
-        <span class="field-label">Manager Phone (used for call buttons)</span>
-        <input type="tel" id="mgr-phone" placeholder="10-digit number">
-
-        <span class="field-label">Help Desk Phone</span>
-        <input type="tel" id="mgr-helpdesk" placeholder="10-digit number">
-
-        <div id="mgr-lock-notice">
-          <span>🔒 Store info locked — enter PIN below, then unlock to edit.</span>
-          <button class="btn-unlock" onclick="unlockMgrFields()">🔓 Unlock</button>
-        </div>
-
-        <span class="field-label">Store PIN (4+ characters)</span>
-        <input type="password" id="mgr-pin" placeholder="Create or enter existing PIN">
-
-        <div class="err-box" id="mgr-err"></div>
-        <button class="btn btn-green" onclick="mgrLogin()">Save &amp; Enter &#x2192;</button>
-        <button class="btn btn-gray" onclick="goHome()">&#x2190; Back</button>
       </div>
     </div>
 

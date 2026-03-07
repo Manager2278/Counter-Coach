@@ -1,194 +1,711 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Counter Coach</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon-192.png" type="image/png">
-  <meta name="theme-color" content="#006400">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #f0f4f0; min-height: 100vh; }
-    .header { background: #006400; color: white; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-    .header h2 { font-size: 18px; letter-spacing: 0.5px; }
-    .header-right { display: flex; align-items: center; gap: 10px; }
-    #header-info { font-size: 12px; opacity: 0.85; text-align: right; line-height: 1.4; }
-    .btn-mgr-setup { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.75); background: none; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 4px 9px; cursor: pointer; white-space: nowrap; }
-    .btn-mgr-setup:hover { color: white; border-color: rgba(255,255,255,0.7); }
-    .wrap { max-width: 540px; margin: 0 auto; padding: 20px 16px 40px; }
-    .screen { display: none; }
-    .screen.active { display: block; }
-    /* ── NAME PROMPT BANNER */
-    #name-banner { background: #1b5e20; color: white; padding: 14px 16px; display: none; }
-    #name-banner.show { display: block; }
-    .nb-inner { max-width: 540px; margin: 0 auto; }
-    .nb-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; opacity: 0.9; }
-    .nb-fields { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .nb-fields input { padding: 8px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); font-family: Arial, sans-serif; font-size: 14px; background: rgba(255,255,255,0.15); color: white; flex: 1; min-width: 100px; }
-    .nb-fields input::placeholder { color: rgba(255,255,255,0.5); }
-    .nb-fields input:focus { outline: none; background: rgba(255,255,255,0.22); }
-    .nb-fields select { padding: 8px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); font-family: Arial, sans-serif; font-size: 14px; background: rgba(255,255,255,0.15); color: white; flex: 1; min-width: 120px; cursor: pointer; }
-    .nb-fields select option { color: #1a1a1a; background: white; }
-    .btn-nb { padding: 8px 16px; background: white; color: #1b5e20; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-    .nb-err { font-size: 12px; color: #ffb3b3; margin-top: 6px; display: none; }
-    .nb-err.show { display: block; }
-    /* ── CARDS */
-    .setup-box, .home-box, .q-box { background: white; border-radius: 14px; padding: 28px 24px; box-shadow: 0 3px 16px rgba(0,0,0,0.1); margin-top: 16px; }
-    .setup-box h3 { font-size: 20px; color: #1a3a1a; margin-bottom: 6px; }
-    .setup-box > p { font-size: 13px; color: #666; margin-bottom: 20px; line-height: 1.5; }
-    input[type=text], input[type=tel], input[type=password] { width: 100%; padding: 11px 14px; margin: 6px 0 14px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 15px; font-family: Arial, sans-serif; background: #fafafa; transition: border .2s; }
-    input:focus { outline: none; border-color: #006400; background: white; }
-    .field-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #888; display: block; }
-    .btn { display: block; width: 100%; padding: 14px; margin: 8px 0; font-weight: bold; font-size: 15px; border: none; border-radius: 10px; cursor: pointer; transition: filter .15s, transform .1s; text-align: center; text-decoration: none; }
-    .btn:active { transform: scale(0.98); }
-    .btn-green { background: #2e7d32; color: white; }
-    .btn-blue { background: #1b5e20; color: white; }
-    .btn-red { background: #c62828; color: white; }
-    .btn-gray { background: #757575; color: white; }
-    .btn-emergency { background: #b71c1c; color: white; }
-    .btn-navy { background: #1565c0; color: white; }
-    .btn-amber { background: #e65100; color: white; }
-    .err-box { background: #ffebee; border: 1px solid #ffcdd2; color: #c62828; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; display: none; }
-    .err-box.show { display: block; }
-    .home-box p { font-size: 16px; font-weight: bold; color: #1a3a1a; margin-bottom: 14px; }
-    hr { border: none; border-top: 1px solid #e8e8e8; margin: 10px 0; }
-    .q-box p { font-size: 18px; font-weight: bold; color: #1a2a1a; margin-bottom: 18px; line-height: 1.4; }
-    .result { padding: 18px; border-radius: 10px; font-size: 20px; font-weight: bold; }
-    .call { background: #ffebee; color: #c62828; }
-    .nocall { background: #e8f5e9; color: #2e7d32; }
-    .why { color: #b71c1c; margin-top: 12px; font-weight: bold; font-size: 15px; line-height: 1.5; }
-    .ask { margin-top: 10px; font-size: 14px; line-height: 1.5; }
-    .expect { color: #1b5e20; margin-top: 12px; font-weight: bold; font-style: italic; font-size: 15px; line-height: 1.5; }
-    #error-banner { display: none; background: #ffcccc; color: #900; padding: 10px 14px; border-radius: 8px; margin: 12px 16px; font-size: 13px; }
-    #broadcast-banner { display: none; background: #1b5e20; color: white; padding: 10px 16px; font-size: 13px; line-height: 1.5; }
-    #broadcast-banner.show { display: block; }
-    #broadcast-banner strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
-    /* ── REG CODE FIELD — hidden by default, shown only for new stores */
-    .reg-code-wrap { display: none; background: #fff8e1; border: 1.5px solid #ffe082; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
-    .reg-code-wrap.show { display: block; }
-    .reg-code-wrap p { font-size: 12px; color: #7a5800; margin-bottom: 8px; line-height: 1.5; }
-    .reg-code-wrap input { margin: 0; background: white; }
-    .store-status { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 6px; display: inline-block; margin-bottom: 10px; }
-    .store-status.new { background: #e8f5e9; color: #2e7d32; }
-    .store-status.exists { background: #e3f2fd; color: #1565c0; }
-    /* ── LOCKED MANAGER FIELDS */
-    input.mgr-locked { background: #f5f5f5 !important; color: #9e9e9e !important; border-color: #e0e0e0 !important; cursor: default !important; }
-    #mgr-lock-notice { display: none; align-items: center; justify-content: space-between; gap: 8px; background: #f5f5f5; border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; font-size: 12px; color: #757575; }
-    #mgr-lock-notice.show { display: flex; }
-    .btn-unlock { font-size: 12px; font-weight: 700; color: #1565c0; background: none; border: 1.5px solid #1565c0; border-radius: 6px; padding: 4px 10px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Recap · Counter Coach</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Karla:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --forest:       #1c3a2a;
+  --forest-mid:   #2d5a40;
+  --forest-light: #4a8c60;
+  --sage:         #7fb891;
+  --mint:         #c8e6d0;
+  --cream:        #f5f2eb;
+  --paper:        #faf8f3;
+  --ruled:        #e2ddd3;
+  --ink:          #1a1a16;
+  --ink-soft:     #4a4a42;
+  --ink-faint:    #8a8a7e;
+  --red:          #b83232;
+  --red-pale:     #fdeaea;
+  --amber:        #c45c00;
+  --amber-pale:   #fef3e2;
+  --purple:       #5c2d91;
+  --purple-pale:  #f0e8fa;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; font-size: 15px; }
+
+/* ── TOP BAR ─────────────────────────────── */
+.topbar {
+  background: var(--forest); color: white;
+  padding: 0 16px; height: 54px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 200;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+}
+.topbar-brand { font-family: 'Courier Prime', monospace; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.topbar-store { font-size: 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); padding: 3px 10px; border-radius: 20px; font-weight: 700; }
+.topbar-user  { font-size: 12px; color: var(--sage); font-weight: 700; }
+.topbar-back  { font-size: 12px; color: rgba(255,255,255,0.75); text-decoration: none; padding: 4px 0; cursor: pointer; border: none; background: none; font-family: 'Karla', sans-serif; }
+.topbar-back:hover { color: white; }
+
+/* ── SCREENS ─────────────────────────────── */
+.screen { display: none; max-width: 700px; margin: 0 auto; padding: 20px 14px 100px; }
+.screen.active { display: block; }
+
+/* ── MANAGER LOGIN BANNER ─────────────────── */
+#mgr-banner {
+  background: var(--forest); color: white;
+  padding: 14px 16px; display: none;
+}
+#mgr-banner.show { display: block; }
+.banner-inner { max-width: 700px; margin: 0 auto; }
+.banner-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; opacity: 0.9; }
+.banner-fields { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.banner-fields input {
+  padding: 8px 11px; border-radius: 8px;
+  font-family: 'Karla', sans-serif; font-size: 14px;
+  background: rgba(255,255,255,0.15); color: white;
+  border: 1px solid rgba(255,255,255,0.3); flex: 1; min-width: 120px;
+}
+.banner-fields input::placeholder { color: rgba(255,255,255,0.5); }
+.banner-fields input:focus { outline: none; background: rgba(255,255,255,0.22); }
+.btn-banner { padding: 8px 16px; background: white; color: var(--forest); border: none; border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.banner-err { font-size: 12px; color: #ffb3b3; margin-top: 6px; display: none; }
+.banner-err.show { display: block; }
+
+/* ── NO SESSION STATE ────────────────────── */
+#no-session { max-width: 700px; margin: 40px auto; padding: 0 14px; display: none; }
+#no-session.show { display: block; }
+.warn-card { background: white; border: 1.5px solid var(--ruled); border-top: 4px solid var(--amber); border-radius: 12px; padding: 24px; text-align: center; }
+.warn-card .wi { font-size: 36px; margin-bottom: 12px; }
+.warn-card h2 { font-family: 'Courier Prime', monospace; font-size: 18px; color: var(--forest); margin-bottom: 8px; }
+.warn-card p { font-size: 14px; color: var(--ink-soft); line-height: 1.6; }
+.btn-goto { display: inline-block; margin-top: 16px; padding: 11px 24px; background: var(--forest); color: white; border: none; border-radius: 10px; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; }
+
+/* ── PAGE HEADER ─────────────────────────── */
+.page-header { margin-bottom: 18px; }
+.page-title  { font-family: 'Courier Prime', monospace; font-size: 22px; font-weight: 700; color: var(--forest); }
+.page-date   { font-size: 12px; color: var(--ink-faint); font-family: 'Courier Prime', monospace; margin-top: 2px; }
+
+/* ── STATS ───────────────────────────────── */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+.stat-box  { background: white; border: 1.5px solid var(--ruled); border-radius: 10px; padding: 11px 12px; text-align: center; }
+.stat-num  { font-family: 'Courier Prime', monospace; font-size: 26px; font-weight: 700; line-height: 1; }
+.s-open    { color: var(--red); }
+.s-done    { color: var(--forest); }
+.s-total   { color: var(--ink-soft); }
+.stat-lbl  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); margin-top: 2px; }
+
+/* ── ADD PANEL ───────────────────────────── */
+.add-panel { background: white; border: 1.5px solid var(--ruled); border-top: 3px solid var(--forest); border-radius: 12px; padding: 15px 16px; margin-bottom: 18px; }
+.add-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); margin-bottom: 8px; }
+.add-panel textarea {
+  width: 100%; padding: 9px 11px;
+  border: 1.5px solid var(--ruled); border-radius: 8px;
+  font-family: 'Courier Prime', monospace; font-size: 14px;
+  resize: none; min-height: 60px; background: var(--paper); color: var(--ink);
+  transition: border .2s; display: block; line-height: 1.5;
+}
+.add-panel textarea:focus { outline: none; border-color: var(--forest-light); background: white; }
+.add-panel textarea::placeholder { color: var(--ink-faint); font-style: italic; }
+.add-controls { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+.type-pills { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
+.tpill {
+  padding: 8px 13px; border-radius: 20px; border: 1.5px solid var(--ruled);
+  font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; background: white; color: var(--ink-soft);
+  transition: all .15s; white-space: nowrap;
+}
+.tpill:hover { border-color: var(--forest-light); color: var(--forest); }
+.tpill.on[data-type="progress"] { background: var(--mint);       border-color: var(--forest-light); color: var(--forest); }
+.tpill.on[data-type="issue"]    { background: var(--red-pale);   border-color: var(--red);          color: var(--red); }
+.tpill.on[data-type="note"]     { background: var(--amber-pale); border-color: var(--amber);        color: var(--amber); }
+.btn-add { background: var(--forest); color: white; border: none; border-radius: 8px; padding: 9px 18px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: filter .15s; }
+.btn-add:hover { filter: brightness(1.1); }
+
+/* ── PHOTO ATTACH ────────────────────────── */
+.photo-attach { margin-top: 10px; display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.btn-photo { display: inline-block; padding: 7px 13px; border: 1.5px dashed var(--forest-light); border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--forest); cursor: pointer; background: var(--paper); transition: all .15s; font-family: 'Karla', sans-serif; white-space: nowrap; }
+.btn-photo:hover { background: var(--mint); border-style: solid; }
+#photo-input { display: none; }
+#photo-preview-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
+.preview-thumb-wrap { position: relative; }
+.preview-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--ruled); display: block; }
+.btn-remove-thumb { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; border-radius: 50%; background: var(--red); color: white; border: none; font-size: 9px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+
+/* Upload progress */
+.upload-bar-wrap { width: 100%; height: 4px; background: var(--ruled); border-radius: 2px; margin-top: 8px; display: none; }
+.upload-bar-wrap.show { display: block; }
+.upload-bar { height: 4px; background: var(--forest-light); border-radius: 2px; width: 0%; transition: width .2s; }
+
+/* Photos on entry cards */
+.entry-photo { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+.entry-photo img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1.5px solid var(--ruled); cursor: pointer; display: block; transition: opacity .15s; }
+.entry-photo img:hover { opacity: 0.9; }
+
+.mgr-photo-attach { margin-top: 8px; }
+.btn-photo-sm { display: inline-block; padding: 5px 10px; border: 1.5px dashed var(--forest-light); border-radius: 6px; font-size: 11px; font-weight: 700; color: var(--forest); cursor: pointer; background: var(--paper); transition: all .15s; font-family: 'Karla', sans-serif; }
+.btn-photo-sm:hover { background: var(--mint); border-style: solid; }
+
+/* ── Lightbox */
+#lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 1000; align-items: center; justify-content: center; }
+#lightbox.show { display: flex; }
+#lightbox img { max-width: 94vw; max-height: 88vh; border-radius: 10px; object-fit: contain; }
+#lightbox-close { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; color: white; font-size: 22px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.filter-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.fpill { padding: 5px 13px; border-radius: 20px; border: 1.5px solid var(--ruled); font-size: 11px; font-weight: 700; cursor: pointer; background: white; color: var(--ink-soft); transition: all .15s; text-transform: uppercase; letter-spacing: 0.5px; }
+.fpill.on { background: var(--forest); color: white; border-color: var(--forest); box-shadow: 0 0 4px 2px rgba(28,58,42,0.25); }
+.fpill.on[data-filter="open"]     { background: var(--red);          border-color: var(--red);          box-shadow: 0 0 4px 2px rgba(184,50,50,0.28); }
+.fpill.on[data-filter="progress"] { background: var(--forest-light); border-color: var(--forest-light); box-shadow: 0 0 4px 2px rgba(74,140,96,0.3); }
+.fpill.on[data-filter="issue"]    { background: var(--red);          border-color: var(--red);          box-shadow: 0 0 4px 2px rgba(184,50,50,0.28); }
+.fpill.on[data-filter="note"]     { background: var(--amber);        border-color: var(--amber);        box-shadow: 0 0 4px 2px rgba(196,92,0,0.28); }
+
+/* ── UNREAD MSG NOTIFY BAR ───────────────── */
+.msg-notify-bar { background: var(--purple-pale); border: 1.5px solid #c0a0e0; border-radius: 10px; padding: 11px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.msg-notify-bar p { font-size: 13px; color: var(--purple); font-weight: 600; }
+.btn-view-msgs { padding: 6px 14px; background: var(--purple); color: white; border: none; border-radius: 7px; font-family: 'Karla', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+/* ── ENTRY CARDS ─────────────────────────── */
+.entry-card { background: white; border: 1.5px solid var(--ruled); border-left: 4px solid var(--ruled); border-radius: 10px; padding: 13px 15px; margin-bottom: 8px; animation: slideIn .2s ease; }
+@keyframes slideIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+.entry-card[data-type="progress"] { border-left-color: var(--forest-light); }
+.entry-card[data-type="issue"]    { border-left-color: var(--red); }
+.entry-card[data-type="note"]     { border-left-color: var(--amber); }
+.entry-card.done { opacity: 0.5; }
+.entry-card.done .entry-text { text-decoration: line-through; }
+.entry-card.pending-clear { background: var(--purple-pale); border-left-color: var(--purple) !important; opacity: 1; }
+.entry-card.pending-clear .entry-text { text-decoration: line-through; color: var(--ink-soft); }
+.entry-top  { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; }
+.entry-text { font-family: 'Courier Prime', monospace; font-size: 14px; line-height: 1.6; flex: 1; }
+.badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+.badge-progress { background: var(--mint);       color: var(--forest); }
+.badge-issue    { background: var(--red-pale);   color: var(--red); }
+.badge-note     { background: var(--amber-pale); color: var(--amber); }
+.entry-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 6px; }
+.entry-meta   { font-size: 11px; color: var(--ink-faint); font-family: 'Courier Prime', monospace; }
+.entry-meta .by { font-weight: 700; color: var(--ink-soft); }
+.entry-actions { display: flex; gap: 6px; align-items: center; }
+
+.btn-done { padding: 4px 11px; border-radius: 6px; border: 1.5px solid var(--ruled); font-size: 11px; font-weight: 700; cursor: pointer; background: white; color: var(--ink-soft); transition: all .15s; font-family: 'Karla', sans-serif; }
+.btn-done:hover { background: var(--mint); border-color: var(--sage); color: var(--forest); }
+.btn-done.is-done { background: var(--mint); border-color: var(--sage); color: var(--forest); }
+
+.btn-clear { padding: 4px 11px; border-radius: 6px; border: 1.5px solid #c0a0e0; font-size: 11px; font-weight: 700; cursor: pointer; background: var(--purple-pale); color: var(--purple); transition: all .15s; font-family: 'Karla', sans-serif; }
+.btn-clear:hover { background: var(--purple); color: white; border-color: var(--purple); }
+.lbl-done { font-size: 10px; font-weight: 700; color: var(--purple); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── CONFIRM ALL BAR ─────────────────────── */
+.confirm-all-bar { background: var(--purple-pale); border: 1.5px solid #c0a0e0; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.confirm-all-bar p { font-size: 13px; color: var(--purple); font-weight: 600; }
+.btn-confirm-all { padding: 8px 16px; background: var(--purple); color: white; border: none; border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+/* ── PRIVATE MESSAGES ────────────────────── */
+.compose-box { background: white; border: 1.5px solid #d8c0f0; border-top: 3px solid var(--purple); border-radius: 12px; padding: 15px 16px; margin-bottom: 18px; }
+.compose-title { font-size: 13px; font-weight: 700; color: var(--purple); margin-bottom: 8px; }
+.compose-box textarea { width: 100%; padding: 9px 11px; border: 1.5px solid var(--ruled); border-radius: 8px; font-family: 'Courier Prime', monospace; font-size: 14px; resize: none; min-height: 72px; background: var(--paper); display: block; transition: border .2s; color: var(--ink); }
+.compose-box textarea:focus { outline: none; border-color: #b085d8; background: white; }
+.btn-send { padding: 9px 20px; background: var(--purple); color: white; border: none; border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+
+.msg-card { background: white; border: 1.5px solid var(--ruled); border-left: 4px solid var(--purple); border-radius: 10px; padding: 13px 15px; margin-bottom: 8px; animation: slideIn .2s ease; }
+.msg-card.msg-unread { border-left-color: var(--red); }
+.msg-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.msg-from { font-size: 13px; font-weight: 700; }
+.msg-unread .msg-from::after { content: " · NEW"; font-size: 9px; color: var(--red); font-weight: 700; }
+.msg-lock { font-size: 10px; font-weight: 700; background: var(--purple-pale); color: var(--purple); padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+.msg-text { font-family: 'Courier Prime', monospace; font-size: 14px; line-height: 1.6; }
+.msg-time { font-size: 11px; color: var(--ink-faint); font-family: 'Courier Prime', monospace; margin-top: 5px; }
+.reply-bubble { background: var(--mint); border-left: 3px solid var(--forest-light); padding: 6px 10px; border-radius: 0 6px 6px 0; margin-top: 7px; font-size: 13px; line-height: 1.4; }
+.reply-bubble strong { font-size: 11px; font-weight: 700; color: var(--forest); display: block; margin-bottom: 2px; }
+.reply-input-row { display: flex; gap: 6px; margin-top: 8px; }
+.reply-input-row textarea { flex: 1; padding: 6px 10px; border: 1.5px solid var(--ruled); border-radius: 6px; font-family: 'Karla', sans-serif; font-size: 13px; resize: none; min-height: 38px; background: var(--paper); }
+.reply-input-row textarea:focus { outline: none; border-color: var(--sage); background: white; }
+.btn-reply-send { padding: 0 14px; border: none; background: var(--forest); color: white; border-radius: 6px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-reply-send:disabled { opacity: 0.5; }
+
+/* ── MANAGER PANEL ───────────────────────── */
+.mgr-panel-header { background: var(--forest); color: white; padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+.mgr-panel-header-left h3 { font-family: 'Courier Prime', monospace; font-size: 16px; }
+.mgr-panel-header-left p  { font-size: 12px; opacity: 0.8; margin-top: 3px; }
+.btn-mgr-logout { padding: 6px 14px; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+.mgr-tabs { display: flex; flex-wrap: wrap; background: white; border: 1.5px solid var(--ruled); border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
+.mgr-tab  { flex: 1 1 calc(33.33% - 2px); padding: 9px 4px; text-align: center; font-size: 10px; font-weight: 700; cursor: pointer; color: var(--ink-faint); border: none; background: none; border-bottom: 3px solid transparent; transition: all .2s; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Karla', sans-serif; position: relative; }
+.mgr-tab.on { color: var(--forest); border-bottom-color: var(--forest); background: var(--paper); }
+.mgr-tab-pane { display: none; }
+.mgr-tab-pane.on { display: block; }
+
+.inbox-cnt { display: inline-block; background: var(--red); color: white; font-size: 10px; font-weight: 700; border-radius: 10px; padding: 1px 5px; margin-left: 3px; vertical-align: middle; }
+
+.qr-box { background: white; border: 1.5px dashed var(--forest-light); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 16px; }
+.qr-box p { font-size: 13px; color: var(--ink-soft); margin-top: 12px; line-height: 1.5; }
+#qr-canvas canvas, #qr-canvas img { border-radius: 8px; display: block; margin: 0 auto; }
+.btn-outline { display: inline-block; padding: 8px 18px; border: 1.5px solid var(--forest); color: var(--forest); background: white; border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 12px; transition: all .15s; }
+.btn-outline:hover { background: var(--forest); color: white; }
+
+.section-head { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink-faint); margin-bottom: 10px; padding-bottom: 7px; border-bottom: 1px solid var(--ruled); }
+
+/* ── BOTTOM NAV ──────────────────────────── */
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1.5px solid var(--ruled); display: none; z-index: 100; box-shadow: 0 -2px 14px rgba(0,0,0,0.08); }
+.bottom-nav.show { display: flex; }
+.nav-btn { flex: 1; padding: 10px 8px 8px; text-align: center; cursor: pointer; border: none; background: none; font-family: 'Karla', sans-serif; color: var(--ink-faint); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; transition: color .15s; position: relative; }
+.nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+.nav-btn.on { color: var(--forest); }
+.nav-dot { position: absolute; top: 8px; right: calc(50% - 20px); width: 8px; height: 8px; background: var(--red); border-radius: 50%; display: none; border: 2px solid white; }
+.nav-dot.show { display: block; }
+
+/* ── EMPTY STATE ─────────────────────────── */
+.empty { text-align: center; padding: 40px 20px; color: var(--ink-faint); }
+.empty .ei { font-size: 32px; margin-bottom: 8px; }
+.empty p { font-size: 13px; font-family: 'Courier Prime', monospace; }
+
+/* ── FEEDBACK TYPE PILLS ─────────────────── */
+.fb-type-pill { padding: 7px 14px; border: 1.5px solid var(--ruled); border-radius: 8px; background: transparent; font-family: 'Karla', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; color: var(--ink-faint); transition: all 0.15s; }
+.fb-type-pill.on { background: var(--forest); color: white; border-color: var(--forest); }
+
+/* ── MANAGER ROSTER ──────────────────────────── */
+.roster-add-form { background: var(--paper); border: 1.5px solid var(--ruled); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+.roster-add-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; align-items: end; }
+@media (max-width: 480px) { .roster-add-grid { grid-template-columns: 1fr 1fr; } }
+.roster-field-input { width: 100%; padding: 7px 10px; border: 1.5px solid var(--ruled); border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 13px; background: var(--paper); color: var(--ink); }
+.roster-field-input:focus { outline: none; border-color: var(--forest-light); }
+.roster-item { padding: 10px 0; border-bottom: 1px solid var(--ruled); }
+.roster-item:last-child { border-bottom: none; }
+.roster-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.roster-name { font-weight: 700; font-size: 14px; flex: 1; min-width: 100px; }
+.roster-meta { font-size: 12px; color: var(--ink-faint); margin-top: 1px; }
+.roster-select { padding: 6px 10px; border: 1.5px solid var(--ruled); border-radius: 8px; font-family: 'Karla', sans-serif; font-size: 13px; background: var(--paper); color: var(--ink); cursor: pointer; }
+.roster-select:focus { outline: none; border-color: var(--forest-light); }
+.roster-saved { font-size: 12px; color: #2e7d32; font-weight: 700; opacity: 0; transition: opacity .3s; min-width: 16px; }
+.roster-saved.show { opacity: 1; }
+.roster-edit-row { display: none; gap: 8px; padding: 8px 0 4px; flex-wrap: wrap; align-items: flex-end; }
+.roster-edit-row.open { display: flex; }
+.btn-icon { padding: 5px 8px; border: 1.5px solid var(--ruled); border-radius: 6px; background: var(--paper); font-size: 14px; cursor: pointer; line-height: 1; flex-shrink: 0; }
+.btn-icon:hover { border-color: var(--sage); }
+.btn-icon-red { border-color: var(--red-pale); }
+.btn-icon-red:hover { background: var(--red-pale); border-color: var(--red); }
+.btn-icon-coach { border-color: var(--mint); }
+.btn-icon-coach:hover { background: var(--mint); border-color: var(--sage); }
+
+.hidden { display: none !important; }
+#broadcast-banner { display: none; background: #1c3a2a; color: white; padding: 10px 16px; font-size: 13px; line-height: 1.5; }
+#broadcast-banner.show { display: block; }
+#broadcast-banner strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+
+/* ── SETTINGS SCREEN ─────────────────────── */
+.settings-card { background: white; border: 1.5px solid var(--ruled); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+.settings-card h3 { font-family: 'Courier Prime', monospace; font-size: 15px; font-weight: 700; color: var(--forest); margin-bottom: 14px; }
+.settings-field { margin-bottom: 14px; }
+.settings-field label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); margin-bottom: 5px; }
+.settings-field input[type=email], .settings-field input[type=text] {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--ruled); border-radius: 8px;
+  font-family: 'Karla', sans-serif; font-size: 14px; background: var(--paper); color: var(--ink); }
+.settings-field input:focus { outline: none; border-color: var(--forest-light); }
+.settings-toggle { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--ruled); }
+.settings-toggle:last-child { border-bottom: none; }
+.settings-toggle span { font-size: 13px; color: var(--ink); }
+.settings-toggle small { font-size: 11px; color: var(--ink-faint); display: block; margin-top: 1px; }
+.toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider { position: absolute; inset: 0; background: var(--ruled); border-radius: 24px; cursor: pointer; transition: background .2s; }
+.toggle-slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle-switch input:checked + .toggle-slider { background: var(--forest-light); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+.btn-settings-save { width: 100%; padding: 12px; background: var(--forest); color: white; border: none; border-radius: 10px; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+.btn-settings-save:hover { filter: brightness(1.1); }
+.settings-ok { background: var(--mint); border: 1.5px solid var(--sage); color: var(--forest); padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; text-align: center; margin-top: 10px; display: none; }
+.settings-ok.show { display: block; }
+
+/* ── COUNTER COACH NAV BTN ───────────────── */
+.nav-btn-cc { flex: 0 0 auto; padding: 10px 10px 8px; text-align: center; cursor: pointer; border: none; background: none; font-family: 'Karla', sans-serif; color: var(--ink-faint); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 52px; }
+.nav-btn-cc:hover { color: var(--forest); }
+</style>
 </head>
 <body>
-  <div class="header" id="main-header">
-    <h2 id="header-brand">
-      <img id="header-logo-img" src="" alt="Logo" style="max-height:30px;vertical-align:middle;border-radius:4px;display:none;">
-      <span id="header-brand-text">&#x1F3EA; Counter Coach</span>
-    </h2>
-    <div class="header-right">
-      <div id="header-info"></div>
-      <button class="btn-mgr-setup" onclick="showManagerSetup()">&#x1F511; Manager</button>
-    </div>
+
+<header class="topbar" id="recap-topbar">
+  <div class="topbar-brand" id="topbar-brand-text">Daily Recap</div>
+  <img id="topbar-logo-img" src="" alt="Logo" style="max-height:30px;vertical-align:middle;border-radius:4px;display:none;">
+  <div class="topbar-right">
+    <span class="topbar-store hidden" id="tb-store"></span>
+    <span class="topbar-user  hidden" id="tb-user"></span>
+    <button class="topbar-back hidden" id="btn-switch-user" onclick="switchUser()">⇄ Switch</button>
   </div>
+</header>
 
-  <!-- Broadcast banner -->
-  <div id="broadcast-banner"></div>
+<!-- Broadcast banner -->
+<div id="broadcast-banner"></div>
 
-  <!-- Name prompt banner -->
-  <div id="name-banner">
-    <div class="nb-inner">
-      <div class="nb-title" id="nb-title">Enter your name to continue</div>
-      <div class="nb-fields">
-        <input type="text" id="nb-store" placeholder="Store #" style="max-width:90px;" inputmode="numeric" oninput="onNbStoreInput()">
-        <select id="nb-name">
-          <option value="">— Enter store # first —</option>
-        </select>
-        <button class="btn-nb" onclick="submitNameBanner()">Go</button>
-      </div>
-      <div class="nb-err" id="nb-err">Please enter your store number and select your name.</div>
+<!-- Manager PIN banner (slides in under topbar when manager taps the nav) -->
+<div id="mgr-banner">
+  <div class="banner-inner">
+    <div class="banner-title">🔑 Manager Login — Store <span id="banner-store"></span></div>
+    <div class="banner-fields">
+      <input type="password" id="b-pin" placeholder="Enter manager PIN" autocomplete="current-password">
+      <button class="btn-banner" onclick="bannerLogin()">Enter</button>
     </div>
+    <div class="banner-err" id="b-err">Incorrect PIN. Try again.</div>
   </div>
+</div>
 
-  <div id="error-banner"></div>
+<!-- No CC session — inline prompt -->
+<div id="no-session">
+  <div class="warn-card">
+    <div class="wi">🏪</div>
+    <h2>Enter Your Info</h2>
+    <p>Enter your store number and name to get started.</p>
+    <div style="margin-top:16px;text-align:left;">
+      <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Store Number</label>
+      <input type="text" id="ns-store" inputmode="numeric" placeholder="e.g. 2278" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+      <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Your Name</label>
+      <select id="ns-name" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+        <option value="">— Enter store # first —</option>
+      </select>
+      <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Counter / Badge #</label>
+      <input type="password" id="ns-counter" inputmode="numeric" placeholder="Your counter or badge number"
+        style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+      <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Email <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional — for reply notifications)</span></label>
+      <input type="email" id="ns-email" placeholder="your@email.com"
+        style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+<div id="ns-err" style="color:var(--red);font-size:13px;margin-bottom:10px;display:none;"></div>
+      <button onclick="noSessionLogin()" class="btn-goto" style="width:100%;display:block;">Enter Store →</button>
 
-  <div class="wrap">
-    <!-- HOME -->
-    <div class="screen active" id="screen-home">
-      <div class="home-box">
-        <p>What is the situation?</p>
-        <button class="btn btn-emergency" onclick="guardedAction('emergency')">&#x1F6A8; Emergency</button>
-        <button class="btn btn-blue" onclick="nextQ('cust1')">Customer Escalation</button>
-        <button class="btn btn-blue" onclick="nextQ('staff1')">Staffing Issue</button>
-        <button class="btn btn-blue" onclick="nextQ('driver1')">Drivers / Delivery</button>
-        <button class="btn btn-blue" onclick="nextQ('cash1')">Cash / Variance</button>
-        <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
-        <a class="btn btn-amber" href="rules.html">&#x1F4D6; Counter Rules &amp; Training</a>
-        <hr>
-        <a id="recap-link" class="btn btn-navy" href="/">&#x1F4CB; Daily Recap &amp; Log</a>
-      </div>
-    </div>
-
-    <!-- MANAGER SETUP -->
-    <div class="screen" id="screen-mgr-setup">
-      <div class="setup-box">
-        <h3>&#x1F511; Manager Setup</h3>
-        <p id="setup-desc">Enter your store number to get started.</p>
-
-        <span class="field-label">Store Number</span>
-        <input type="text" id="mgr-store" placeholder="e.g. 2278" inputmode="numeric" oninput="onStoreInput()">
-
-        <div id="store-status-badge"></div>
-
-        <!-- Registration code — only shown for brand-new stores -->
-        <div class="reg-code-wrap" id="reg-code-wrap">
-          <p>&#x1F512; This store hasn't been set up yet. Enter your <strong>registration code</strong> to create it. Contact SM 2278 Justin if you don't have one.</p>
-          <input type="password" id="mgr-regcode" placeholder="Registration code" autocomplete="off">
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--ruled);text-align:center;">
+        <button onclick="showMgrLoginForm()"
+          style="background:none;border:none;color:var(--ink-faint);font-size:13px;cursor:pointer;font-family:'Karla',sans-serif;text-decoration:underline;">
+          Manager Login →
+        </button>
+        <div id="mgr-login-form" style="display:none;margin-top:12px;">
+          <input type="password" id="ns-mgr-pin" inputmode="numeric" placeholder="Manager PIN"
+            style="width:100%;padding:11px 13px;border:1.5px solid var(--forest);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:10px;"
+            onkeydown="if(event.key==='Enter') mgrLoginFromForm()">
+          <button onclick="mgrLoginFromForm()" class="btn-goto" style="width:100%;display:block;">Unlock →</button>
         </div>
-
-        <span class="field-label">Manager Name</span>
-        <input type="text" id="mgr-name" placeholder="Your name">
-
-        <span class="field-label">Manager Phone (used for call buttons)</span>
-        <input type="tel" id="mgr-phone" placeholder="10-digit number">
-
-        <span class="field-label">Help Desk Phone</span>
-        <input type="tel" id="mgr-helpdesk" placeholder="10-digit number">
-
-        <div id="mgr-lock-notice">
-          <span>🔒 Info locked — enter PIN below, then unlock to edit.</span>
-          <button class="btn-unlock" onclick="unlockMgrFields()">🔓 Unlock</button>
-        </div>
-
-        <span class="field-label">Store PIN (4+ characters)</span>
-        <input type="password" id="mgr-pin" placeholder="Create or enter existing PIN">
-
-        <div class="err-box" id="mgr-err"></div>
-        <button class="btn btn-green" onclick="mgrLogin()">Save &amp; Enter &#x2192;</button>
-        <button class="btn btn-gray" onclick="goHome()">&#x2190; Back</button>
-      </div>
-    </div>
-
-    <!-- QUESTION SCREEN -->
-    <div class="screen" id="screen-q">
-      <div class="q-box" id="q-inner"></div>
-    </div>
-
-    <!-- RESULT SCREEN -->
-    <div class="screen" id="screen-result">
-      <div class="q-box">
-        <div id="resultText" class="result"></div>
-        <div id="why" class="why"></div>
-        <div id="ask" class="ask"></div>
-        <div id="expect" class="expect"></div>
-        <div id="actionBtn" style="margin-top:14px;"></div>
-        <button class="btn btn-gray" style="margin-top:12px;" onclick="goHome()">&#x2190; Home</button>
       </div>
     </div>
   </div>
-  <footer style="text-align:center; font-size:10px; margin-top:20px; color:#555;">
-   Counter Coach © 2026 Justin Thomas • Internal Use Only • Unauthorized commercial use prohibited
-  </footer>
+</div>
 
-<script type="module" src="js/index.js"></script>
+<!-- ═══════════════════ LOGBOOK ═════════════════ -->
+<div class="screen" id="screen-log">
+  <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;">
+    <div>
+      <div class="page-title">📋 Daily Logbook</div>
+      <div class="page-date" id="log-date"></div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-num s-open"  id="s-open">0</div><div class="stat-lbl">Open</div></div>
+    <div class="stat-box"><div class="stat-num s-done"  id="s-done">0</div><div class="stat-lbl">Done</div></div>
+    <div class="stat-box"><div class="stat-num s-total" id="s-total">0</div><div class="stat-lbl">Total</div></div>
+  </div>
+  <div id="msg-notify-bar" class="msg-notify-bar hidden">
+    <p>🔒 <span id="msg-notify-count">0</span> unread private message(s) from employees</p>
+    <button class="btn-view-msgs" onclick="navTo('mgr')">View in Inbox →</button>
+  </div>
+  <div class="add-panel">
+    <div class="add-label">New Entry</div>
+    <textarea id="new-text" placeholder="Log a progress update, issue, or note..."></textarea>
+    <div class="add-controls">
+      <div class="type-pills">
+        <button class="tpill on" data-type="progress" onclick="selectType(this)">📈 Progress</button>
+        <button class="tpill"    data-type="issue"    onclick="selectType(this)">⚠️ Issue</button>
+        <button class="tpill"    data-type="note"     onclick="selectType(this)">📝 Note</button>
+      </div>
+      <button class="btn-add" onclick="addEntry()">Add</button>
+    </div>
+    <div class="photo-attach">
+      <label class="btn-photo" id="photo-label" for="photo-input">📷 Add Photos</label>
+      <input type="file" id="photo-input" accept="image/*" multiple onchange="previewPhoto(this)">
+      <div id="photo-preview-wrap"></div>
+    </div>
+    <div class="upload-bar-wrap"><div class="upload-bar"></div></div>
+  </div>
+  <div class="filter-row">
+    <button class="fpill on" data-filter="all"      data-label="All"      onclick="setFilter('all',this)">All</button>
+    <button class="fpill"    data-filter="open"     data-label="Open"     onclick="setFilter('open',this)">Open</button>
+    <button class="fpill"    data-filter="progress" data-label="Progress" onclick="setFilter('progress',this)">Progress</button>
+    <button class="fpill"    data-filter="issue"    data-label="Issues"   onclick="setFilter('issue',this)">Issues</button>
+    <button class="fpill"    data-filter="note"     data-label="Notes"    onclick="setFilter('note',this)">Notes</button>
+  </div>
+  <div id="entries-list"></div>
+</div>
+
+<!-- ═══════════════════ MESSAGES ══════════════════ -->
+<div class="screen" id="screen-msg">
+  <div class="page-header">
+    <div class="page-title">🔒 Private Message</div>
+    <div class="page-date">Visible only to you and your manager</div>
+  </div>
+  <div class="compose-box">
+    <div class="compose-title">🔒 Send Private Message to Manager</div>
+    <textarea id="msg-text" placeholder="Describe a concern, issue, or anything private..."></textarea>
+    <button class="btn-send" onclick="sendMsg()">Send Message</button>
+  </div>
+  <div class="section-head">Your Sent Messages</div>
+  <div id="msg-list"></div>
+</div>
+
+<!-- ═══════════════════ MY COACHING ══════════════ -->
+<div class="screen" id="screen-coaching">
+  <div class="page-header">
+    <div class="page-title">&#x1F4CB; My Coaching Records</div>
+    <div class="page-date">Private &mdash; visible only to you</div>
+  </div>
+  <div id="coaching-list">
+    <div style="text-align:center;padding:36px 0;color:var(--ink-faint);font-size:14px;">Loading&hellip;</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MANAGER PANEL ══════════════ -->
+<div class="screen" id="screen-mgr">
+  <div class="mgr-panel-header">
+    <div class="mgr-panel-header-left">
+      <h3>🔑 Manager Panel</h3>
+      <p id="mgr-store-sub"></p>
+    </div>
+    <button class="btn-mgr-logout" onclick="logoutMgr()">Log Out</button>
+  </div>
+
+  <div class="mgr-tabs">
+    <button class="mgr-tab on" onclick="setMgrTab('inbox',this)">📬 Inbox <span class="inbox-cnt hidden" id="inbox-cnt"></span></button>
+    <button class="mgr-tab"    onclick="setMgrTab('all-log',this)">📋 All Entries</button>
+    <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 QR Code</button>
+    <button class="mgr-tab"    onclick="setMgrTab('roster',this)">👥 Roster</button>
+    <button class="mgr-tab"    onclick="setMgrTab('settings',this)">⚙️ Store Setup</button>
+    <button class="mgr-tab" id="mgr-tab-feedback-btn" onclick="setMgrTab('feedback',this)">💬 Feedback</button>
+  </div>
+
+  <!-- INBOX -->
+  <div class="mgr-tab-pane on" id="mgr-pane-inbox">
+    <div class="section-head">Private Messages from Employees</div>
+    <div id="mgr-inbox-list"></div>
+  </div>
+
+  <!-- ALL ENTRIES -->
+  <div class="mgr-tab-pane" id="mgr-pane-all-log">
+    <div class="section-head">All Store Entries — Today</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-num s-open"  id="ms-open">0</div><div class="stat-lbl">Open</div></div>
+      <div class="stat-box"><div class="stat-num s-done"  id="ms-done">0</div><div class="stat-lbl">Done</div></div>
+      <div class="stat-box"><div class="stat-num s-total" id="ms-total">0</div><div class="stat-lbl">Total</div></div>
+    </div>
+    <div id="confirm-all-bar" class="confirm-all-bar hidden">
+      <p>✅ Employees marked items complete — confirm to clear them.</p>
+      <button class="btn-confirm-all" onclick="confirmAllDone()">Confirm &amp; Clear All</button>
+    </div>
+    <div id="mgr-entries-list"></div>
+  </div>
+
+  <!-- QR CODE -->
+  <div class="mgr-tab-pane" id="mgr-pane-qr">
+    <div class="section-head">Employee Login QR Code</div>
+    <div class="qr-box">
+      <div id="qr-canvas"></div>
+      <p>Employees scan this to go directly to Store <strong id="qr-store-lbl"></strong>.<br>They just enter their name — store is pre-filled.</p>
+      <button class="btn-outline" onclick="copyLink()">📋 Copy Login Link</button>
+    </div>
+  </div>
+
+  <!-- ROSTER -->
+  <div class="mgr-tab-pane" id="mgr-pane-roster">
+    <div class="section-head">Store Roster</div>
+
+    <!-- Add Employee -->
+    <div class="roster-add-form">
+      <div class="roster-add-grid">
+        <div>
+          <div class="add-label">Name</div>
+          <input type="text" id="roster-add-name" placeholder="First Last"
+            class="roster-field-input" style="margin:0;">
+        </div>
+        <div>
+          <div class="add-label">Counter #</div>
+          <input type="text" id="roster-add-num" placeholder="Member #"
+            class="roster-field-input" style="margin:0;">
+        </div>
+        <div>
+          <div class="add-label">Title</div>
+          <select id="roster-add-title" class="roster-select" style="width:100%;">
+            <option>Parts Specialist</option><option>RSS</option>
+            <option>ISS</option><option>Assistant</option><option>Driver</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="btn-add" onclick="addMgrEmployee()"
+            style="padding:8px 18px;border-radius:8px;font-size:13px;white-space:nowrap;">+ Add</button>
+        </div>
+      </div>
+      <div class="err-box" id="roster-add-err" style="margin-top:8px;display:none;"></div>
+    </div>
+
+    <div id="mgr-roster-list"><div class="empty">Loading…</div></div>
+  </div>
+
+  <!-- STORE SETUP -->
+  <div class="mgr-tab-pane" id="mgr-pane-settings">
+    <div class="section-head">Manager Info</div>
+    <div style="margin-bottom:14px;">
+      <div class="add-label">Manager Name</div>
+      <input type="text" id="mgr-name-disp" placeholder="Your name"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;">
+      <div class="add-label" style="margin-top:8px;">Manager Phone</div>
+      <input type="tel" id="mgr-phone-disp" placeholder="10-digit number"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;">
+      <div class="add-label" style="margin-top:8px;">Help Desk Phone</div>
+      <input type="tel" id="mgr-helpdesk-disp" placeholder="10-digit number"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;">
+    </div>
+
+    <div class="section-head" style="margin-top:4px;">Store Setup</div>
+    <div style="margin-bottom:14px;">
+      <div class="add-label">District Manager Email</div>
+      <input type="email" id="mgr-dm-email-disp" placeholder="dm@example.com"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;">
+      <div class="add-label" style="margin-top:10px;">Recap Notification Email</div>
+      <input type="email" id="mgr-recap-email-disp" placeholder="recap@example.com"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;">
+    </div>
+
+    <div class="section-head" style="margin-top:4px;">Email Notifications</div>
+    <div style="font-size:12px;color:var(--ink-faint);margin-bottom:10px;">
+      Choose which events send an email to the Recap Notification address.
+    </div>
+    <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;">
+      <input type="checkbox" id="notify-entry" style="width:16px;height:16px;">
+      <span style="font-size:14px;">📝 Log book entries</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;">
+      <input type="checkbox" id="notify-flagged" style="width:16px;height:16px;">
+      <span style="font-size:14px;">⚠️ Issue / flagged entries</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer;">
+      <input type="checkbox" id="notify-messages" style="width:16px;height:16px;">
+      <span style="font-size:14px;">📬 Private messages</span>
+    </label>
+
+    <div class="section-head" style="margin-top:4px;">Change PIN</div>
+    <div style="margin-bottom:14px;">
+      <div class="add-label">New PIN (4+ characters)</div>
+      <input type="password" id="mgr-new-pin" placeholder="Leave blank to keep current PIN"
+        class="roster-field-input" style="max-width:300px;margin:6px 0;" autocomplete="new-password">
+    </div>
+
+    <button class="btn btn-green" onclick="saveStoreSettings()"
+      style="padding:8px 20px;font-size:13px;">Save Settings</button>
+    <span class="roster-saved" id="settings-ok" style="margin-left:8px;">✓ Saved</span>
+  </div>
+
+  <!-- COACHING -->
+  <div class="mgr-tab-pane" id="mgr-pane-coaching">
+    <div class="section-head">Employee Coaching</div>
+    <p style="font-size:14px;color:var(--ink-soft);margin-bottom:16px;line-height:1.6;">
+      Create and manage coaching records for your team. Supports verbal coaching, written warnings, and final warnings — with digital signatures, a send-to-employee signing link, and PDF export.
+    </p>
+    <a href="coaching.html" class="btn-add" style="display:inline-block;text-decoration:none;border-radius:8px;color:white;">
+      &#x1F4CB; Open Coaching System &rarr;
+    </a>
+  </div>
+
+  <!-- FEEDBACK -->
+  <div class="mgr-tab-pane" id="mgr-pane-feedback">
+    <div class="section-head">Submit Feedback to Admin</div>
+    <div class="compose-box" style="border-top-color: var(--forest); border-color: #b0d4b8;">
+      <div class="compose-title" style="color:var(--forest);">📣 Report an Issue or Share an Idea</div>
+      <p style="font-size:12px;color:var(--ink-faint);margin-bottom:10px;line-height:1.4;">Help us improve Counter Coach. Your feedback goes directly to the admin team.</p>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="fb-type-pill on" data-type="idea"  onclick="setFbType(this,'idea')">💡 Idea</button>
+        <button class="fb-type-pill"    data-type="bug"   onclick="setFbType(this,'bug')">🐛 Bug Report</button>
+        <button class="fb-type-pill"    data-type="other" onclick="setFbType(this,'other')">💬 Other</button>
+      </div>
+      <textarea id="fb-text" placeholder="Describe the issue or your idea in detail…" style="min-height:90px;"></textarea>
+      <div id="fb-ok"  style="display:none;font-size:13px;color:#2e7d32;font-weight:700;margin-top:6px;">✅ Feedback sent — thank you!</div>
+      <div id="fb-err" style="display:none;font-size:13px;color:var(--red);margin-top:6px;"></div>
+      <button class="btn-send" style="background:var(--forest);" onclick="sendFeedback()">Send Feedback</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════ EMPLOYEE SETTINGS ════════ -->
+<div class="screen" id="screen-settings">
+  <div class="page-header">
+    <div class="page-title">⚙️ My Settings</div>
+    <div class="page-date">Notification preferences for your account</div>
+  </div>
+
+  <div class="settings-card">
+    <h3>📧 Email Notifications</h3>
+    <div class="settings-field">
+      <label>Your Email Address</label>
+      <input type="email" id="emp-settings-email" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <p style="font-size:12px;color:var(--ink-faint);margin-bottom:12px;line-height:1.5;">Receive notifications when your manager replies or takes action. Leave blank to opt out.</p>
+
+    <div class="settings-toggle">
+      <div>
+        <span>📋 New Log Entries</span>
+        <small>Email when any entry is added to the log</small>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="emp-notify-entries">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="settings-toggle">
+      <div>
+        <span>📬 Message Replies</span>
+        <small>Email when manager replies to your private message</small>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="emp-notify-messages" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="settings-toggle">
+      <div>
+        <span>📋 Coaching Records</span>
+        <small>Email when a coaching document is created for you</small>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="emp-notify-coaching" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <button class="btn-settings-save" onclick="saveEmpSettings()">Save Settings</button>
+    <div class="settings-ok" id="emp-settings-ok">✔ Settings saved!</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ LIGHTBOX ══════════════════ -->
+<div id="lightbox" onclick="closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="">
+</div>
+
+<!-- ═══════════════════ BOTTOM NAV ══════════════════ -->
+<nav class="bottom-nav" id="bottom-nav">
+  <a class="nav-btn-cc" href="/coach" title="Counter Coach Decision Tool">
+    <img src="icon-192.png" alt="CC" style="width:22px;height:22px;border-radius:4px;object-fit:cover;display:block;margin:0 auto 2px;">CC
+  </a>
+  <button class="nav-btn on" id="nav-log" onclick="navTo('log')">
+    <span class="nav-icon">📋</span>Logbook
+  </button>
+  <button class="nav-btn" id="nav-msg" onclick="navTo('msg')">
+    <span class="nav-icon">🔒</span>Private
+    <span class="nav-dot" id="msg-dot"></span>
+  </button>
+  <button class="nav-btn" id="nav-coaching" onclick="navTo('coaching')">
+    <span class="nav-icon">&#x1F4CB;</span>Coaching
+    <span class="nav-dot" id="coaching-dot" style="display:none;"></span>
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="navTo('settings')">
+    <span class="nav-icon">⚙️</span>Settings
+  </button>
+  <button class="nav-btn" id="nav-mgr" onclick="navTo('mgr')" style="display:none;">
+    <span class="nav-icon">🔑</span>Manager
+    <span class="nav-dot" id="mgr-dot"></span>
+  </button>
+</nav>
+
+<script type="module" src="js/recap.js"></script>
 </body>
 </html>
