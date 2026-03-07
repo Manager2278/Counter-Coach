@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -372,6 +372,8 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
           Manager Login →
         </button>
         <div id="mgr-login-form" style="display:none;margin-top:12px;">
+          <input type="text" id="ns-mgr-counter" inputmode="numeric" placeholder="Your counter / badge number"
+            style="width:100%;padding:11px 13px;border:1.5px solid var(--forest);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:10px;">
           <input type="password" id="ns-mgr-pin" inputmode="numeric" placeholder="Manager PIN"
             style="width:100%;padding:11px 13px;border:1.5px solid var(--forest);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:10px;"
             onkeydown="if(event.key==='Enter') mgrLoginFromForm()">
@@ -533,6 +535,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
           <select id="roster-add-title" class="roster-select" style="width:100%;">
             <option>Parts Specialist</option><option>RSS</option>
             <option>ISS</option><option>Assistant</option><option>Driver</option>
+            <option>Merchandiser</option><option>Store Manager</option>
           </select>
         </div>
         <div style="display:flex;align-items:flex-end;">
