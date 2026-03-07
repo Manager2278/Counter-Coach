@@ -158,12 +158,12 @@ window.showMgrLoginForm = function() {
 };
 
 window.mgrLoginFromForm = async function() {
-  const s       = el("ns-store")?.value.trim()       || "";
+  const s       = (el("ns-mgr-store")?.value.trim()   || "");
   const counter = el("ns-mgr-counter")?.value.trim() || "";
   const pin     = el("ns-mgr-pin")?.value.trim()     || "";
   const err     = el("ns-err");
   if (err) err.style.display = "none";
-  if (!s)       { if(err){err.textContent="Enter your store number first.";err.style.display="block";} return; }
+  if (!s)       { if(err){err.textContent="Enter your store number.";err.style.display="block";} return; }
   if (!counter) { if(err){err.textContent="Enter your counter / badge number.";err.style.display="block";} return; }
   if (!pin)     { if(err){err.textContent="Enter your manager PIN.";err.style.display="block";} return; }
   try {
