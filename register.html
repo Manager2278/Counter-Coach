@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Store Setup — Counter Coach</title>
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <meta name="theme-color" content="#006400">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; background: #f0f4f0; min-height: 100vh; }
+
+    .header { background: #006400; color: white; padding: 14px 20px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .header img { height: 28px; width: 28px; border-radius: 4px; object-fit: cover; }
+    .header h2 { font-size: 18px; letter-spacing: 0.3px; }
+
+    .wrap { max-width: 480px; margin: 0 auto; padding: 24px 16px 60px; }
+
+    .card { background: white; border-radius: 14px; padding: 28px 24px; box-shadow: 0 3px 16px rgba(0,0,0,0.1); }
+    h3 { font-size: 20px; color: #1a3a1a; margin-bottom: 6px; }
+    .subtitle { font-size: 13px; color: #666; margin-bottom: 20px; line-height: 1.5; }
+
+    .fl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; display: block; margin-bottom: 4px; }
+    .optional { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 10px; }
+
+    input[type=text], input[type=tel], input[type=email], input[type=password] {
+      width: 100%; padding: 11px 13px; border: 1.5px solid #dce8dc; border-radius: 8px;
+      font-size: 15px; font-family: Arial, sans-serif; background: #fafafa; margin-bottom: 14px;
+      color: #1a2a1a; transition: border .2s;
+    }
+    input:focus { outline: none; border-color: #006400; background: white; }
+    input.locked { background: #f5f5f5 !important; color: #9e9e9e !important; border-color: #e0e0e0 !important; cursor: default !important; }
+    input[style*="uppercase"] { text-transform: uppercase; }
+
+    /* Status badge */
+    .badge { font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 6px; display: inline-block; margin-bottom: 10px; }
+    .badge-new    { background: #e8f5e9; color: #2e7d32; }
+    .badge-exists { background: #e3f2fd; color: #1565c0; }
+    .badge-check  { background: #fff8e1; color: #7a5800; }
+    #status-badge { min-height: 24px; }
+
+    /* Info text under badge */
+    #desc-text { display: none; font-size: 13px; color: #555; margin-bottom: 14px;
+      padding: 10px 14px; background: #f0f4f0; border-radius: 8px; line-height: 1.5; }
+
+    /* Lock notice */
+    #lock-notice { display: none; align-items: center; justify-content: space-between; gap: 8px;
+      background: #f5f5f5; border: 1.5px solid #e0e0e0; border-radius: 8px; padding: 8px 12px;
+      margin-bottom: 14px; font-size: 12px; color: #757575; }
+    #lock-notice.show { display: flex; }
+    .btn-unlock { font-size: 12px; font-weight: 700; color: #1565c0; background: none;
+      border: 1.5px solid #1565c0; border-radius: 6px; padding: 4px 10px; cursor: pointer; flex-shrink: 0; }
+
+    /* Registration code section (new stores only) */
+    .reg-wrap { display: none; background: #fff8e1; border: 1.5px solid #ffe082; border-radius: 8px;
+      padding: 14px 16px; margin-bottom: 14px; }
+    .reg-wrap.show { display: block; }
+    .reg-wrap p { font-size: 12px; color: #7a5800; margin-bottom: 10px; line-height: 1.5; }
+    .reg-wrap .fl { color: #7a5800; }
+    .reg-wrap input { margin: 0; background: white; }
+
+    hr { border: none; border-top: 1px solid #e8e8e8; margin: 18px 0; }
+    .section-label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 12px; }
+
+    .btn { display: block; width: 100%; padding: 14px; font-weight: bold; font-size: 15px;
+      border: none; border-radius: 10px; cursor: pointer; margin-top: 8px; transition: filter .15s, transform .1s; text-align: center; }
+    .btn:active { transform: scale(0.98); }
+    .btn-green { background: #2e7d32; color: white; }
+    .btn-green:hover { filter: brightness(1.1); }
+
+    .err { color: #c62828; font-size: 13px; margin-bottom: 12px; display: none;
+      background: #ffebee; padding: 10px 14px; border-radius: 8px; border: 1px solid #ffcdd2; }
+    .err.show { display: block; }
+    .ok { color: #2e7d32; font-size: 13px; margin-bottom: 12px; display: none;
+      background: #e8f5e9; padding: 10px 14px; border-radius: 8px; }
+    .ok.show { display: block; }
+
+    .back-link { display: block; text-align: center; margin-top: 16px; font-size: 13px;
+      color: #888; text-decoration: none; }
+    .back-link:hover { color: #1a3a1a; }
+
+    footer { text-align: center; font-size: 10px; margin-top: 20px; color: #555; padding-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <img src="icon-192.png" alt="CC">
+    <h2>Store Setup</h2>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <h3>Register / Update Store</h3>
+      <p class="subtitle">Enter your store number to check if it's already registered. New stores require a registration code from your district manager.</p>
+
+      <label class="fl">Store Number</label>
+      <input type="text" id="reg-store" inputmode="numeric" placeholder="e.g. 2278" oninput="onStoreInput()" autocomplete="off">
+
+      <div id="status-badge"></div>
+      <div id="desc-text"></div>
+
+      <div id="lock-notice">
+        <span>Fields are locked — enter your PIN below and click Unlock to edit info.</span>
+        <button class="btn-unlock" onclick="unlockFields()">Unlock</button>
+      </div>
+
+      <label class="fl">Manager Name</label>
+      <input type="text" id="reg-name" placeholder="Your name" autocomplete="off">
+
+      <label class="fl">Manager Phone <span class="optional">(optional)</span></label>
+      <input type="tel" id="reg-phone" placeholder="e.g. 555-867-5309">
+
+      <label class="fl">Help Desk Phone <span class="optional">(optional)</span></label>
+      <input type="tel" id="reg-helpdesk" placeholder="IT / Operations help desk number">
+
+      <hr>
+
+      <label class="fl">Manager PIN <span class="optional">(min 4 digits — used to access the Manager Panel)</span></label>
+      <input type="password" id="reg-pin" inputmode="numeric" placeholder="Choose a PIN (or enter current PIN to verify / update)">
+
+      <div class="reg-wrap" id="reg-code-wrap">
+        <p>🆕 This store is not registered yet. Enter the registration code provided to you by SM Justin Thomas to create your store.</p>
+        <label class="fl">Registration Code</label>
+        <input type="text" id="reg-code" placeholder="e.g. ABC123" style="text-transform:uppercase;margin-top:4px;">
+      </div>
+
+      <hr>
+
+      <div class="section-label">Email Notifications <span class="optional">(optional)</span></div>
+
+      <label class="fl">DM / Area Manager Email</label>
+      <input type="email" id="reg-dm-email" placeholder="district.manager@example.com">
+
+      <label class="fl">Daily Recap Email</label>
+      <input type="email" id="reg-recap-email" placeholder="store-recap@example.com">
+
+      <div class="err" id="reg-err"></div>
+      <div class="ok"  id="reg-ok"></div>
+
+      <button class="btn btn-green" onclick="submitSetup()">Save &amp; Continue →</button>
+      <a href="/" class="back-link">← Back to app</a>
+    </div>
+  </div>
+
+  <footer>Counter Coach © 2026 Justin Thomas &bull; Internal Use Only &bull; Unauthorized commercial use prohibited</footer>
+
+  <script type="module" src="js/register.js"></script>
+</body>
+</html>

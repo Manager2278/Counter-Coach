@@ -40,6 +40,7 @@
       { "source": "/coaching", "destination": "/coaching.html"},
       { "source": "/coach",    "destination": "/coach.html"   },
       { "source": "/rules",    "destination": "/rules.html"   },
+      { "source": "/register", "destination": "/register.html"},
       { "source": "/recap",    "destination": "/index.html"   },
       { "source": "/**",       "destination": "/index.html"   }
     ]
