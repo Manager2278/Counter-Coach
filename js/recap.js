@@ -976,7 +976,11 @@ function renderMgrRoster() {
   const listEl = el("mgr-roster-list");
   if (!listEl) return;
   listEl.innerHTML = mgrRosterData.map(e => {
-    const opts = ROSTER_TITLES.map(t =>
+    // Include employee's current role even if it's not in the standard list
+    const titleList = (e.role && !ROSTER_TITLES.includes(e.role))
+      ? [e.role, ...ROSTER_TITLES]
+      : ROSTER_TITLES;
+    const opts = titleList.map(t =>
       `<option value="${t}"${e.role===t?' selected':''}>${t}</option>`
     ).join("");
     return `
