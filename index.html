@@ -347,12 +347,13 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 <!-- No CC session — inline prompt -->
 <div id="no-session">
   <div class="warn-card">
-    <div class="wi">🏪</div>
+    <div class="wi"><img src="icon-192.png" alt="CC" style="width:52px;height:52px;border-radius:10px;object-fit:cover;"></div>
     <h2>Enter Your Info</h2>
     <p>Enter your store number and name to get started.</p>
     <div style="margin-top:16px;text-align:left;">
       <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Store Number</label>
-      <input type="text" id="ns-store" inputmode="numeric" placeholder="e.g. 2278" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+      <input type="text" id="ns-store" inputmode="numeric" placeholder="e.g. 2278" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:6px;">
+      <div id="ns-store-status" style="font-size:12px;margin-bottom:8px;display:none;padding:4px 2px;"></div>
       <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Your Name</label>
       <select id="ns-name" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
         <option value="">— Enter store # first —</option>
@@ -696,7 +697,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 <!-- ═══════════════════ BOTTOM NAV ══════════════════ -->
 <nav class="bottom-nav" id="bottom-nav">
   <a class="nav-btn-cc" href="/coach" title="Counter Coach Decision Tool">
-    <img src="icon-192.png" alt="CC" style="width:22px;height:22px;border-radius:4px;object-fit:cover;display:block;margin:0 auto 2px;">CC
+    <img src="icon-192.png" alt="Coach" style="width:22px;height:22px;border-radius:4px;object-fit:cover;display:block;margin:0 auto 2px;">Coach
   </a>
   <button class="nav-btn on" id="nav-log" onclick="navTo('log')">
     <span class="nav-icon">📋</span>Logbook
