@@ -158,23 +158,37 @@ window.showMgrLoginForm = function() {
 };
 
 window.mgrLoginFromForm = async function() {
-  const s   = el("ns-store")?.value.trim() || "";
-  const pin = el("ns-mgr-pin")?.value.trim() || "";
-  const err = el("ns-err");
-  if (!s) { if(err){err.textContent="Enter store number first.";err.style.display="block";} return; }
-  if (!pin) return;
+  const s       = el("ns-store")?.value.trim()       || "";
+  const counter = el("ns-mgr-counter")?.value.trim() || "";
+  const pin     = el("ns-mgr-pin")?.value.trim()     || "";
+  const err     = el("ns-err");
+  if (err) err.style.display = "none";
+  if (!s)       { if(err){err.textContent="Enter your store number first.";err.style.display="block";} return; }
+  if (!counter) { if(err){err.textContent="Enter your counter / badge number.";err.style.display="block";} return; }
+  if (!pin)     { if(err){err.textContent="Enter your manager PIN.";err.style.display="block";} return; }
   try {
-    const snap = await getDoc(doc(db,"stores",s));
-    if (!snap.exists() || snap.data().pin !== pin) {
+    // Verify store PIN
+    const storeSnap = await getDoc(doc(db,"stores",s));
+    if (!storeSnap.exists() || storeSnap.data().pin !== pin) {
       if(err){err.textContent="Incorrect PIN.";err.style.display="block";} return;
     }
+    // Look up employee record by counter # to get manager's name
+    const empSnap = await getDocs(
+      query(collection(db,"stores",s,"employees"), where("memberNum","==",counter))
+    );
+    if (empSnap.empty) {
+      if(err){err.textContent="Counter # not found in roster — set up your store first or contact your admin.";err.style.display="block";}
+      return;
+    }
+    const mgrName  = empSnap.docs[0].data().name || "Manager";
+    const storeData = storeSnap.data();
+    store = s; name = mgrName; mgrLoggedIn = true;
+    saveMgrSession({ store, on: true });
+    saveSession({ store, name: mgrName, role: "manager",
+                  managerPhone: storeData.managerPhone||"", helpdeskPhone: storeData.helpdeskPhone||"" });
+    el("no-session").classList.remove("show");
+    bootApp();
   } catch(e) { if(err){err.textContent="Error: "+e.message;err.style.display="block";} return; }
-  if(err) err.style.display = "none";
-  store = s; name = "Manager"; mgrLoggedIn = true;
-  saveMgrSession({ store, on: true });
-  saveSession({ store, name: "Manager", role: "manager" });
-  el("no-session").classList.remove("show");
-  bootApp();
 };
 
 el("ns-store").addEventListener("input",  onNsStoreInput);
@@ -938,7 +952,7 @@ async function loadBranding() {
 }
 
 // ── MANAGER ROSTER ────────────────────────────────────────────
-const ROSTER_TITLES = ["Parts Specialist","RSS","ISS","Assistant","Driver"];
+const ROSTER_TITLES = ["Parts Specialist","RSS","ISS","Assistant","Driver","Merchandiser","Store Manager"];
 
 async function loadMgrRoster() {
   const listEl = el("mgr-roster-list");

@@ -2,7 +2,8 @@
 import { db, auth }                   from "./firebase.js";
 import { saveSession, saveMgrSession } from "./session.js";
 import {
-  doc, getDoc, setDoc, updateDoc, serverTimestamp
+  doc, getDoc, setDoc, updateDoc, serverTimestamp,
+  collection, addDoc, getDocs, query, where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
@@ -30,9 +31,9 @@ function clearMsg() {
 }
 
 // ── STATE ─────────────────────────────────────────────────────
-let storeStatus    = null;   // null | "new" | "exists"
+let storeStatus     = null;   // null | "new" | "exists"
 let storeCheckTimer = null;
-let fieldsLocked   = false;
+let fieldsLocked    = false;
 
 // ── STORE CHECK (debounced) ────────────────────────────────────
 window.onStoreInput = function () {
@@ -55,13 +56,20 @@ async function checkStore(s) {
       el("status-badge").innerHTML = '<span class="badge badge-exists">✓ Store already registered</span>';
       el("desc-text").textContent  = `Store ${s} is registered. Enter your PIN to verify, or enter PIN then click Unlock to edit info.`;
       el("desc-text").style.display = "block";
-      // Pre-fill
+      // Pre-fill store fields
       el("reg-name").value        = d.managerName  || "";
       el("reg-phone").value       = d.managerPhone  || "";
       el("reg-helpdesk").value    = d.helpdeskPhone || "";
       el("reg-dm-email").value    = d.dmEmail       || "";
       el("reg-recap-email").value = d.recapEmail    || "";
-      // Lock fields, hide reg code
+      // Pre-fill manager counter # from their employee record
+      try {
+        const mgrEmp = await getDocs(
+          query(collection(db, "stores", s, "employees"), where("isManager", "==", true))
+        );
+        if (!mgrEmp.empty) el("reg-counter").value = mgrEmp.docs[0].data().memberNum || "";
+      } catch (_) {}
+      // Lock all fields, hide reg code
       lockFields();
       el("reg-code-wrap").classList.remove("show");
     } else {
@@ -80,7 +88,7 @@ async function checkStore(s) {
 }
 
 // ── LOCK / UNLOCK ─────────────────────────────────────────────
-const LOCKABLE = ["reg-name", "reg-phone", "reg-helpdesk", "reg-dm-email", "reg-recap-email"];
+const LOCKABLE = ["reg-name", "reg-counter", "reg-phone", "reg-helpdesk", "reg-dm-email", "reg-recap-email"];
 
 function lockFields() {
   LOCKABLE.forEach(id => {
@@ -117,23 +125,48 @@ window.unlockFields = async function () {
   } catch (e) { showErr("Error: " + e.message); }
 };
 
+// ── SAVE / UPDATE MANAGER EMPLOYEE RECORD ─────────────────────
+async function syncManagerEmployeeRecord(s, n, counterNum) {
+  if (!counterNum) return; // skip if no counter # provided
+  const empRef = collection(db, "stores", s, "employees");
+  try {
+    // Find existing manager record (flagged with isManager:true)
+    const mgrSnap = await getDocs(query(empRef, where("isManager", "==", true)));
+    if (mgrSnap.empty) {
+      // No manager record yet — create one
+      await addDoc(empRef, {
+        store: s, name: n, memberNum: counterNum,
+        role: "Store Manager", isManager: true,
+        addedBy: "registration", addedAt: serverTimestamp()
+      });
+    } else {
+      // Update existing manager record
+      await updateDoc(mgrSnap.docs[0].ref, {
+        name: n, memberNum: counterNum, role: "Store Manager"
+      });
+    }
+  } catch (e) { console.warn("syncManagerEmployeeRecord:", e); }
+}
+
 // ── SUBMIT ────────────────────────────────────────────────────
 window.submitSetup = async function () {
-  const s   = val("reg-store");
-  const n   = val("reg-name");
-  const ph  = val("reg-phone");
-  const hd  = val("reg-helpdesk");
-  const pin = val("reg-pin");
-  const reg = val("reg-code");
-  const dm  = val("reg-dm-email");
-  const rc  = val("reg-recap-email");
+  const s       = val("reg-store");
+  const n       = val("reg-name");
+  const counter = val("reg-counter");
+  const ph      = val("reg-phone");
+  const hd      = val("reg-helpdesk");
+  const pin     = val("reg-pin");
+  const reg     = val("reg-code");
+  const dm      = val("reg-dm-email");
+  const rc      = val("reg-recap-email");
 
   clearMsg();
 
-  if (!s)              { showErr("Store number is required."); return; }
-  if (!n)              { showErr("Manager name is required."); return; }
-  if (!pin)            { showErr("PIN is required."); return; }
-  if (pin.length < 4)  { showErr("PIN must be at least 4 characters."); return; }
+  if (!s)             { showErr("Store number is required."); return; }
+  if (!n)             { showErr("Manager name is required."); return; }
+  if (!counter)       { showErr("Counter / badge number is required."); return; }
+  if (!pin)           { showErr("PIN is required."); return; }
+  if (pin.length < 4) { showErr("PIN must be at least 4 characters."); return; }
   if (storeStatus === null) { showErr("Please wait for the store check to complete."); return; }
 
   const storeRef = doc(db, "stores", s);
@@ -142,15 +175,9 @@ window.submitSetup = async function () {
     if (storeStatus === "exists") {
       // Verify PIN before updating
       const snap = await getDoc(storeRef);
-      if (!snap.exists())               { showErr("Store not found — refresh and try again."); return; }
-      if (snap.data().pin !== pin)      { showErr("Incorrect PIN."); return; }
-      // Build update: only change pin if a new one was entered AND fields were unlocked
-      const updates = { managerName: n, managerPhone: ph, helpdeskPhone: hd, dmEmail: dm, recapEmail: rc };
-      if (!fieldsLocked) {
-        // Fields were unlocked with correct PIN, so user may have changed info
-        updates.pin = pin; // keep same pin (or they'd need a separate "change PIN" flow)
-      }
-      await setDoc(storeRef, updates, { merge: true });
+      if (!snap.exists())          { showErr("Store not found — refresh and try again."); return; }
+      if (snap.data().pin !== pin) { showErr("Incorrect PIN."); return; }
+      await setDoc(storeRef, { managerName: n, managerPhone: ph, helpdeskPhone: hd, dmEmail: dm, recapEmail: rc }, { merge: true });
 
     } else {
       // New store — validate registration code
@@ -158,11 +185,11 @@ window.submitSetup = async function () {
       const codeKey  = reg.toUpperCase();
       const codeRef  = doc(db, "reg_codes", codeKey);
       const codeSnap = await getDoc(codeRef);
-      if (!codeSnap.exists())                                                     { showErr("Invalid registration code."); return; }
+      if (!codeSnap.exists())                                                   { showErr("Invalid registration code."); return; }
       const cd = codeSnap.data();
-      if (cd.used)                                                                { showErr("This code has already been used."); return; }
-      if (cd.expires && cd.expires.toDate && cd.expires.toDate() < new Date())    { showErr("This code has expired."); return; }
-      if (cd.storeNumber && cd.storeNumber !== s)                                 { showErr(`This code is for store ${cd.storeNumber}, not ${s}.`); return; }
+      if (cd.used)                                                              { showErr("This code has already been used."); return; }
+      if (cd.expires && cd.expires.toDate && cd.expires.toDate() < new Date()) { showErr("This code has expired."); return; }
+      if (cd.storeNumber && cd.storeNumber !== s)                               { showErr(`This code is for store ${cd.storeNumber}, not ${s}.`); return; }
       // Mark code used + create store doc
       await updateDoc(codeRef, { used: true, usedAt: serverTimestamp(), usedByStore: s });
       await setDoc(storeRef, {
@@ -170,6 +197,9 @@ window.submitSetup = async function () {
         dmEmail: dm, recapEmail: rc, created: serverTimestamp()
       });
     }
+
+    // Create / update manager's employee record in the roster
+    await syncManagerEmployeeRecord(s, n, counter);
 
     // Save session (manager) and redirect to main app
     saveSession({ store: s, name: n, role: "manager", managerPhone: ph, helpdeskPhone: hd });
