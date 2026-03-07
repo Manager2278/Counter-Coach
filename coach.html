@@ -19,20 +19,6 @@
     .wrap { max-width: 540px; margin: 0 auto; padding: 20px 16px 40px; }
     .screen { display: none; }
     .screen.active { display: block; }
-    /* ── NAME PROMPT BANNER */
-    #name-banner { background: #1b5e20; color: white; padding: 14px 16px; display: none; }
-    #name-banner.show { display: block; }
-    .nb-inner { max-width: 540px; margin: 0 auto; }
-    .nb-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; opacity: 0.9; }
-    .nb-fields { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .nb-fields input { padding: 8px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); font-family: Arial, sans-serif; font-size: 14px; background: rgba(255,255,255,0.15); color: white; flex: 1; min-width: 100px; }
-    .nb-fields input::placeholder { color: rgba(255,255,255,0.5); }
-    .nb-fields input:focus { outline: none; background: rgba(255,255,255,0.22); }
-    .nb-fields select { padding: 8px 11px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); font-family: Arial, sans-serif; font-size: 14px; background: rgba(255,255,255,0.15); color: white; flex: 1; min-width: 120px; cursor: pointer; }
-    .nb-fields select option { color: #1a1a1a; background: white; }
-    .btn-nb { padding: 8px 16px; background: white; color: #1b5e20; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-    .nb-err { font-size: 12px; color: #ffb3b3; margin-top: 6px; display: none; }
-    .nb-err.show { display: block; }
     /* ── CARDS */
     .setup-box, .home-box, .q-box { background: white; border-radius: 14px; padding: 28px 24px; box-shadow: 0 3px 16px rgba(0,0,0,0.1); margin-top: 16px; }
     .setup-box h3 { font-size: 20px; color: #1a3a1a; margin-bottom: 6px; }
@@ -94,21 +80,6 @@
   <!-- Broadcast banner -->
   <div id="broadcast-banner"></div>
 
-  <!-- Name prompt banner -->
-  <div id="name-banner">
-    <div class="nb-inner">
-      <div class="nb-title" id="nb-title">Enter your name to continue</div>
-      <div class="nb-fields">
-        <input type="text" id="nb-store" placeholder="Store #" style="max-width:90px;" inputmode="numeric" oninput="onNbStoreInput()">
-        <select id="nb-name">
-          <option value="">— Enter store # first —</option>
-        </select>
-        <button class="btn-nb" onclick="submitNameBanner()">Go</button>
-      </div>
-      <div class="nb-err" id="nb-err">Please enter your store number and select your name.</div>
-    </div>
-  </div>
-
   <div id="error-banner"></div>
 
   <div class="wrap">
@@ -116,7 +87,7 @@
     <div class="screen active" id="screen-home">
       <div class="home-box">
         <p>What is the situation?</p>
-        <button class="btn btn-emergency" onclick="guardedAction('emergency')">&#x1F6A8; Emergency</button>
+        <button class="btn btn-emergency" onclick="emergency()">&#x1F6A8; Emergency</button>
         <button class="btn btn-blue" onclick="nextQ('cust1')">Customer Escalation</button>
         <button class="btn btn-blue" onclick="nextQ('staff1')">Staffing Issue</button>
         <button class="btn btn-blue" onclick="nextQ('driver1')">Drivers / Delivery</button>
@@ -124,7 +95,7 @@
         <button class="btn btn-blue" onclick="nextQ('ops1')">System / Store Issue</button>
         <a class="btn btn-amber" href="rules.html">&#x1F4D6; Counter Rules &amp; Training</a>
         <hr>
-        <a id="recap-link" class="btn btn-navy" href="/">&#x1F4CB; Daily Recap &amp; Log</a>
+        <a class="btn btn-navy" href="/">&#x1F4CB; Daily Recap &amp; Log</a>
       </div>
     </div>
 
@@ -155,7 +126,7 @@
         <input type="tel" id="mgr-helpdesk" placeholder="10-digit number">
 
         <div id="mgr-lock-notice">
-          <span>🔒 Info locked — enter PIN below, then unlock to edit.</span>
+          <span>🔒 Store info locked — enter PIN below, then unlock to edit.</span>
           <button class="btn-unlock" onclick="unlockMgrFields()">🔓 Unlock</button>
         </div>
 

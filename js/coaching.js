@@ -881,5 +881,5 @@ window.kioskSelectEmp = async function(name) {
     }
     saveSession({ store: kioskStoreId, name, role: "employee", managerPhone, helpdeskPhone });
   } catch(_) {}
-  window.location.href = "index.html";
+  window.location.href = "/coach";
 };

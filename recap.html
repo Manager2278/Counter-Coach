@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Recap · Counter Coach</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Karla:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -285,12 +287,40 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 #broadcast-banner { display: none; background: #1c3a2a; color: white; padding: 10px 16px; font-size: 13px; line-height: 1.5; }
 #broadcast-banner.show { display: block; }
 #broadcast-banner strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+
+/* ── SETTINGS SCREEN ─────────────────────── */
+.settings-card { background: white; border: 1.5px solid var(--ruled); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+.settings-card h3 { font-family: 'Courier Prime', monospace; font-size: 15px; font-weight: 700; color: var(--forest); margin-bottom: 14px; }
+.settings-field { margin-bottom: 14px; }
+.settings-field label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); margin-bottom: 5px; }
+.settings-field input[type=email], .settings-field input[type=text] {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--ruled); border-radius: 8px;
+  font-family: 'Karla', sans-serif; font-size: 14px; background: var(--paper); color: var(--ink); }
+.settings-field input:focus { outline: none; border-color: var(--forest-light); }
+.settings-toggle { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--ruled); }
+.settings-toggle:last-child { border-bottom: none; }
+.settings-toggle span { font-size: 13px; color: var(--ink); }
+.settings-toggle small { font-size: 11px; color: var(--ink-faint); display: block; margin-top: 1px; }
+.toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-slider { position: absolute; inset: 0; background: var(--ruled); border-radius: 24px; cursor: pointer; transition: background .2s; }
+.toggle-slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.toggle-switch input:checked + .toggle-slider { background: var(--forest-light); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+.btn-settings-save { width: 100%; padding: 12px; background: var(--forest); color: white; border: none; border-radius: 10px; font-family: 'Karla', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+.btn-settings-save:hover { filter: brightness(1.1); }
+.settings-ok { background: var(--mint); border: 1.5px solid var(--sage); color: var(--forest); padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; text-align: center; margin-top: 10px; display: none; }
+.settings-ok.show { display: block; }
+
+/* ── COUNTER COACH NAV BTN ───────────────── */
+.nav-btn-cc { flex: 0 0 auto; padding: 10px 10px 8px; text-align: center; cursor: pointer; border: none; background: none; font-family: 'Karla', sans-serif; color: var(--ink-faint); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 52px; }
+.nav-btn-cc:hover { color: var(--forest); }
 </style>
 </head>
 <body>
 
 <header class="topbar" id="recap-topbar">
-  <button class="topbar-back" id="topbar-back-btn" onclick="goBack()">&#x2190; Counter Coach</button>
+  <a class="topbar-back" id="topbar-back-btn" href="/coach">&#x2190; Counter Coach</a>
   <div class="topbar-brand" id="topbar-brand-text">Daily Recap</div>
   <img id="topbar-logo-img" src="" alt="Logo" style="max-height:30px;vertical-align:middle;border-radius:4px;position:absolute;left:50%;transform:translateX(-50%);display:none;">
   <div class="topbar-right">
@@ -576,6 +606,57 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 
 </div>
 
+<!-- ═══════════════════ EMPLOYEE SETTINGS ════════ -->
+<div class="screen" id="screen-settings">
+  <div class="page-header">
+    <div class="page-title">⚙️ My Settings</div>
+    <div class="page-date">Notification preferences for your account</div>
+  </div>
+
+  <div class="settings-card">
+    <h3>📧 Email Notifications</h3>
+    <div class="settings-field">
+      <label>Your Email Address</label>
+      <input type="email" id="emp-settings-email" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <p style="font-size:12px;color:var(--ink-faint);margin-bottom:12px;line-height:1.5;">Receive notifications when your manager replies or takes action. Leave blank to opt out.</p>
+
+    <div class="settings-toggle">
+      <div>
+        <span>📋 New Log Entries</span>
+        <small>Email when any entry is added to the log</small>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="emp-notify-entries">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="settings-toggle">
+      <div>
+        <span>📬 Message Replies</span>
+        <small>Email when manager replies to your private message</small>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="emp-notify-messages" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="settings-toggle">
+      <div>
+        <span>📋 Coaching Records</span>
+        <small>Email when a coaching document is created for you</small>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="emp-notify-coaching" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <button class="btn-settings-save" onclick="saveEmpSettings()">Save Settings</button>
+    <div class="settings-ok" id="emp-settings-ok">✔ Settings saved!</div>
+  </div>
+</div>
+
 <!-- ═══════════════════ LIGHTBOX ══════════════════ -->
 <div id="lightbox" onclick="closeLightbox()">
   <button id="lightbox-close" onclick="closeLightbox()">✕</button>
@@ -584,6 +665,9 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 
 <!-- ═══════════════════ BOTTOM NAV ══════════════════ -->
 <nav class="bottom-nav" id="bottom-nav">
+  <a class="nav-btn-cc" href="/coach" title="Counter Coach Decision Tool">
+    <span class="nav-icon">🏪</span>CC
+  </a>
   <button class="nav-btn on" id="nav-log" onclick="navTo('log')">
     <span class="nav-icon">📋</span>Logbook
   </button>
@@ -594,6 +678,9 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   <button class="nav-btn" id="nav-coaching" onclick="navTo('coaching')">
     <span class="nav-icon">&#x1F4CB;</span>Coaching
     <span class="nav-dot" id="coaching-dot" style="display:none;"></span>
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="navTo('settings')">
+    <span class="nav-icon">⚙️</span>Settings
   </button>
   <button class="nav-btn" id="nav-mgr" onclick="navTo('mgr')" style="display:none;">
     <span class="nav-icon">🔑</span>Manager
