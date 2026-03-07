@@ -317,6 +317,8 @@ function renderStores() {
         👤 ${esc(s.managerName   || "—")}
         &nbsp;·&nbsp; 📞 ${esc(s.managerPhone  || "—")}
         &nbsp;·&nbsp; 🛟 ${esc(s.helpdeskPhone || "—")}
+        ${s.dmEmail    ? `<br>📧 DM: ${esc(s.dmEmail)}`    : ""}
+        ${s.recapEmail ? `<br>📨 Recap: ${esc(s.recapEmail)}` : ""}
         ${s.created ? `<br>📅 Registered ${fmtDate(s.created)}` : ""}
         ${s.infoUpdatedAt ? `<br>🔄 Info updated ${fmtDate(s.infoUpdatedAt)}` : ""}
       </div>
@@ -334,9 +336,17 @@ function renderStores() {
             <label class="field-label">Manager Phone</label>
             <input type="tel" id="sf-phone-${esc(s.id)}" value="${esc(s.managerPhone || '')}" placeholder="555-1234">
           </div>
-          <div class="edit-field" style="grid-column:1/-1;">
+          <div class="edit-field">
             <label class="field-label">Helpdesk Phone</label>
             <input type="tel" id="sf-helpdesk-${esc(s.id)}" value="${esc(s.helpdeskPhone || '')}" placeholder="Helpdesk number">
+          </div>
+          <div class="edit-field">
+            <label class="field-label">DM / Area Manager Email</label>
+            <input type="email" id="sf-dm-${esc(s.id)}" value="${esc(s.dmEmail || '')}" placeholder="dm@example.com" style="margin:0;">
+          </div>
+          <div class="edit-field">
+            <label class="field-label">Daily Recap Email</label>
+            <input type="email" id="sf-recap-${esc(s.id)}" value="${esc(s.recapEmail || '')}" placeholder="recap@example.com" style="margin:0;">
           </div>
         </div>
         <label class="replies-toggle-row">
@@ -409,9 +419,11 @@ window.toggleStoreEdit = function(storeId) {
 };
 
 window.saveStore = async function(storeId) {
-  const name          = document.getElementById(`sf-name-${storeId}`).value.trim();
-  const phone         = document.getElementById(`sf-phone-${storeId}`).value.trim();
-  const helpdesk      = document.getElementById(`sf-helpdesk-${storeId}`).value.trim();
+  const name           = document.getElementById(`sf-name-${storeId}`).value.trim();
+  const phone          = document.getElementById(`sf-phone-${storeId}`).value.trim();
+  const helpdesk       = document.getElementById(`sf-helpdesk-${storeId}`).value.trim();
+  const dmEmail        = document.getElementById(`sf-dm-${storeId}`).value.trim();
+  const recapEmail     = document.getElementById(`sf-recap-${storeId}`).value.trim();
   const repliesEnabled = document.getElementById(`sf-replies-${storeId}`).checked;
   if (!name) { alert("Manager name is required."); return; }
   try {
@@ -422,6 +434,8 @@ window.saveStore = async function(storeId) {
       managerName:    name,
       managerPhone:   phone,
       helpdeskPhone:  helpdesk,
+      dmEmail:        dmEmail,
+      recapEmail:     recapEmail,
       repliesEnabled: repliesEnabled,
       pin:            cur.pin || "0000",
       infoUpdatedAt:  serverTimestamp()
@@ -1061,8 +1075,11 @@ function renderEmployees() {
     container.innerHTML = '<div class="empty">No employees found.</div>';
     return;
   }
-  const titleOptions = ["Parts Specialist","RSS","ISS","Assistant","Driver"];
-  container.innerHTML = filtEmployees.map(e => `
+  const TITLES = ["Parts Specialist","RSS","ISS","Assistant","Driver","Merchandiser","Store Manager"];
+  container.innerHTML = filtEmployees.map(e => {
+    // Include the employee's current role even if it's not in the standard list
+    const titleList = (e.role && !TITLES.includes(e.role)) ? [e.role, ...TITLES] : TITLES;
+    return `
     <div class="emp-wrap">
       <div class="emp-item">
         <div style="flex:1;min-width:0;">
@@ -1084,7 +1101,7 @@ function renderEmployees() {
           <div class="edit-field">
             <label class="field-label">Title</label>
             <select id="ee-role-${esc(e.id)}" style="padding:8px 10px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:14px;background:var(--paper);color:var(--ink);width:100%;">
-              ${titleOptions.map(t => `<option value="${t}"${e.role===t?' selected':''}>${t}</option>`).join("")}
+              ${titleList.map(t => `<option value="${t}"${e.role===t?' selected':''}>${t}</option>`).join("")}
             </select>
           </div>
           <div class="edit-field">
@@ -1101,7 +1118,8 @@ function renderEmployees() {
           <button class="btn btn-sm btn-outline" onclick="editEmployee('${esc(e.id)}')">Cancel</button>
         </div>
       </div>
-    </div>`).join("") +
+    </div>`;
+  }).join("") +
     (allEmployees.length > filtEmployees.length
       ? `<div class="empty" style="padding:10px 0;">Filtered — ${filtEmployees.length} of ${allEmployees.length} employees</div>` : "");
 }
