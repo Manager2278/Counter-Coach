@@ -71,6 +71,9 @@ window.showManagerSetup = () => {
   el("reg-code-wrap").classList.remove("show");
   el("mgr-lock-notice").classList.remove("show");
   el("setup-desc").textContent = "Enter your store number to check if it exists.";
+  const storeField = el("mgr-store");
+  storeField.readOnly = false;
+  storeField.classList.remove("mgr-locked");
   ["mgr-name", "mgr-phone", "mgr-helpdesk"].forEach(id => {
     el(id).readOnly = false;
     el(id).classList.remove("mgr-locked");
@@ -117,6 +120,10 @@ async function checkStoreExists(s) {
       el("mgr-name").value     = d.managerName   || "";
       el("mgr-phone").value    = d.managerPhone   || "";
       el("mgr-helpdesk").value = d.helpdeskPhone  || "";
+      // Lock store number + all manager fields until PIN is entered
+      const storeField = el("mgr-store");
+      storeField.readOnly = true;
+      storeField.classList.add("mgr-locked");
       ["mgr-name", "mgr-phone", "mgr-helpdesk"].forEach(id => {
         el(id).readOnly = true;
         el(id).classList.add("mgr-locked");
@@ -151,7 +158,7 @@ window.onNbStoreInput = () => {
 async function loadNbRoster(s) {
   const sel = el("nb-name");
   try {
-    const snap = await getDocs(query(collection(db,"employees"), where("store","==",s)));
+    const snap = await getDocs(collection(db, "stores", s, "employees"));
     const available = snap.docs.filter(d => !d.data().loggedIn).map(d => d.data().name).sort((a,b) => a.localeCompare(b));
     if (snap.empty) {
       sel.innerHTML = '<option value="">— No roster found — ask your manager to add you —</option>';
@@ -224,6 +231,10 @@ window.unlockMgrFields = async () => {
       showErr("mgr-err", "Incorrect PIN — cannot unlock.");
       return;
     }
+    // Unlock store number + all manager fields
+    const storeField = el("mgr-store");
+    storeField.readOnly = false;
+    storeField.classList.remove("mgr-locked");
     ["mgr-name", "mgr-phone", "mgr-helpdesk"].forEach(id => {
       el(id).readOnly = false;
       el(id).classList.remove("mgr-locked");
@@ -326,10 +337,7 @@ Object.keys(Q).forEach(k => {
   const q = Q[k];
   if (q.yes[0] === "CALL") {
     const key = "callManager_" + encodeURIComponent(q.yes[1]);
-    window[key] = () => {
-      if (!name) { pendingAction = () => window[key](); showNameBanner("Who's calling? Enter your info first"); return; }
-      callManager(q.yes[1]);
-    };
+    window[key] = () => callManager(q.yes[1]);
   }
 });
 window.noCall = (reasonEncoded) => {

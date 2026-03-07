@@ -295,8 +295,10 @@ exports.onEmployeeMessageReplied = onDocumentUpdated(
       .collection("employees").where("name", "==", after.from).limit(1).get();
     if (empSnap.empty) return;
 
-    const empEmail = empSnap.docs[0].data().empEmail;
+    const emp = empSnap.docs[0].data();
+    const empEmail = emp.empEmail;
     if (!empEmail) return;
+    if (emp.notifyMessages === false) return;
 
     const replyText = (after.reply?.text || "").slice(0, 200);
     await sendEmail(
@@ -304,6 +306,43 @@ exports.onEmployeeMessageReplied = onDocumentUpdated(
       "Counter Coach — Manager replied to your message",
       `Your manager replied to your message:\n\n"${replyText}"\n\nLog in at countercoach.app to view the full reply.`
     ).catch(e => console.error("onEmployeeMessageReplied email error:", e));
+  }
+);
+
+/**
+ * onEmployeeEntryCreated
+ * When a log entry is created, email any employee at that store
+ * who has notifyEntries:true and empEmail set.
+ * Listens on: stores/{storeId}/entries/{entryId}
+ */
+exports.onEmployeeEntryCreated = onDocumentCreated(
+  "stores/{storeId}/entries/{entryId}", async event => {
+    const d       = event.data?.data() || {};
+    const storeId = event.params.storeId;
+    if (!storeId) return;
+
+    const empSnap = await db.collection("stores").doc(storeId)
+      .collection("employees").get();
+    if (empSnap.empty) return;
+
+    const typeEmoji  = { progress: "📈", issue: "⚠️", note: "📝" };
+    const typeLabel  = { progress: "Progress", issue: "Issue/Flag", note: "Note" };
+    const entryType  = d.type || "progress";
+    const subject    = `${typeEmoji[entryType] || "📋"} New Log Entry — Store ${storeId}`;
+    const body       = `A new ${typeLabel[entryType] || entryType} entry was added by ${d.author || "an employee"} at Store ${storeId}.\n\n"${(d.text || "").slice(0, 300)}"\n\nLog in at countercoach.app to view the full logbook.`;
+
+    const sends = [];
+    empSnap.docs.forEach(empDoc => {
+      const emp = empDoc.data();
+      // Skip the author themselves, and only send if opted in
+      if (!emp.empEmail)            return;
+      if (emp.notifyEntries === false) return;
+      if (emp.name === d.author)    return;
+      sends.push(sendEmail(emp.empEmail, subject, body).catch(e =>
+        console.error("onEmployeeEntryCreated email error:", e)
+      ));
+    });
+    await Promise.all(sends);
   }
 );
 
@@ -322,8 +361,10 @@ exports.onEmployeeCoachingCreated = onDocumentCreated(
       .collection("employees").where("name", "==", d.name).limit(1).get();
     if (empSnap.empty) return;
 
-    const empEmail = empSnap.docs[0].data().empEmail;
+    const emp = empSnap.docs[0].data();
+    const empEmail = emp.empEmail;
     if (!empEmail) return;
+    if (emp.notifyCoaching === false) return;
 
     const typeLabel = {
       verbal: "Verbal", written: "Written", final: "Final Written",

@@ -266,6 +266,42 @@ window.saveStoreSettings = async function() {
   } catch(e) { alert("Error saving settings: " + e.message); }
 };
 
+// ── EMPLOYEE SETTINGS ─────────────────────────────────────────
+async function loadEmpSettings() {
+  if (!store || !name) return;
+  try {
+    const snap = await getDocs(
+      query(collection(db, "stores", store, "employees"), where("name", "==", name))
+    );
+    if (snap.empty) return;
+    const d = snap.docs[0].data();
+    el("emp-settings-email").value           = d.empEmail          || "";
+    el("emp-notify-entries").checked         = d.notifyEntries     !== false;
+    el("emp-notify-messages").checked        = d.notifyMessages    !== false;
+    el("emp-notify-coaching").checked        = d.notifyCoaching    !== false;
+  } catch(e) { console.warn("loadEmpSettings:", e); }
+}
+
+window.saveEmpSettings = async function() {
+  if (!store || !name) return;
+  const email        = el("emp-settings-email").value.trim();
+  const notifyEntries  = el("emp-notify-entries").checked;
+  const notifyMessages = el("emp-notify-messages").checked;
+  const notifyCoaching = el("emp-notify-coaching").checked;
+  const okEl = el("emp-settings-ok");
+  try {
+    const snap = await getDocs(
+      query(collection(db, "stores", store, "employees"), where("name", "==", name))
+    );
+    if (snap.empty) { alert("Could not find your employee record. Contact your manager."); return; }
+    const updates = { notifyEntries, notifyMessages, notifyCoaching };
+    if (email) updates.empEmail = email;
+    await updateDoc(snap.docs[0].ref, updates);
+    okEl.classList.add("show");
+    setTimeout(() => okEl.classList.remove("show"), 2500);
+  } catch(e) { alert("Error saving settings: " + e.message); }
+};
+
 function fireRecapNotif(type, payload) {
   if (!recapEmail) return;
   if (type === "entry"   && !notifyEntry)    return;
@@ -292,7 +328,7 @@ function goScreen(s) {
   const nb = el("nav-"+s);    if (nb) nb.classList.add("on");
 }
 window.goScreen = goScreen;
-window.goBack   = () => { window.location.href = "index.html"; };
+window.goBack   = () => { window.location.href = "/coach"; };
 
 window.navTo = (dest) => {
   if (dest === "mgr" && !mgrLoggedIn) {
@@ -316,6 +352,7 @@ window.navTo = (dest) => {
   } else {
     goScreen(dest);
     if (dest === "coaching") loadMyCoaching();
+    if (dest === "settings") loadEmpSettings();
   }
 };
 
@@ -865,6 +902,7 @@ async function loadBranding() {
     if (data.appName) {
       document.title = "Daily Recap · " + data.appName;
       el("topbar-back-btn").textContent = "← " + data.appName;
+      el("topbar-back-btn").href = "/coach";
     }
     if (data.logoUrl) {
       el("topbar-logo-img").src = data.logoUrl;

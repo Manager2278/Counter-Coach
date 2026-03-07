@@ -35,11 +35,12 @@
       }
     ],
     "rewrites": [
-      { "source": "/hub", "destination": "/cc-hub.html" },
-      { "source": "/login", "destination": "/clogin.html" },
-      { "source": "/coaching", "destination": "/coaching.html" },
-      { "source": "/recap", "destination": "/recap.html" },
-      { "source": "/rules", "destination": "/rules.html" }
+      { "source": "/hub",      "destination": "/cc-hub.html"  },
+      { "source": "/login",    "destination": "/clogin.html"  },
+      { "source": "/coaching", "destination": "/coaching.html"},
+      { "source": "/coach",    "destination": "/coach.html"   },
+      { "source": "/rules",    "destination": "/rules.html"   },
+      { "source": "/**",       "destination": "/recap.html"   }
     ]
   }
 }
