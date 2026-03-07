@@ -328,8 +328,27 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
       <select id="ns-name" style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
         <option value="">— Enter store # first —</option>
       </select>
+      <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Counter / Badge #</label>
+      <input type="password" id="ns-counter" inputmode="numeric" placeholder="Your counter or badge number"
+        style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
+      <label class="field-label" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);display:block;margin-bottom:4px;">Email <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional — for reply notifications)</span></label>
+      <input type="email" id="ns-email" placeholder="your@email.com"
+        style="width:100%;padding:11px 13px;border:1.5px solid var(--ruled);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:12px;">
 <div id="ns-err" style="color:var(--red);font-size:13px;margin-bottom:10px;display:none;"></div>
       <button onclick="noSessionLogin()" class="btn-goto" style="width:100%;display:block;">Enter Store →</button>
+
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--ruled);text-align:center;">
+        <button onclick="showMgrLoginForm()"
+          style="background:none;border:none;color:var(--ink-faint);font-size:13px;cursor:pointer;font-family:'Karla',sans-serif;text-decoration:underline;">
+          Manager Login →
+        </button>
+        <div id="mgr-login-form" style="display:none;margin-top:12px;">
+          <input type="password" id="ns-mgr-pin" inputmode="numeric" placeholder="Manager PIN"
+            style="width:100%;padding:11px 13px;border:1.5px solid var(--forest);border-radius:8px;font-family:'Karla',sans-serif;font-size:15px;background:var(--paper);color:var(--ink);margin-bottom:10px;"
+            onkeydown="if(event.key==='Enter') mgrLoginFromForm()">
+          <button onclick="mgrLoginFromForm()" class="btn-goto" style="width:100%;display:block;">Unlock →</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -340,29 +359,6 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <div>
       <div class="page-title">📋 Daily Logbook</div>
       <div class="page-date" id="log-date"></div>
-    </div>
-    <button title="Notification Settings" onclick="toggleEmpNotifPanel()"
-      style="background:none;border:none;font-size:22px;cursor:pointer;padding:4px 6px;line-height:1;">🔔</button>
-  </div>
-
-  <!-- Employee push notification panel -->
-  <div id="emp-notif-panel" class="compose-box" style="display:none;margin:0 0 10px;">
-    <div class="compose-title">🔔 Push Notifications</div>
-    <label class="replies-toggle-row" style="margin-top:8px;">
-      <input type="checkbox" id="emp-push-cb" onchange="toggleEmpPush()">
-      Enable push notifications on this device
-    </label>
-    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--ruled);">
-      <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--ink-faint);">Notify me about:</div>
-      <label class="replies-toggle-row">
-        <input type="checkbox" id="emp-notif-entries" checked>
-        New log entries at my store
-      </label>
-      <div style="font-size:11px;color:var(--ink-faint);margin:4px 0 8px 24px;">
-        Manager replies and coaching records are always included.
-      </div>
-      <button class="btn btn-sm btn-green" onclick="saveEmpNotifPrefs()">Save Preferences</button>
-      <div id="emp-notif-prefs-ok" style="display:none;font-size:13px;color:#2e7d32;font-weight:700;margin-top:6px;">✅ Saved</div>
     </div>
   </div>
 
@@ -442,11 +438,10 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   <div class="mgr-tabs">
     <button class="mgr-tab on" onclick="setMgrTab('inbox',this)">📬 Inbox <span class="inbox-cnt hidden" id="inbox-cnt"></span></button>
     <button class="mgr-tab"    onclick="setMgrTab('all-log',this)">📋 All Entries</button>
-    <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 Setup QR</button>
+    <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 QR Code</button>
     <button class="mgr-tab"    onclick="setMgrTab('roster',this)">👥 Roster</button>
     <button class="mgr-tab"    onclick="setMgrTab('settings',this)">⚙️ Store Setup</button>
     <button class="mgr-tab" id="mgr-tab-feedback-btn" onclick="setMgrTab('feedback',this)">💬 Feedback</button>
-    <button class="mgr-tab" id="mgr-tab-notif-btn"   onclick="setMgrTab('notif',this)">🔔 Notifications</button>
   </div>
 
   <!-- INBOX -->
@@ -472,7 +467,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 
   <!-- QR CODE -->
   <div class="mgr-tab-pane" id="mgr-pane-qr">
-    <div class="section-head">Employee Setup QR</div>
+    <div class="section-head">Employee Login QR Code</div>
     <div class="qr-box">
       <div id="qr-canvas"></div>
       <p>Employees scan this to go directly to Store <strong id="qr-store-lbl"></strong>.<br>They just enter their name — store is pre-filled.</p>
@@ -579,35 +574,6 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     </div>
   </div>
 
-  <!-- NOTIFICATIONS -->
-  <div class="mgr-tab-pane" id="mgr-pane-notif">
-    <div class="section-head">Push Notification Settings</div>
-
-    <div id="mgr-push-toggle-row" style="margin-bottom:16px;">
-      <label style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-        <div>
-          <div style="font-weight:700;font-size:14px;">Enable Push Notifications</div>
-          <div id="mgr-push-status" style="font-size:12px;color:var(--ink-faint);margin-top:2px;">Off</div>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" id="mgr-push-toggle-cb" onchange="toggleMgrPush()">
-          <span class="toggle-slider"></span>
-        </label>
-      </label>
-    </div>
-
-    <div class="section-head" style="margin-top:0;">Notify me about:</div>
-    <label class="replies-toggle-row">
-      <input type="checkbox" id="notif-pref-entries" checked>
-      New log entries from employees
-    </label>
-    <label class="replies-toggle-row" style="margin-top:8px;">
-      <input type="checkbox" id="notif-pref-messages" checked>
-      New private messages from employees
-    </label>
-    <button class="btn btn-sm btn-green" style="margin-top:12px;" onclick="saveMgrNotifPrefs()">Save Preferences</button>
-    <div id="notif-prefs-ok" style="display:none;font-size:13px;color:#2e7d32;font-weight:700;margin-top:8px;">✅ Saved</div>
-  </div>
 </div>
 
 <!-- ═══════════════════ LIGHTBOX ══════════════════ -->

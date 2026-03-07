@@ -5,13 +5,9 @@ import { el, v, esc, ts, compressImage,
 import { saveSession, loadSession,
          saveMgrSession, loadMgrSession,
          clearMgrSession }                             from "./session.js";
-import { isPushSupported, getPushPermission,
-         enablePush, disablePush,
-         refreshToken, subscribeForeground }            from "./fcm.js";
 import { collection, addDoc, onSnapshot, deleteDoc,
          query, where, orderBy, limit, updateDoc, doc, getDoc,
-         getDocs, serverTimestamp, writeBatch,
-         arrayUnion, arrayRemove }                      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+         getDocs, serverTimestamp, writeBatch }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { signInAnonymously }                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { uploadBytesResumable, getDownloadURL, ref }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { httpsCallable }                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
@@ -31,11 +27,6 @@ let notifyFlagged      = true;
 let notifyMessages     = true;
 let empDocMap          = {};
 let mgrRosterData      = [];
-let unsubFcmForeground = null;
-let empPushDocId       = null;
-let pushNotifyEntries  = true;
-let pushNotifyMessages = true;
-let isManagerUser      = false;
 
 // ── INIT ──────────────────────────────────────────────────────
 (function preShowQR() {
@@ -71,10 +62,9 @@ function init() {
   if (saved && saved.store && saved.name) {
     store = saved.store;
     name  = saved.name;
-    getDocs(query(collection(db,"employees"), where("store","==",store), where("name","==",name)))
+    getDocs(query(collection(db,"stores",store,"employees"), where("name","==",name)))
       .then(snap => {
         if (!snap.empty) {
-          empPushDocId = snap.docs[0].id;
           updateDoc(snap.docs[0].ref, { loggedIn: true }).catch(()=>{});
         }
       })
@@ -116,8 +106,8 @@ async function loadNsRoster(s) {
   sel.disabled = true;
   empDocMap = {};
   try {
-    const snap = await getDocs(query(collection(db, "employees"), where("store", "==", s)));
-    snap.docs.forEach(d => { empDocMap[d.data().name] = d.id; });
+    const snap = await getDocs(collection(db, "stores", s, "employees"));
+    snap.docs.forEach(d => { empDocMap[d.data().name] = { id: d.id, memberNum: d.data().memberNum }; });
     const available = snap.docs
       .filter(d => !d.data().loggedIn)
       .map(d => d.data().name)
@@ -137,29 +127,52 @@ async function loadNsRoster(s) {
 }
 
 window.noSessionLogin = () => {
-  const s   = el("ns-store").value.trim() || store;
-  const n   = el("ns-name").value.trim();
-  const errEl = el("ns-err");
-  if (!s) { errEl.textContent = "Please enter your store number.";       errEl.style.display = "block"; return; }
-  if (!n) { errEl.textContent = "Please select your name from the list."; errEl.style.display = "block"; return; }
+  const s       = el("ns-store").value.trim() || store;
+  const n       = el("ns-name").value.trim();
+  const counter = el("ns-counter").value.trim();
+  const email   = el("ns-email")?.value.trim() || "";
+  const errEl   = el("ns-err");
+  if (!s) { errEl.textContent = "Please enter your store number."; errEl.style.display="block"; return; }
+  if (!n) { errEl.textContent = "Please select your name.";        errEl.style.display="block"; return; }
+  if (!counter) { errEl.textContent = "Please enter your counter/badge number."; errEl.style.display="block"; return; }
   errEl.style.display = "none";
-  const docId = empDocMap[n];
-  if (docId) {
-    empPushDocId = docId;
-    updateDoc(doc(db, "employees", docId), { loggedIn: true })
-      .catch(e => console.warn("loggedIn write failed:", e));
-  } else {
-    getDocs(query(collection(db,"employees"), where("store","==",s), where("name","==",n)))
-      .then(snap => {
-        if (!snap.empty) {
-          empPushDocId = snap.docs[0].id;
-          updateDoc(snap.docs[0].ref, { loggedIn: true }).catch(()=>{});
-        }
-      })
-      .catch(() => {});
+  const empData = empDocMap[n];
+  if (!empData || String(empData.memberNum) !== counter) {
+    errEl.textContent = "Counter/badge number doesn't match. Check with your manager.";
+    errEl.style.display = "block"; return;
   }
+  const docId = empData.id;
+  const updates = { loggedIn: true };
+  if (email) updates.empEmail = email;
+  updateDoc(doc(db,"stores",s,"employees",docId), updates).catch(e => console.warn(e));
   store = s; name = n;
-  saveSession({ store, name, role: "employee", managerPhone: "", helpdeskPhone: "" });
+  saveSession({ store, name, role: "employee" });
+  el("no-session").classList.remove("show");
+  bootApp();
+};
+
+window.showMgrLoginForm = function() {
+  const f = el("mgr-login-form");
+  if (f) { f.style.display = "block"; }
+  setTimeout(() => { const p = el("ns-mgr-pin"); if (p) p.focus(); }, 100);
+};
+
+window.mgrLoginFromForm = async function() {
+  const s   = el("ns-store")?.value.trim() || "";
+  const pin = el("ns-mgr-pin")?.value.trim() || "";
+  const err = el("ns-err");
+  if (!s) { if(err){err.textContent="Enter store number first.";err.style.display="block";} return; }
+  if (!pin) return;
+  try {
+    const snap = await getDoc(doc(db,"stores",s));
+    if (!snap.exists() || snap.data().pin !== pin) {
+      if(err){err.textContent="Incorrect PIN.";err.style.display="block";} return;
+    }
+  } catch(e) { if(err){err.textContent="Error: "+e.message;err.style.display="block";} return; }
+  if(err) err.style.display = "none";
+  store = s; name = "Manager"; mgrLoggedIn = true;
+  saveMgrSession({ store, on: true });
+  saveSession({ store, name: "Manager", role: "manager" });
   el("no-session").classList.remove("show");
   bootApp();
 };
@@ -171,7 +184,7 @@ window.switchUser = async function() {
   if (!confirm("Log out and switch user? Your session will end.")) return;
   try {
     const snap = await getDocs(
-      query(collection(db, "employees"), where("store","==",store), where("name","==",name))
+      query(collection(db, "stores", store, "employees"), where("name","==",name))
     );
     if (!snap.empty) await updateDoc(snap.docs[0].ref, { loggedIn: false });
   } catch(_) {}
@@ -216,20 +229,13 @@ async function loadStorePin() {
       notifyEntry       = d.notifyEntry    !== false;
       notifyFlagged     = d.notifyFlagged  !== false;
       notifyMessages    = d.notifyMessages !== false;
-      pushNotifyEntries  = d.pushNotifyEntries  !== false;
-      pushNotifyMessages = d.pushNotifyMessages !== false;
-      // Show Manager nav button only for the manager (or if no managerName set, show for all)
-      const mgrName = (d.managerName || "").trim().toLowerCase();
-      isManagerUser = !mgrName || mgrName === name.trim().toLowerCase();
     }
   } catch(e) { console.error("loadStorePin:", e); }
 }
 
-/** Show/hide the 🔑 Manager nav button based on whether this user is the manager */
 function _updateMgrNavBtn() {
   const btn = el("nav-mgr");
-  if (!btn) return;
-  btn.style.display = (isManagerUser || mgrLoggedIn) ? "" : "none";
+  if (btn) btn.style.display = mgrLoggedIn ? "" : "none";
 }
 
 async function loadStoreSettings() {
@@ -239,9 +245,6 @@ async function loadStoreSettings() {
   el("notify-entry").checked       = notifyEntry;
   el("notify-flagged").checked     = notifyFlagged;
   el("notify-messages").checked    = notifyMessages;
-  if (el("notif-pref-entries"))  el("notif-pref-entries").checked  = pushNotifyEntries;
-  if (el("notif-pref-messages")) el("notif-pref-messages").checked = pushNotifyMessages;
-  _updateMgrPushToggle();
 }
 
 window.saveStoreSettings = async function() {
@@ -342,7 +345,6 @@ window.bannerLogin = async () => {
   el("b-err").classList.remove("show");
   el("b-pin").value = "";
   mgrLoggedIn = true;
-  isManagerUser = true;
   saveMgrSession({ store, on: true });
   el("tb-user").textContent = name + " 🔑";
   _updateMgrNavBtn();
@@ -358,17 +360,6 @@ function activateMgrPanel() {
   buildQR();
   listenMgrEntries();
   listenMgrInbox();
-
-  // FCM: refresh token + subscribe foreground
-  const _saveMgr = t => updateDoc(doc(db,"stores",store), { mgrPushTokens: arrayUnion(t) });
-  refreshToken(_saveMgr).catch(() => {});
-  if (unsubFcmForeground) { unsubFcmForeground(); unsubFcmForeground = null; }
-  unsubFcmForeground = subscribeForeground(p => {
-    const b = p.notification?.body  || p.data?.body  || "";
-    const t = p.notification?.title || p.data?.title || "Counter Coach";
-    console.log("FCM foreground:", t, b);
-  });
-  _updateMgrPushToggle();
 }
 
 window.logoutMgr = () => {
@@ -377,53 +368,11 @@ window.logoutMgr = () => {
   el("tb-user").textContent = name;
   if (unsubMgrEntries)    { unsubMgrEntries();    unsubMgrEntries    = null; }
   if (unsubMgrMsgs)       { unsubMgrMsgs();       unsubMgrMsgs       = null; }
-  if (unsubFcmForeground) { unsubFcmForeground(); unsubFcmForeground = null; }
   el("mgr-dot").classList.remove("show");
   _updateMgrNavBtn();
   goScreen("log");
 };
 
-// ── MANAGER PUSH NOTIFICATION HELPERS ────────────────────────
-function _updateMgrPushToggle() {
-  const row = el("mgr-push-toggle-row");
-  if (!row) return;
-  if (!isPushSupported()) { row.style.display = "none"; return; }
-  const perm = getPushPermission();
-  const cb = el("mgr-push-toggle-cb");
-  if (cb) cb.checked = perm === "granted";
-  const statusEl = el("mgr-push-status");
-  if (statusEl) statusEl.textContent =
-    perm === "granted" ? "Enabled" :
-    perm === "denied"  ? "Blocked in browser settings" : "Off";
-}
-
-window.toggleMgrPush = async function() {
-  const cb      = el("mgr-push-toggle-cb");
-  const _save   = t => updateDoc(doc(db,"stores",store), { mgrPushTokens: arrayUnion(t)  });
-  const _remove = t => updateDoc(doc(db,"stores",store), { mgrPushTokens: arrayRemove(t) });
-  if (cb.checked) {
-    const r = await enablePush(_save);
-    if (r !== "granted") {
-      cb.checked = false;
-      if (r === "denied") alert("Allow notifications in browser settings then try again.");
-    }
-  } else {
-    await disablePush(_remove);
-  }
-  _updateMgrPushToggle();
-};
-
-window.saveMgrNotifPrefs = async function() {
-  const entries  = el("notif-pref-entries")?.checked  ?? true;
-  const messages = el("notif-pref-messages")?.checked ?? true;
-  try {
-    await updateDoc(doc(db,"stores",store), { pushNotifyEntries: entries, pushNotifyMessages: messages });
-    pushNotifyEntries  = entries;
-    pushNotifyMessages = messages;
-    const ok = el("notif-prefs-ok");
-    if (ok) { ok.style.display = "block"; setTimeout(() => ok.style.display = "none", 2500); }
-  } catch(e) { console.error("saveMgrNotifPrefs:", e); }
-};
 
 // ── PHOTO ATTACH TO EXISTING ENTRY ───────────────────────────
 window.attachPhotoToEntry = async (entryId, input) => {
@@ -432,7 +381,7 @@ window.attachPhotoToEntry = async (entryId, input) => {
   const label = input.previousElementSibling;
   label.textContent = "Uploading…";
   try {
-    const snap    = await getDoc(doc(db, "entries", entryId));
+    const snap    = await getDoc(doc(db, "stores", store, "entries", entryId));
     const cur     = snap.data() || {};
     const existing = cur.photos && cur.photos.length ? cur.photos
                    : cur.photoURL ? [cur.photoURL] : [];
@@ -441,7 +390,7 @@ window.attachPhotoToEntry = async (entryId, input) => {
     const toUpload = files.slice(0, slots);
     const newUrls = await Promise.all(toUpload.map((f, i) => uploadPhoto(f, entryId, existing.length + i)));
     const urls = [...existing, ...newUrls];
-    await updateDoc(doc(db,"entries",entryId), { photos: urls, photoURL: urls[0] });
+    await updateDoc(doc(db,"stores",store,"entries",entryId), { photos: urls, photoURL: urls[0] });
   } catch(e) {
     alert("Upload error: " + e.message);
     label.textContent = "📷 Add Photo";
@@ -530,7 +479,7 @@ window.addEntry = async () => {
   if (pendingPhotoFiles.length) { barWrap.classList.add("show"); bar.style.width = "0%"; }
 
   try {
-    const docRef = await addDoc(collection(db,"entries"), {
+    const docRef = await addDoc(collection(db,"stores",store,"entries"), {
       store, author: name, text: txt, type,
       status: "open", time: Date.now(), ts: serverTimestamp(),
       photos: [], photoURL: null
@@ -559,19 +508,19 @@ window.addEntry = async () => {
 
 window.toggleDone = async (id, cur) => {
   const next = cur === "complete" ? "open" : "complete";
-  await updateDoc(doc(db,"entries",id), { status: next }).catch(e => alert(e.message));
+  await updateDoc(doc(db,"stores",store,"entries",id), { status: next }).catch(e => alert(e.message));
 };
 
 window.confirmClear = async (id) => {
   if (!confirm("Clear this completed entry from the log?")) return;
-  await deleteDoc(doc(db,"entries",id)).catch(e => alert(e.message));
+  await deleteDoc(doc(db,"stores",store,"entries",id)).catch(e => alert(e.message));
 };
 
 window.confirmAllDone = async () => {
   if (!confirm("Clear ALL completed entries? This cannot be undone.")) return;
   const batch = writeBatch(db);
   allEntriesMgr.filter(e => e.status === "complete")
-                .forEach(e => batch.delete(doc(db,"entries",e.id)));
+                .forEach(e => batch.delete(doc(db,"stores",store,"entries",e.id)));
   await batch.commit().catch(e => alert(e.message));
 };
 
@@ -583,10 +532,10 @@ window.setFilter = (f, btn) => {
 };
 
 function _entriesQuery() {
-  return query(collection(db,"entries"), where("store","==",store), orderBy("time","desc"), limit(200));
+  return query(collection(db,"stores",store,"entries"), orderBy("time","desc"), limit(200));
 }
 function _entriesQueryFallback() {
-  return query(collection(db,"entries"), where("store","==",store));
+  return collection(db,"stores",store,"entries");
 }
 
 function listenEntries() {
@@ -720,7 +669,7 @@ function updateStats() {
 window.sendMsg = async () => {
   const txt = v("msg-text"); if (!txt) return;
   try {
-    await addDoc(collection(db,"messages"), {
+    await addDoc(collection(db,"stores",store,"messages"), {
       store, from: name, text: txt,
       time: Date.now(), ts: serverTimestamp(), read: false
     });
@@ -733,8 +682,7 @@ async function loadMyCoaching() {
   const listEl = el("coaching-list");
   listEl.innerHTML = '<div style="text-align:center;padding:36px 0;color:var(--ink-faint);font-size:14px;">Loading\u2026</div>';
   try {
-    const q    = query(collection(db,"coaching"),
-                       where("store","==",store),
+    const q    = query(collection(db,"stores",store,"coaching"),
                        where("name","==",name));
     const snap = await getDocs(q);
     if (snap.empty) {
@@ -784,8 +732,8 @@ async function loadMyCoaching() {
 
 function listenMyMsgs() {
   if (unsubMsgs) unsubMsgs();
-  const q = query(collection(db,"messages"),
-    where("store","==",store), where("from","==",name));
+  const q = query(collection(db,"stores",store,"messages"),
+    where("from","==",name));
   unsubMsgs = onSnapshot(q, snap => {
     myMsgs = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time);
     renderMsgs(myMsgs, "msg-list", false);
@@ -795,7 +743,7 @@ function listenMyMsgs() {
 
 function listenMgrInbox() {
   if (unsubMgrMsgs) unsubMgrMsgs();
-  const q = query(collection(db,"messages"), where("store","==",store));
+  const q = collection(db,"stores",store,"messages");
   unsubMgrMsgs = onSnapshot(q, snap => {
     const msgs   = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => b.time - a.time);
     const unread = msgs.filter(m => !m.read).length;
@@ -815,7 +763,7 @@ function listenMgrInbox() {
 let _lastInboxMsgs = [];
 function markMsgsRead(msgs) {
   msgs.filter(m => !m.read).forEach(m =>
-    updateDoc(doc(db,"messages",m.id),{read:true}).catch(()=>{})
+    updateDoc(doc(db,"stores",store,"messages",m.id),{read:true}).catch(()=>{})
   );
 }
 
@@ -856,7 +804,7 @@ window.sendReply = async (msgId) => {
   ta.disabled = true;
   ta.nextElementSibling.disabled = true;
   try {
-    await updateDoc(doc(db, "messages", msgId), {
+    await updateDoc(doc(db, "stores", store, "messages", msgId), {
       reply: { from: name, text: txt, time: Date.now() }
     });
   } catch(e) {
@@ -939,7 +887,7 @@ async function loadMgrRoster() {
   listEl.innerHTML = '<div class="empty">Loading…</div>';
   try {
     const snap = await getDocs(
-      query(collection(db,"employees"), where("store","==",store), orderBy("name"))
+      query(collection(db,"stores",store,"employees"), orderBy("name"))
     );
     mgrRosterData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     if (!mgrRosterData.length) {
@@ -1000,7 +948,7 @@ function renderMgrRoster() {
 
 window.saveMgrTitle = async function(id, sel) {
   try {
-    await updateDoc(doc(db,"employees",id), { role: sel.value });
+    await updateDoc(doc(db,"stores",store,"employees",id), { role: sel.value });
     const e = mgrRosterData.find(x => x.id === id);
     if (e) e.role = sel.value;
     flashRosterSaved(id);
@@ -1016,7 +964,7 @@ window.saveMgrEmployee = async function(id) {
   const newName = document.getElementById("re-name-" + id)?.value.trim();
   const newNum  = document.getElementById("re-num-"  + id)?.value.trim();
   if (!newName) { alert("Name is required."); return; }
-  await updateDoc(doc(db,"employees",id), {
+  await updateDoc(doc(db,"stores",store,"employees",id), {
     name: newName, memberNum: newNum || null
   }).catch(e => { alert("Error: " + e.message); return; });
   const e = mgrRosterData.find(x => x.id === id);
@@ -1033,7 +981,7 @@ window.addMgrEmployee = async function() {
   errEl.style.display = "none";
   if (!n) { errEl.textContent = "Name is required."; errEl.style.display = "block"; return; }
   try {
-    const ref = await addDoc(collection(db,"employees"), {
+    const ref = await addDoc(collection(db,"stores",store,"employees"), {
       store, name: n, role: title, memberNum: num || null,
       addedBy: "manager", addedAt: serverTimestamp()
     });
@@ -1047,7 +995,7 @@ window.addMgrEmployee = async function() {
 
 window.deleteMgrEmployee = async function(id, empName) {
   if (!confirm(`Remove "${empName}" from the roster? This cannot be undone.`)) return;
-  await deleteDoc(doc(db,"employees",id)).catch(e => alert("Error: " + e.message));
+  await deleteDoc(doc(db,"stores",store,"employees",id)).catch(e => alert("Error: " + e.message));
   mgrRosterData = mgrRosterData.filter(x => x.id !== id);
   renderMgrRoster();
 };
@@ -1066,61 +1014,6 @@ function flashRosterSaved(id) {
   setTimeout(() => savedEl.classList.remove("show"), 2000);
 }
 
-// ── EMPLOYEE PUSH NOTIFICATION HELPERS ───────────────────────
-function _updateEmpPushBtn() {
-  const cb = el("emp-push-cb");
-  if (!cb || !isPushSupported()) return;
-  cb.checked = getPushPermission() === "granted";
-}
-
-window.toggleEmpPush = async function() {
-  const cb      = el("emp-push-cb");
-  const _save   = t => empPushDocId
-    ? updateDoc(doc(db,"employees",empPushDocId), { pushToken: t }) : Promise.resolve();
-  const _remove = () => empPushDocId
-    ? updateDoc(doc(db,"employees",empPushDocId), { pushToken: "" }) : Promise.resolve();
-  if (cb.checked) {
-    const r = await enablePush(_save);
-    if (r !== "granted") {
-      cb.checked = false;
-      if (r === "denied") alert("Allow notifications in browser settings to receive replies and coaching alerts.");
-    }
-  } else {
-    await disablePush(_remove);
-  }
-  _updateEmpPushBtn();
-};
-
-window.saveEmpNotifPrefs = async function() {
-  if (!empPushDocId) return;
-  const notifyEntries = el("emp-notif-entries")?.checked ?? false;
-  try {
-    await updateDoc(doc(db,"employees",empPushDocId), { empPushNotifyEntries: notifyEntries });
-    const ok = el("emp-notif-prefs-ok");
-    if (ok) { ok.style.display = "block"; setTimeout(() => ok.style.display = "none", 2000); }
-  } catch(e) { console.error("saveEmpNotifPrefs:", e); }
-};
-
-async function _loadEmpPushPrefs() {
-  if (!empPushDocId) return;
-  try {
-    const snap = await getDoc(doc(db,"employees",empPushDocId));
-    if (!snap.exists()) return;
-    const d = snap.data();
-    const cb = el("emp-push-cb");
-    if (cb) cb.checked = !!d.pushToken && getPushPermission() === "granted";
-    const entCb = el("emp-notif-entries");
-    if (entCb) entCb.checked = d.empPushNotifyEntries !== false;
-  } catch(e) { console.warn("_loadEmpPushPrefs:", e); }
-}
-
-window.toggleEmpNotifPanel = function() {
-  const panel = el("emp-notif-panel");
-  if (!panel) return;
-  const shown = panel.style.display === "block";
-  panel.style.display = shown ? "none" : "block";
-  if (!shown) { _updateEmpPushBtn(); _loadEmpPushPrefs(); }
-};
 
 // ── APP CONFIG CHECK ──────────────────────────────────────────
 async function checkAppConfig() {

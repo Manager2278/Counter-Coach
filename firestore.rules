@@ -14,32 +14,48 @@ service cloud.firestore {
                     && request.resource.data.pin is string
                     && request.resource.data.pin.size() >= 4;
       allow delete: if false;
-    }
 
-    // ── ENTRIES ─────────────────────────────────────────────
-    match /entries/{entryId} {
-      allow read:   if request.auth != null;
-      allow create: if request.auth != null
-                    && request.resource.data.keys().hasAll(['store','author','text','type','status','time'])
-                    && request.resource.data.status == 'open'
-                    && request.resource.data.text is string
-                    && request.resource.data.text.size() > 0
-                    && request.resource.data.text.size() <= 2000;
-      allow update: if request.auth != null
-                    && request.resource.data.store == resource.data.store;
-      allow delete: if request.auth != null;
-    }
+      // ── EMPLOYEES (subcollection) ───────────────────────
+      match /employees/{empId} {
+        allow read, write: if request.auth != null;
+      }
 
-    // ── MESSAGES ────────────────────────────────────────────
-    match /messages/{messageId} {
-      allow read:   if request.auth != null;
-      allow create: if request.auth != null
-                    && request.resource.data.keys().hasAll(['store','from','text','time'])
-                    && request.resource.data.text is string
-                    && request.resource.data.text.size() > 0
-                    && request.resource.data.text.size() <= 5000;
-      allow update: if request.auth != null;
-      allow delete: if request.auth != null;
+      // ── ENTRIES (subcollection) ─────────────────────────
+      match /entries/{entryId} {
+        allow read:   if request.auth != null;
+        allow create: if request.auth != null
+                      && request.resource.data.keys().hasAll(['store','author','text','type','status','time'])
+                      && request.resource.data.status == 'open'
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() > 0
+                      && request.resource.data.text.size() <= 2000;
+        allow update: if request.auth != null
+                      && request.resource.data.store == resource.data.store;
+        allow delete: if request.auth != null;
+      }
+
+      // ── MESSAGES (subcollection) ────────────────────────
+      match /messages/{messageId} {
+        allow read:   if request.auth != null;
+        allow create: if request.auth != null
+                      && request.resource.data.keys().hasAll(['store','from','text','time'])
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() > 0
+                      && request.resource.data.text.size() <= 5000;
+        allow update: if request.auth != null;
+        allow delete: if request.auth != null;
+      }
+
+      // ── COACHING (subcollection) ────────────────────────
+      match /coaching/{coachId} {
+        allow read:   if request.auth != null;
+        allow create: if request.auth != null
+                      && request.resource.data.keys().hasAll(['store','manager','name','type','savedAt'])
+                      && request.resource.data.name is string
+                      && request.resource.data.name.size() > 0;
+        allow update: if request.auth != null;
+        allow delete: if request.auth != null;
+      }
     }
 
     // ── ADMIN ─────────────────────────────────────────────────
@@ -66,24 +82,6 @@ service cloud.firestore {
     // ── AUDIT LOG ────────────────────────────────────────────
     // Written by admin hub on key actions; read by admin only.
     match /audit_log/{logId} {
-      allow read, write: if request.auth != null;
-    }
-
-    // ── COACHING ─────────────────────────────────────────────
-    // Manager creates records; employees update to add their signature.
-    match /coaching/{docId} {
-      allow read:   if request.auth != null;
-      allow create: if request.auth != null
-                    && request.resource.data.keys().hasAll(['store','manager','name','type','savedAt'])
-                    && request.resource.data.name is string
-                    && request.resource.data.name.size() > 0;
-      allow update: if request.auth != null;
-      allow delete: if request.auth != null;
-    }
-
-    // ── EMPLOYEES ────────────────────────────────────────────
-    // Store managers add/remove employees for name autocomplete.
-    match /employees/{empId} {
       allow read, write: if request.auth != null;
     }
 
