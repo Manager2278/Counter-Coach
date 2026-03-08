@@ -250,15 +250,18 @@ async function bootApp() {
   el("log-date").textContent = new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
   el("banner-store").textContent = store;
 
-  goScreen("log");
   listenEntries();
   listenMyMsgs();
 
   await loadStorePin();
-  _updateMgrNavBtn();
 
   if (mgrLoggedIn) {
+    applyRoleUI(true);
     activateMgrPanel();
+    goScreen("mgr");   // managers land on manager panel
+  } else {
+    applyRoleUI(false);
+    goScreen("log");   // employees land on logbook
   }
 }
 
@@ -279,9 +282,20 @@ async function loadStorePin() {
   } catch(e) { console.error("loadStorePin:", e); }
 }
 
+// ── ROLE-BASED UI ─────────────────────────────────────────────
+// Show/hide nav items based on role. To add a new role-specific nav
+// item, just set data-role="employee" or data-role="manager" on it.
+function applyRoleUI(isManager) {
+  document.querySelectorAll("[data-role='employee']").forEach(btn => {
+    btn.style.display = isManager ? "none" : "";
+  });
+  document.querySelectorAll("[data-role='manager']").forEach(btn => {
+    btn.style.display = isManager ? "" : "none";
+  });
+}
+
 function _updateMgrNavBtn() {
-  const btn = el("nav-mgr");
-  if (btn) btn.style.display = mgrLoggedIn ? "" : "none";
+  applyRoleUI(mgrLoggedIn);
 }
 
 async function loadStoreSettings() {
@@ -409,6 +423,10 @@ window.goScreen = goScreen;
 window.goBack   = () => { window.location.href = "/coach"; };
 
 window.navTo = (dest) => {
+  // Role guards — prevent cross-role navigation
+  if (mgrLoggedIn && ["settings", "msg", "coaching"].includes(dest)) {
+    goScreen("mgr"); return;
+  }
   if (dest === "mgr" && !mgrLoggedIn) {
     document.querySelectorAll(".screen").forEach(x => x.classList.remove("active"));
     document.querySelectorAll(".nav-btn").forEach(x => x.classList.remove("on"));
@@ -462,7 +480,7 @@ window.bannerLogin = async () => {
   mgrLoggedIn = true;
   saveMgrSession({ store, on: true });
   el("tb-user").textContent = name + " 🔑";
-  _updateMgrNavBtn();
+  applyRoleUI(true);
   activateMgrPanel();
   goScreen("mgr");
 };
@@ -487,7 +505,7 @@ window.logoutMgr = () => {
   if (unsubMgrEntries)    { unsubMgrEntries();    unsubMgrEntries    = null; }
   if (unsubMgrMsgs)       { unsubMgrMsgs();       unsubMgrMsgs       = null; }
   el("mgr-dot").classList.remove("show");
-  _updateMgrNavBtn();
+  applyRoleUI(false);
   goScreen("log");
 };
 
