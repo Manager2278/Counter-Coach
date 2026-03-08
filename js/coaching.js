@@ -7,7 +7,7 @@ import { el, esc }                           from "./utils.js";
 import { loadSession as getSession,
          loadMgrSession, saveSession }        from "./session.js";
 import { getFirestore, doc, getDoc, addDoc, updateDoc, deleteDoc,
-         collection, query, where, orderBy, getDocs,
+         collection, query, where, orderBy, getDocs, onSnapshot,
          serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { signInAnonymously }                 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFunctions, httpsCallable }       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
@@ -120,7 +120,7 @@ function init() {
   mgrPad = new SigPad(el("mgr-sig"));
 
   updateKioskQR();
-  loadRoster();
+  listenRoster();
   loadDashData();
   loadLevelPreview();
 }
@@ -743,16 +743,21 @@ window.rvEmailPDF = async function() {
 
 // ── EMPLOYEE ROSTER ───────────────────────────────────────────
 let roster = [];
+let unsubRoster = null;
 
-async function loadRoster() {
+// Real-time roster listener — stays in sync with manager panel changes
+function listenRoster() {
   if (!store) return;
-  try {
-    const snap = await getDocs(collection(db,"stores",store,"employees"));
-    roster = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    roster.sort((a,b) => a.name.localeCompare(b.name));
-    updateDropdown();
-    renderRoster();
-  } catch(e) { console.warn("loadRoster:", e); }
+  if (unsubRoster) unsubRoster();
+  unsubRoster = onSnapshot(
+    query(collection(db, "stores", store, "employees"), orderBy("name")),
+    snap => {
+      roster = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      updateDropdown();
+      renderRoster();
+    },
+    e => console.error("roster snapshot:", e)
+  );
 }
 
 function updateDropdown() {
@@ -775,51 +780,86 @@ function updateDropdown() {
 
 function renderRoster() {
   const c = el("roster-list");
-  if (!roster.length) { c.innerHTML = '<div class="empty">No employees added yet.</div>'; return; }
+  if (!c) return;
+  if (!roster.length) {
+    c.innerHTML = '<div class="empty">No employees on roster. Add them from the Manager Panel.</div>';
+    return;
+  }
   c.innerHTML = roster.map(e => `
     <div class="roster-item">
-      <div>
-        <div class="roster-name">${esc(e.name)}</div>
-        ${e.role ? `<div class="roster-role">${esc(e.role)}</div>` : ""}
-        ${e.memberNum ? `<div class="roster-role">#${esc(e.memberNum)}</div>` : ""}
+      <div class="roster-row">
+        <div style="flex:1;min-width:0;">
+          <div class="roster-name">${esc(e.name || "—")}</div>
+          ${e.role      ? `<div class="roster-meta">${esc(e.role)}</div>`       : ""}
+          ${e.memberNum ? `<div class="roster-meta">#${esc(e.memberNum)}</div>` : ""}
+        </div>
+        <button class="btn-action btn-action-coach"
+          onclick="startCoach('${esc(e.id)}','${esc(e.name)}','${esc(e.memberNum||'')}')">
+          &#x1F4CB; Coach
+        </button>
+        <button class="btn-action"
+          onclick="toggleRosterEditCoach('${esc(e.id)}')">
+          &#x270F;&#xFE0F; Edit
+        </button>
+        <button class="btn-action btn-action-red"
+          onclick="removeEmployee('${esc(e.id)}','${esc(e.name)}')">
+          &#x1F5D1;&#xFE0F; Delete
+        </button>
       </div>
-      <button class="btn-remove" onclick="removeEmployee('${e.id}','${esc(e.name)}')" title="Remove">&#x2715;</button>
+      <div class="roster-edit-row" id="ce-row-${esc(e.id)}">
+        <div>
+          <div class="add-label">Name</div>
+          <input type="text" class="roster-field-input" id="ce-name-${esc(e.id)}"
+            value="${esc(e.name||'')}" style="width:140px;">
+        </div>
+        <div>
+          <div class="add-label">Counter #</div>
+          <input type="text" class="roster-field-input" id="ce-num-${esc(e.id)}"
+            value="${esc(e.memberNum||'')}" style="width:110px;">
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:6px;">
+          <button class="btn-action btn-action-coach"
+            onclick="saveCoachEmp('${esc(e.id)}')">Save</button>
+          <button class="btn-action"
+            onclick="toggleRosterEditCoach('${esc(e.id)}')">Cancel</button>
+        </div>
+      </div>
     </div>
   `).join("");
 }
 
-window.addEmployee = async function() {
-  const errEl = el("emp-err");
-  errEl.classList.remove("show");
-  const name      = el("new-emp-name").value.trim();
-  const role      = el("new-emp-role").value.trim();
-  const memberNum = el("new-emp-num").value.trim();
-  if (!name) { showErr("emp-err","Name is required."); return; }
-  if (!store) { showErr("emp-err","Not logged in."); return; }
-  if (roster.some(e => e.name.toLowerCase() === name.toLowerCase())) {
-    showErr("emp-err","An employee with that name already exists."); return;
-  }
+// Pre-fill coaching form and switch to New tab
+window.startCoach = function(id, name, memberNum) {
+  const sel = el("emp-name");
+  if (sel) { sel.value = name; sel.dispatchEvent(new Event("change")); }
+  const numEl = el("emp-counter");
+  if (numEl) numEl.value = memberNum || "";
+  switchTab("new");
+  loadLevelPreview();
+};
+
+// Toggle inline edit row open/closed
+window.toggleRosterEditCoach = function(id) {
+  const row = el("ce-row-" + id);
+  if (row) row.classList.toggle("open");
+};
+
+// Save name / counter # edits — onSnapshot auto-refreshes the list
+window.saveCoachEmp = async function(id) {
+  const name      = el("ce-name-" + id)?.value.trim();
+  const memberNum = el("ce-num-" + id)?.value.trim() || "";
+  if (!name) return;
   try {
-    const ref = await addDoc(collection(db,"stores",store,"employees"), {
-      store, name, role: role || null, memberNum: memberNum || null, addedBy: managerName, addedAt: serverTimestamp()
-    });
-    roster.push({ id: ref.id, store, name, role: role || null, memberNum: memberNum || null });
-    roster.sort((a,b) => a.name.localeCompare(b.name));
-    el("new-emp-name").value = "";
-    el("new-emp-role").value = "";
-    el("new-emp-num").value  = "";
-    updateDropdown();
-    renderRoster();
-  } catch(e) { showErr("emp-err","Error: " + e.message); }
+    await updateDoc(doc(db, "stores", store, "employees", id), { name, memberNum });
+    toggleRosterEditCoach(id);
+  } catch(e) { alert("Error saving: " + e.message); }
 };
 
 window.removeEmployee = async function(id, name) {
   if (!confirm(`Remove ${name} from the roster?\n\nThis only removes them from the name list — their coaching records are not deleted.`)) return;
   try {
     await deleteDoc(doc(db,"stores",store,"employees",id));
-    roster = roster.filter(e => e.id !== id);
-    updateDropdown();
-    renderRoster();
+    // onSnapshot auto-refreshes roster and dropdown
   } catch(e) { alert("Error removing: " + e.message); }
 };
 
