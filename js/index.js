@@ -87,8 +87,11 @@ const Q = {
 
 function renderQ(id) {
   const q = Q[id]; if (!q) return;
+  // Use the Q-tree key (e.g. "cust4") as the function suffix — encodeURIComponent
+  // produces % characters which are invalid in JS identifier names and silently
+  // prevent the onclick from firing.
   const yH = q.yes[0] === "CALL"
-    ? `callManager_${encodeURIComponent(q.yes[1])}()`
+    ? `callManager_${id}()`
     : q.yes[0] ? `nextQ('${q.yes[0]}')` : `noCall('${encodeURIComponent(q.yes[1])}')`;
   const nH = q.no[0] ? `nextQ('${q.no[0]}')` : `noCall('${encodeURIComponent(q.no[1])}')`;
   el("q-inner").innerHTML = `
@@ -111,12 +114,12 @@ window.callManager = (reason) => {
   if (managerPhone) btn.innerHTML = `<a href="tel:${managerPhone}" class="btn btn-green">&#x1F4DE; Call Manager Now</a>`;
 };
 
-// Register window.callManager_* for each CALL branch
+// Register window.callManager_* for each CALL branch using the Q-tree key
+// (e.g. window.callManager_cust4) so the onclick identifier is always valid JS.
 Object.keys(Q).forEach(k => {
   const q = Q[k];
   if (q.yes[0] === "CALL") {
-    const key = "callManager_" + encodeURIComponent(q.yes[1]);
-    window[key] = () => callManager(q.yes[1]);
+    window["callManager_" + k] = () => callManager(q.yes[1]);
   }
 });
 
