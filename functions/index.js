@@ -1,8 +1,10 @@
 const { onCall, HttpsError }            = require("firebase-functions/v2/https");
 const { onDocumentCreated,
-        onDocumentUpdated }             = require("firebase-functions/v2/firestore");
+        onDocumentUpdated,
+        onDocumentDeleted }             = require("firebase-functions/v2/firestore");
 const { initializeApp }                 = require("firebase-admin/app");
 const { getFirestore, FieldValue }      = require("firebase-admin/firestore");
+const { getStorage }                    = require("firebase-admin/storage");
 const nodemailer                        = require("nodemailer");
 
 // ── Environment variables ──────────────────────────────────────────────────
@@ -416,5 +418,51 @@ exports.onEmployeeCoachingCreated = onDocumentCreated(
       "Counter Coach — Coaching Record",
       `A ${label} coaching document has been created for you at Store ${storeId}.\n\nPlease log in at countercoach.app to review and sign the document.`
     ).catch(e => console.error("onEmployeeCoachingCreated email error:", e));
+  }
+);
+
+// ── STORAGE CLEANUP ────────────────────────────────────────────
+
+/**
+ * Extract a Firebase Storage object path from a download URL.
+ * URL format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encoded-path}?...
+ */
+function storagePathFromUrl(url) {
+  try {
+    const match = decodeURIComponent(new URL(url).pathname).match(/\/o\/(.+)$/);
+    return match ? match[1] : null;
+  } catch (_) { return null; }
+}
+
+/**
+ * onEntryDeleted
+ * When a log entry is deleted (from any client — cc-hub, recap, etc.),
+ * delete all associated photos from Firebase Storage so the bucket
+ * doesn't accumulate orphaned images.
+ *
+ * Listens on: stores/{storeId}/entries/{entryId}
+ */
+exports.onEntryDeleted = onDocumentDeleted(
+  "stores/{storeId}/entries/{entryId}", async event => {
+    const data = event.data?.data() || {};
+    // Collect all photo URLs — prefer the photos array, fall back to legacy photoURL
+    const urls = (data.photos && data.photos.length)
+      ? data.photos
+      : data.photoURL ? [data.photoURL] : [];
+
+    if (!urls.length) return;   // no photos attached — nothing to clean up
+
+    const bucket = getStorage().bucket();
+    await Promise.all(urls.map(async url => {
+      const path = storagePathFromUrl(url);
+      if (!path) return;
+      try {
+        await bucket.file(path).delete();
+        console.log("Deleted storage file:", path);
+      } catch (e) {
+        // 404 = file already gone — not an error worth logging loudly
+        if (e.code !== 404) console.error("onEntryDeleted storage delete error:", path, e.message);
+      }
+    }));
   }
 );
