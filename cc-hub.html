@@ -474,9 +474,15 @@
 
       <div class="card">
         <div class="card-title">🗑️ Maintenance</div>
-        <button class="btn btn-red" onclick="clearUsedCodes()" style="margin-bottom:0;">
+        <button class="btn btn-red" onclick="clearUsedCodes()" style="margin-bottom:12px;">
           Delete All Used &amp; Expired Codes
         </button>
+        <button class="btn" onclick="migrateOldData()" style="margin-bottom:0;background:var(--forest);color:#fff;">
+          📦 Migrate Old Flat-Collection Data → Subcollections
+        </button>
+        <p style="font-size:11px;color:var(--ink-faint);margin-top:8px;margin-bottom:0;line-height:1.5;">
+          Run once after upgrading to move legacy /employees and /coaching documents into the correct per-store subcollection paths.
+        </p>
       </div>
     </div>
 

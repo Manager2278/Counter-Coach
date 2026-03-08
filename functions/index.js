@@ -351,6 +351,42 @@ exports.onEmployeeEntryCreated = onDocumentCreated(
 );
 
 /**
+ * onEntryMarkedDone
+ * When a log entry is marked complete (status → "complete"), email the author
+ * if they have empEmail set and notifyDone is not false.
+ * Listens on: stores/{storeId}/entries/{entryId}
+ */
+exports.onEntryMarkedDone = onDocumentUpdated(
+  "stores/{storeId}/entries/{entryId}", async event => {
+    const before = event.data.before.data() || {};
+    const after  = event.data.after.data()  || {};
+    // Only fire when status first changes to "complete"
+    if (before.status === "complete" || after.status !== "complete") return;
+
+    const storeId = event.params.storeId;
+    const author  = after.author;
+    if (!author || !storeId) return;
+
+    const empSnap = await db.collection("stores").doc(storeId)
+      .collection("employees").where("name", "==", author).limit(1).get();
+    if (empSnap.empty) return;
+
+    const emp = empSnap.docs[0].data();
+    if (!emp.empEmail)            return;
+    if (emp.notifyDone === false)  return;
+
+    const typeLabel = { progress: "Progress", issue: "Issue/Flag", note: "Note" };
+    const label     = typeLabel[after.type] || after.type || "Log";
+    const preview   = (after.text || "").slice(0, 300);
+    await sendEmail(
+      emp.empEmail,
+      `✅ Your entry was marked done — Store ${storeId}`,
+      `Your ${label} entry has been marked complete by a manager at Store ${storeId}.\n\n"${preview}"\n\nLog in at countercoach.app to view your logbook.`
+    ).catch(e => console.error("onEntryMarkedDone email error:", e));
+  }
+);
+
+/**
  * onEmployeeCoachingCreated
  * When a coaching record is created, email the named employee.
  * Listens on the new subcollection path: stores/{storeId}/coaching/{coachId}

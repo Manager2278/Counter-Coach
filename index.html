@@ -651,10 +651,11 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   <div class="settings-card">
     <h3>📧 Email Notifications</h3>
     <div class="settings-field">
-      <label>Your Email Address</label>
+      <label>Your Email Address <span style="color:#c0392b;">*</span></label>
       <input type="email" id="emp-settings-email" placeholder="your@email.com" autocomplete="email">
     </div>
-    <p style="font-size:12px;color:var(--ink-faint);margin-bottom:12px;line-height:1.5;">Receive notifications when your manager replies or takes action. Leave blank to opt out.</p>
+    <p style="font-size:12px;color:var(--ink-faint);margin-bottom:4px;line-height:1.5;">Required to receive email notifications when your manager replies or takes action.</p>
+    <div id="emp-settings-email-err" style="font-size:12px;color:#c0392b;margin-bottom:10px;display:none;">⚠ Please enter a valid email address.</div>
 
     <div class="settings-toggle">
       <div>
@@ -683,6 +684,16 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
       </div>
       <label class="toggle-switch">
         <input type="checkbox" id="emp-notify-coaching" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="settings-toggle">
+      <div>
+        <span>✅ Entries Marked Done</span>
+        <small>Email when your log entry is marked complete by a manager</small>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="emp-notify-done">
         <span class="toggle-slider"></span>
       </label>
     </div>

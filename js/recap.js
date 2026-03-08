@@ -346,23 +346,34 @@ async function loadEmpSettings() {
     el("emp-notify-entries").checked         = d.notifyEntries     !== false;
     el("emp-notify-messages").checked        = d.notifyMessages    !== false;
     el("emp-notify-coaching").checked        = d.notifyCoaching    !== false;
+    el("emp-notify-done").checked            = d.notifyDone        === true;
   } catch(e) { console.warn("loadEmpSettings:", e); }
 }
 
 window.saveEmpSettings = async function() {
   if (!store || !name) return;
-  const email        = el("emp-settings-email").value.trim();
+  const email          = el("emp-settings-email").value.trim();
   const notifyEntries  = el("emp-notify-entries").checked;
   const notifyMessages = el("emp-notify-messages").checked;
   const notifyCoaching = el("emp-notify-coaching").checked;
-  const okEl = el("emp-settings-ok");
+  const notifyDone     = el("emp-notify-done").checked;
+  const errEl = el("emp-settings-email-err");
+  const okEl  = el("emp-settings-ok");
+
+  // Email is required
+  if (!email) {
+    errEl.style.display = "block";
+    el("emp-settings-email").focus();
+    return;
+  }
+  errEl.style.display = "none";
+
   try {
     const snap = await getDocs(
       query(collection(db, "stores", store, "employees"), where("name", "==", name))
     );
     if (snap.empty) { alert("Could not find your employee record. Contact your manager."); return; }
-    const updates = { notifyEntries, notifyMessages, notifyCoaching };
-    if (email) updates.empEmail = email;
+    const updates = { empEmail: email, notifyEntries, notifyMessages, notifyCoaching, notifyDone };
     await updateDoc(snap.docs[0].ref, updates);
     okEl.classList.add("show");
     setTimeout(() => okEl.classList.remove("show"), 2500);
