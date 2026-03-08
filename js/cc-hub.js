@@ -254,7 +254,7 @@ function listenCodes() {
     allCodes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderCodes();
     updateStats();
-  });
+  }, e => console.error("reg_codes snapshot:", e));
 }
 
 function renderCodes() {
@@ -302,7 +302,7 @@ function listenStores() {
     allStores = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderStores();
     updateStats();
-  });
+  }, e => console.error("stores snapshot:", e));
 }
 
 function renderStores() {
@@ -470,7 +470,7 @@ function listenEntries() {
   if (unsubEntries) unsubEntries();
   const q = query(collectionGroup(db, "entries"), orderBy("time", "desc"));
   unsubEntries = onSnapshot(q, snap => {
-    allEntries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allEntries = snap.docs.map(d => ({ id: d.id, _docPath: d.ref.path, ...d.data() }));
     populateStoreFilter();
     filterEntries();
   }, e => console.error("entries snapshot:", e));
@@ -526,7 +526,8 @@ window.deleteEntry = async function(id) {
   if (!confirm("Delete this logbook entry? This cannot be undone.")) return;
   const entry = allEntries.find(e => e.id === id);
   if (!entry) { alert("Entry not found."); return; }
-  await deleteDoc(doc(db, "stores", entry.store, "entries", id)).catch(e => alert("Error: " + e.message));
+  const ref = entry._docPath ? doc(db, entry._docPath) : doc(db, "stores", entry.store, "entries", id);
+  await deleteDoc(ref).catch(e => alert("Error: " + e.message));
 };
 
 // ── ADMIN MESSAGES ─────────────────────────────────────────────
@@ -534,7 +535,7 @@ function listenAdminMsgs() {
   if (unsubAdminMsgs) unsubAdminMsgs();
   const q = query(collectionGroup(db, "messages"), orderBy("time", "desc"));
   unsubAdminMsgs = onSnapshot(q, snap => {
-    allAdminMsgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allAdminMsgs = snap.docs.map(d => ({ id: d.id, _docPath: d.ref.path, ...d.data() }));
     populateMsgStoreFilter();
     filterMessages();
   }, e => console.error("admin msgs:", e));
@@ -564,7 +565,8 @@ window.deleteMessage = async function(id) {
   if (!confirm("Delete this message? This cannot be undone.")) return;
   const msg = allAdminMsgs.find(m => m.id === id);
   if (!msg) { alert("Message not found."); return; }
-  await deleteDoc(doc(db, "stores", msg.store, "messages", id)).catch(e => alert("Error: " + e.message));
+  const ref = msg._docPath ? doc(db, msg._docPath) : doc(db, "stores", msg.store, "messages", id);
+  await deleteDoc(ref).catch(e => alert("Error: " + e.message));
   auditLog("Deleted private message", `ID: ${id}`);
 };
 
@@ -1048,7 +1050,7 @@ function listenEmployees() {
   if (unsubEmployees) unsubEmployees();
   const q = query(collectionGroup(db, "employees"), orderBy("name"));
   unsubEmployees = onSnapshot(q, snap => {
-    allEmployees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allEmployees = snap.docs.map(d => ({ id: d.id, _docPath: d.ref.path, ...d.data() }));
     populateEmpStoreFilter();
     filterEmployees();
   }, e => console.error("employees snapshot:", e));
@@ -1142,7 +1144,8 @@ window.saveEmployee = async function(id) {
   if (!store) { alert("Store number is required."); return; }
   const emp = allEmployees.find(e => e.id === id);
   if (!emp) { alert("Employee not found."); return; }
-  await updateDoc(doc(db, "stores", emp.store, "employees", id), {
+  const ref = emp._docPath ? doc(db, emp._docPath) : doc(db, "stores", emp.store, "employees", id);
+  await updateDoc(ref, {
     name, role, memberNum: memberNum || null, store
   }).catch(e => { alert("Error: " + e.message); return; });
   auditLog("Updated employee", `ID: ${id} · Name: ${name} · Title: ${role} · Store: ${store}`);
@@ -1178,7 +1181,8 @@ window.deleteEmployee = async function(id, name) {
   if (!confirm(`Remove "${name}" from the roster? This cannot be undone.`)) return;
   const emp = allEmployees.find(e => e.id === id);
   if (!emp) { alert("Employee not found."); return; }
-  await deleteDoc(doc(db, "stores", emp.store, "employees", id)).catch(e => alert("Error: " + e.message));
+  const ref = emp._docPath ? doc(db, emp._docPath) : doc(db, "stores", emp.store, "employees", id);
+  await deleteDoc(ref).catch(e => alert("Error: " + e.message));
   auditLog("Removed employee", `Name: ${name} · ID: ${id}`);
 };
 
@@ -1186,7 +1190,8 @@ window.releaseEmployee = async function(id, name) {
   if (!confirm(`Release session for "${name}"? They will be able to log in again.`)) return;
   const emp = allEmployees.find(e => e.id === id);
   if (!emp) { alert("Employee not found."); return; }
-  await updateDoc(doc(db, "stores", emp.store, "employees", id), { loggedIn: false }).catch(e => alert("Error: " + e.message));
+  const ref = emp._docPath ? doc(db, emp._docPath) : doc(db, "stores", emp.store, "employees", id);
+  await updateDoc(ref, { loggedIn: false }).catch(e => alert("Error: " + e.message));
   auditLog("Released employee session", `Name: ${name}`);
 };
 
@@ -1195,7 +1200,7 @@ function listenCoaching() {
   if (unsubCoaching) unsubCoaching();
   const q = query(collectionGroup(db, "coaching"), orderBy("savedAt", "desc"), limit(200));
   unsubCoaching = onSnapshot(q, snap => {
-    allCoaching = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allCoaching = snap.docs.map(d => ({ id: d.id, _docPath: d.ref.path, ...d.data() }));
     populateCoachingStoreFilter();
     filterCoaching();
   }, e => console.error("coaching snapshot:", e));
@@ -1222,7 +1227,8 @@ window.deleteCoaching = async function(id, name) {
   if (!confirm(`Delete coaching record for "${name}"? This cannot be undone.`)) return;
   const coaching = allCoaching.find(c => c.id === id);
   if (!coaching) { alert("Coaching record not found."); return; }
-  await deleteDoc(doc(db, "stores", coaching.store, "coaching", id)).catch(e => alert("Error: " + e.message));
+  const ref = coaching._docPath ? doc(db, coaching._docPath) : doc(db, "stores", coaching.store, "coaching", id);
+  await deleteDoc(ref).catch(e => alert("Error: " + e.message));
   auditLog("Deleted coaching record", `Name: ${name} · ID: ${id}`);
 };
 
