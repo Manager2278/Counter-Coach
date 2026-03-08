@@ -476,6 +476,9 @@ function activateMgrPanel() {
   buildQR();
   listenMgrEntries();
   listenMgrInbox();
+  // CC Hub link — only visible for the designated admin store
+  const ccHubBtn = el("mgr-tab-cchub-btn");
+  if (ccHubBtn) ccHubBtn.style.display = (store === "2278") ? "" : "none";
 }
 
 window.logoutMgr = () => {
