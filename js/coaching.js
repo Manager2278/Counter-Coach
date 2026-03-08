@@ -226,7 +226,7 @@ async function loadLevelPreview() {
   const name = el("emp-name").value.trim();
   if (!name || !store) { setLevelUI(0); return; }
   try {
-    const q    = query(collection(db,"coaching"), where("store","==",store), where("name","==",name));
+    const q    = query(collection(db,"stores",store,"coaching"), where("name","==",name));
     const snap = await getDocs(q);
     priorCount = snap.size;
     setLevelUI(priorCount);
@@ -319,7 +319,7 @@ window.saveCoaching = async function() {
   };
 
   try {
-    const ref = await addDoc(collection(db,"coaching"), data);
+    const ref = await addDoc(collection(db,"stores",store,"coaching"), data);
     lastDoc = data;
     lastId  = ref.id;
 
@@ -517,8 +517,7 @@ let allCoachings = [];
 async function loadDashData() {
   if (!store) return;
   try {
-    const q    = query(collection(db,"coaching"), where("store","==",store));
-    const snap = await getDocs(q);
+    const snap = await getDocs(collection(db,"stores",store,"coaching"));
     allCoachings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     allCoachings.sort((a,b) => (b.savedAt?.seconds||0) - (a.savedAt?.seconds||0));
   } catch(e) { console.warn("loadDashData:", e); }
@@ -622,7 +621,7 @@ window.openReview = async function(id) {
   let rec = allCoachings.find(c => c.id === id);
   if (!rec) {
     try {
-      const snap = await getDoc(doc(db, "coaching", id));
+      const snap = await getDoc(doc(db, "stores", store, "coaching", id));
       if (!snap.exists()) { alert("Record not found."); return; }
       rec = { id, ...snap.data() };
     } catch(e) { alert("Error loading record: " + e.message); return; }
@@ -699,7 +698,7 @@ window.saveRvSignature = async function() {
   el("rv-sign-btn").textContent = "Saving…";
   try {
     const empSig = rvPad.get();
-    await updateDoc(doc(db, "coaching", rvId), {
+    await updateDoc(doc(db, "stores", store, "coaching", rvId), {
       empSig, signedAt: serverTimestamp(), status: "complete"
     });
     const idx = allCoachings.findIndex(c => c.id === rvId);
@@ -748,8 +747,7 @@ let roster = [];
 async function loadRoster() {
   if (!store) return;
   try {
-    const q    = query(collection(db,"employees"), where("store","==",store));
-    const snap = await getDocs(q);
+    const snap = await getDocs(collection(db,"stores",store,"employees"));
     roster = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     roster.sort((a,b) => a.name.localeCompare(b.name));
     updateDropdown();
@@ -802,7 +800,7 @@ window.addEmployee = async function() {
     showErr("emp-err","An employee with that name already exists."); return;
   }
   try {
-    const ref = await addDoc(collection(db,"employees"), {
+    const ref = await addDoc(collection(db,"stores",store,"employees"), {
       store, name, role: role || null, memberNum: memberNum || null, addedBy: managerName, addedAt: serverTimestamp()
     });
     roster.push({ id: ref.id, store, name, role: role || null, memberNum: memberNum || null });
@@ -818,7 +816,7 @@ window.addEmployee = async function() {
 window.removeEmployee = async function(id, name) {
   if (!confirm(`Remove ${name} from the roster?\n\nThis only removes them from the name list — their coaching records are not deleted.`)) return;
   try {
-    await deleteDoc(doc(db,"employees",id));
+    await deleteDoc(doc(db,"stores",store,"employees",id));
     roster = roster.filter(e => e.id !== id);
     updateDropdown();
     renderRoster();
@@ -844,8 +842,7 @@ async function loadKiosk(storeId) {
   el("topbar-store").style.display = "inline-block";
   el("topbar-store").textContent   = "Store " + storeId;
   try {
-    const q    = query(collection(db,"employees"), where("store","==",storeId));
-    const snap = await getDocs(q);
+    const snap = await getDocs(collection(db,"stores",storeId,"employees"));
     const emps = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     emps.sort((a,b) => a.name.localeCompare(b.name));
     renderKioskRoster(emps);
