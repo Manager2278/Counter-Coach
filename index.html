@@ -477,8 +477,8 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   </div>
 
   <div class="mgr-tabs">
-    <button class="mgr-tab on" onclick="setMgrTab('inbox',this)">📬 Inbox <span class="inbox-cnt hidden" id="inbox-cnt"></span></button>
-    <button class="mgr-tab"    onclick="setMgrTab('all-log',this)">📋 All Entries</button>
+    <button class="mgr-tab"    onclick="setMgrTab('inbox',this)">📬 Inbox <span class="inbox-cnt hidden" id="inbox-cnt"></span></button>
+    <button class="mgr-tab on" onclick="setMgrTab('all-log',this)">📋 All Entries</button>
     <button class="mgr-tab"    onclick="setMgrTab('qr',this)">📱 QR Code</button>
     <button class="mgr-tab"    onclick="setMgrTab('roster',this)">👥 Roster</button>
     <button class="mgr-tab"    onclick="setMgrTab('settings',this)">⚙️ Store Setup</button>
@@ -487,13 +487,13 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   </div>
 
   <!-- INBOX -->
-  <div class="mgr-tab-pane on" id="mgr-pane-inbox">
+  <div class="mgr-tab-pane" id="mgr-pane-inbox">
     <div class="section-head">Private Messages from Employees</div>
     <div id="mgr-inbox-list"></div>
   </div>
 
   <!-- ALL ENTRIES -->
-  <div class="mgr-tab-pane" id="mgr-pane-all-log">
+  <div class="mgr-tab-pane on" id="mgr-pane-all-log">
     <div class="section-head">All Store Entries — Today</div>
     <div class="stats-row">
       <div class="stat-box"><div class="stat-num s-open"  id="ms-open">0</div><div class="stat-lbl">Open</div></div>

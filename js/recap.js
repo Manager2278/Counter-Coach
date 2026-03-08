@@ -397,8 +397,7 @@ function goScreen(s) {
   document.querySelectorAll(".nav-btn").forEach(x => x.classList.remove("on"));
   el("mgr-banner").classList.remove("show");
   if (s === "mgr") {
-    mgrViewingInbox = true;
-    markMsgsRead(_lastInboxMsgs);
+    mgrViewingInbox = false;  // default tab is All Entries, not Inbox
   } else {
     mgrViewingInbox = false;
   }
