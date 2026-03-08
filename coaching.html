@@ -139,12 +139,25 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
 .hist-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 
 /* ── ROSTER ITEMS */
-.roster-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--ruled); gap: 8px; }
+.roster-item { display: flex; flex-direction: column; padding: 10px 0; border-bottom: 1px solid var(--ruled); gap: 4px; }
 .roster-item:last-child { border-bottom: none; }
+.roster-row  { display: flex; align-items: center; gap: 8px; width: 100%; }
 .roster-name { font-size: 14px; font-weight: 700; }
 .roster-role { font-size: 12px; color: var(--ink-faint); }
+.roster-meta { font-size: 12px; color: var(--ink-faint); }
+.roster-note { font-size: 12px; color: var(--ink-faint); margin-bottom: 14px; line-height: 1.5; }
 .btn-remove { background: none; border: none; color: var(--red); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
 .btn-remove:hover { background: var(--red-pale); }
+/* ── LABELED ACTION BUTTONS */
+.btn-action { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; border: 1.5px solid var(--ruled); border-radius: 7px; padding: 5px 9px; background: white; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.btn-action:hover { background: var(--paper); }
+.btn-action-coach { border-color: var(--forest); color: var(--forest); }
+.btn-action-red   { border-color: var(--red);    color: var(--red); }
+/* ── INLINE EDIT ROW */
+.roster-edit-row { display: none; gap: 8px; flex-wrap: wrap; align-items: flex-end; padding: 8px 0 4px; }
+.roster-edit-row.open { display: flex; }
+.add-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--ink-faint); margin-bottom: 3px; }
+.roster-field-input { padding: 7px 10px; border: 1.5px solid var(--ruled); border-radius: 7px; font-size: 13px; }
 
 /* ── EMPTY STATE */
 .empty { text-align: center; padding: 36px 0; color: var(--ink-faint); font-size: 14px; }
@@ -367,27 +380,8 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
       <div class="screen" id="screen-emp">
         <div class="card" style="margin-top:8px;">
           <div class="card-title">&#x1F465; Employee Roster</div>
-          <p style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;">Add employees to pre-fill the name field when creating coaching records.</p>
-          <div class="input-row" style="grid-template-columns:1fr 1fr 1fr;">
-            <div>
-              <label class="field-label">Name</label>
-              <input type="text" id="new-emp-name" placeholder="Employee name" style="margin-bottom:0;">
-            </div>
-            <div>
-              <label class="field-label">Position (optional)</label>
-              <input type="text" id="new-emp-role" placeholder="e.g. Parts Specialist" style="margin-bottom:0;">
-            </div>
-            <div>
-              <label class="field-label">Team Member # (optional)</label>
-              <input type="text" id="new-emp-num" placeholder="e.g. TM-1042" style="margin-bottom:0;">
-            </div>
-          </div>
-          <div class="err-box" id="emp-err" style="margin-top:10px;"></div>
-          <button class="btn btn-green" onclick="addEmployee()" style="margin-top:10px;">&#x2795; Add to Roster</button>
-        </div>
-        <div class="card">
-          <div class="card-title">&#x1F4CB; Current Roster</div>
-          <div id="roster-list"><div class="empty">No employees added yet.</div></div>
+          <p class="roster-note">Employees are managed from the <b>Manager Panel</b>. Tap <b>📋 Coach</b> to start a coaching session for an employee.</p>
+          <div id="roster-list"><div class="empty">Loading roster…</div></div>
         </div>
 
         <div class="card">
