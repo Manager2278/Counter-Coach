@@ -251,6 +251,7 @@ exports.sendRecapNotification = onCall(async (request) => {
   if (type === "entry"   && !s.notifyEntry)    return { skipped: true };
   if (type === "flagged" && !s.notifyFlagged)  return { skipped: true };
   if (type === "message" && !s.notifyMessages) return { skipped: true };
+  if (type === "done"    && !s.notifyDone)     return { skipped: true };
 
   const { transport, from } = await getMailTransport().catch(() => ({ transport: null, from: null }));
   if (!transport) return { skipped: true };
@@ -258,12 +259,15 @@ exports.sendRecapNotification = onCall(async (request) => {
   const subjects = {
     entry:   `📝 New Log Entry — Store ${storeId}`,
     flagged: `⚠️ Issue Entry — Store ${storeId}`,
-    message: `📬 New Message — Store ${storeId}`
+    message: `📬 New Message — Store ${storeId}`,
+    done:    `✅ Entry Marked Done — Store ${storeId}`
   };
+  const typeLabel = { progress: "Progress", issue: "Issue", note: "Note" };
   const bodies = {
     entry:   `Employee: ${data.author||"?"}\nEntry: ${data.text||""}\nTime: ${new Date(data.time||Date.now()).toLocaleString()}`,
     flagged: `Employee: ${data.author||"?"}\nIssue: ${data.text||""}\nTime: ${new Date(data.time||Date.now()).toLocaleString()}`,
-    message: `From: ${data.from||"?"}\nMessage: ${data.text||""}\nTime: ${new Date(data.time||Date.now()).toLocaleString()}`
+    message: `From: ${data.from||"?"}\nMessage: ${data.text||""}\nTime: ${new Date(data.time||Date.now()).toLocaleString()}`,
+    done:    `Entry marked done at Store ${storeId}.\n\nEmployee: ${data.author||"?"}\nType: ${typeLabel[data.type]||data.type||"Entry"}\nEntry: ${data.text||""}\nTime: ${new Date(data.time||Date.now()).toLocaleString()}`
   };
 
   await transport.sendMail({

@@ -353,6 +353,10 @@ function renderStores() {
           <input type="checkbox" id="sf-replies-${esc(s.id)}" ${s.repliesEnabled ? 'checked' : ''}>
           Allow manager to reply to employee private messages
         </label>
+        <label class="replies-toggle-row" style="margin-top:6px;">
+          <input type="checkbox" id="sf-notify-done-${esc(s.id)}" ${s.notifyDone ? 'checked' : ''}>
+          Send recap email when entries are marked done
+        </label>
         <div style="display:flex;gap:8px;margin-top:10px;">
           <button class="btn btn-sm btn-green" onclick="saveStore('${esc(s.id)}')">💾 Save</button>
           <button class="btn btn-sm btn-outline" onclick="resetPIN('${esc(s.id)}')">🔑 Reset PIN</button>
@@ -425,6 +429,7 @@ window.saveStore = async function(storeId) {
   const dmEmail        = document.getElementById(`sf-dm-${storeId}`).value.trim();
   const recapEmail     = document.getElementById(`sf-recap-${storeId}`).value.trim();
   const repliesEnabled = document.getElementById(`sf-replies-${storeId}`).checked;
+  const notifyDone     = document.getElementById(`sf-notify-done-${storeId}`)?.checked || false;
   if (!name) { alert("Manager name is required."); return; }
   try {
     const storeDoc = doc(db, "stores", storeId);
@@ -437,6 +442,7 @@ window.saveStore = async function(storeId) {
       dmEmail:        dmEmail,
       recapEmail:     recapEmail,
       repliesEnabled: repliesEnabled,
+      notifyDone:     notifyDone,
       pin:            cur.pin || "0000",
       infoUpdatedAt:  serverTimestamp()
     });

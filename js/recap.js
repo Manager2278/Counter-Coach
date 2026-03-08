@@ -25,6 +25,7 @@ let recapEmail         = "";
 let notifyEntry        = true;
 let notifyFlagged      = true;
 let notifyMessages     = true;
+let notifyDone         = false;
 let empDocMap          = {};
 let mgrRosterData      = [];
 
@@ -273,6 +274,7 @@ async function loadStorePin() {
       notifyEntry       = d.notifyEntry    !== false;
       notifyFlagged     = d.notifyFlagged  !== false;
       notifyMessages    = d.notifyMessages !== false;
+      notifyDone        = d.notifyDone     === true;
     }
   } catch(e) { console.error("loadStorePin:", e); }
 }
@@ -298,6 +300,7 @@ async function loadStoreSettings() {
   el("notify-entry").checked       = notifyEntry;
   el("notify-flagged").checked     = notifyFlagged;
   el("notify-messages").checked    = notifyMessages;
+  el("notify-done").checked        = notifyDone;
   el("mgr-new-pin").value = "";
 }
 
@@ -310,18 +313,19 @@ window.saveStoreSettings = async function() {
   const newNE       = el("notify-entry").checked;
   const newNF       = el("notify-flagged").checked;
   const newNM       = el("notify-messages").checked;
+  const newND       = el("notify-done").checked;
   const newPin      = el("mgr-new-pin").value.trim();
   if (newPin && newPin.length < 4) { alert("PIN must be at least 4 characters."); return; }
   try {
     const updates = {
       managerName: newMgrName, managerPhone: newMgrPhone, helpdeskPhone: newHelpdesk,
       dmEmail: newDm, recapEmail: newRecap,
-      notifyEntry: newNE, notifyFlagged: newNF, notifyMessages: newNM
+      notifyEntry: newNE, notifyFlagged: newNF, notifyMessages: newNM, notifyDone: newND
     };
     if (newPin) { updates.pin = newPin; storePin = newPin; }
     await updateDoc(doc(db,"stores",store), updates);
     dmEmail = newDm; recapEmail = newRecap;
-    notifyEntry = newNE; notifyFlagged = newNF; notifyMessages = newNM;
+    notifyEntry = newNE; notifyFlagged = newNF; notifyMessages = newNM; notifyDone = newND;
     el("mgr-new-pin").value = "";
     const ok = el("settings-ok");
     ok.classList.add("show");
@@ -370,6 +374,7 @@ function fireRecapNotif(type, payload) {
   if (type === "entry"   && !notifyEntry)    return;
   if (type === "flagged" && !notifyFlagged)  return;
   if (type === "message" && !notifyMessages) return;
+  if (type === "done"    && !notifyDone)     return;
   httpsCallable(functions, "sendRecapNotification")({
     storeId: store, type, data: payload
   }).catch(e => console.warn("Recap notif:", e));
@@ -609,6 +614,10 @@ window.addEntry = async () => {
 window.toggleDone = async (id, cur) => {
   const next = cur === "complete" ? "open" : "complete";
   await updateDoc(doc(db,"stores",store,"entries",id), { status: next }).catch(e => alert(e.message));
+  if (next === "complete") {
+    const entry = allEntriesMgr.find(e => e.id === id);
+    if (entry) fireRecapNotif("done", { author: entry.author, text: entry.text, type: entry.type, time: Date.now() });
+  }
 };
 
 window.confirmClear = async (id) => {
