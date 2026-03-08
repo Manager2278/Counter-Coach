@@ -3,7 +3,7 @@ import { db, auth, storage }           from "./firebase.js";
 import { el, v, esc }                  from "./utils.js";
 import { signInAnonymously }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
-  doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc,
+  doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc,
   collection, collectionGroup, onSnapshot, writeBatch, serverTimestamp, Timestamp,
   query, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -414,6 +414,48 @@ window.clearUsedCodes = async function() {
   toDelete.forEach(c => batch.delete(doc(db, "reg_codes", c.id)));
   await batch.commit().catch(e => alert("Error: " + e.message));
   auditLog("Deleted used/expired codes", `Count: ${toDelete.length}`);
+};
+
+// ── MIGRATE OLD FLAT-COLLECTION DATA ──────────────────────────
+window.migrateOldData = async function() {
+  if (!confirm("This will move old top-level /employees and /coaching documents into the correct per-store subcollections, then delete the originals.\n\nMake sure all stores are registered before running this.\n\nProceed?")) return;
+
+  let empMoved = 0, empSkipped = 0;
+  let coachMoved = 0, coachSkipped = 0;
+  const errors = [];
+
+  try {
+    // ── Migrate /employees ─────────────────────────────────────
+    const empSnap = await getDocs(collection(db, "employees"));
+    for (const d of empSnap.docs) {
+      const data  = d.data();
+      const store = data.store;
+      if (!store) { empSkipped++; continue; }
+      try {
+        await addDoc(collection(db, "stores", store, "employees"), data);
+        await deleteDoc(d.ref);
+        empMoved++;
+      } catch(e) { errors.push(`emp/${d.id}: ${e.message}`); empSkipped++; }
+    }
+
+    // ── Migrate /coaching ──────────────────────────────────────
+    const coachSnap = await getDocs(collection(db, "coaching"));
+    for (const d of coachSnap.docs) {
+      const data  = d.data();
+      const store = data.store;
+      if (!store) { coachSkipped++; continue; }
+      try {
+        await addDoc(collection(db, "stores", store, "coaching"), data);
+        await deleteDoc(d.ref);
+        coachMoved++;
+      } catch(e) { errors.push(`coach/${d.id}: ${e.message}`); coachSkipped++; }
+    }
+
+    let msg = `Migration complete!\n\n✅ Employees moved: ${empMoved} (skipped: ${empSkipped})\n✅ Coaching moved: ${coachMoved} (skipped: ${coachSkipped})`;
+    if (errors.length) msg += `\n\n⚠️ Errors:\n${errors.join("\n")}`;
+    alert(msg);
+    auditLog("Ran old-data migration", `emp:${empMoved}, coach:${coachMoved}, errors:${errors.length}`);
+  } catch(e) { alert("Migration error: " + e.message); }
 };
 
 // ── STORE EDITING ──────────────────────────────────────────────
