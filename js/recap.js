@@ -346,7 +346,7 @@ async function loadEmpSettings() {
     el("emp-notify-entries").checked         = d.notifyEntries     !== false;
     el("emp-notify-messages").checked        = d.notifyMessages    !== false;
     el("emp-notify-coaching").checked        = d.notifyCoaching    !== false;
-    el("emp-notify-done").checked            = d.notifyDone        === true;
+    el("emp-notify-done").checked            = d.notifyDone        !== false;
   } catch(e) { console.warn("loadEmpSettings:", e); }
 }
 
