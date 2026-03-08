@@ -718,18 +718,18 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   <button class="nav-btn on" id="nav-log" onclick="navTo('log')">
     <span class="nav-icon">📋</span>Logbook
   </button>
-  <button class="nav-btn" id="nav-msg" onclick="navTo('msg')">
+  <button data-role="employee" class="nav-btn" id="nav-msg" onclick="navTo('msg')">
     <span class="nav-icon">🔒</span>Private
     <span class="nav-dot" id="msg-dot"></span>
   </button>
-  <button class="nav-btn" id="nav-coaching" onclick="navTo('coaching')">
+  <button data-role="employee" class="nav-btn" id="nav-coaching" onclick="navTo('coaching')">
     <span class="nav-icon">&#x1F4CB;</span>Coaching
     <span class="nav-dot" id="coaching-dot" style="display:none;"></span>
   </button>
-  <button class="nav-btn" id="nav-settings" onclick="navTo('settings')">
+  <button data-role="employee" class="nav-btn" id="nav-settings" onclick="navTo('settings')">
     <span class="nav-icon">⚙️</span>Settings
   </button>
-  <button class="nav-btn" id="nav-mgr" onclick="navTo('mgr')" style="display:none;">
+  <button data-role="manager" class="nav-btn" id="nav-mgr" onclick="navTo('mgr')" style="display:none;">
     <span class="nav-icon">🔑</span>Manager
     <span class="nav-dot" id="mgr-dot"></span>
   </button>
