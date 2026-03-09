@@ -282,6 +282,10 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .btn-icon-red:hover { background: var(--red-pale); border-color: var(--red); }
 .btn-icon-coach { border-color: var(--mint); }
 .btn-icon-coach:hover { background: var(--mint); border-color: var(--sage); }
+.btn-action { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; border: 1.5px solid var(--ruled); border-radius: 7px; padding: 5px 9px; background: white; cursor: pointer; white-space: nowrap; font-family: 'Karla', sans-serif; }
+.btn-action:hover { background: var(--paper); }
+.btn-action-coach { border-color: var(--forest); color: var(--forest); }
+.btn-action-red   { border-color: #c0392b;      color: #c0392b; }
 
 .hidden { display: none !important; }
 #broadcast-banner { display: none; background: #1c3a2a; color: white; padding: 10px 16px; font-size: 13px; line-height: 1.5; }
@@ -458,8 +462,8 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 <!-- ═══════════════════ MY COACHING ══════════════ -->
 <div class="screen" id="screen-coaching">
   <div class="page-header">
-    <div class="page-title">&#x1F4CB; My Coaching Records</div>
-    <div class="page-date">Private &mdash; visible only to you</div>
+    <div class="page-title" id="coaching-section-head">&#x1F4CB; My Coaching Records</div>
+    <div class="page-date" id="coaching-subtitle">Private &mdash; visible only to you</div>
   </div>
   <div id="coaching-list">
     <div style="text-align:center;padding:36px 0;color:var(--ink-faint);font-size:14px;">Loading&hellip;</div>
@@ -722,7 +726,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <span class="nav-icon">🔒</span>Private
     <span class="nav-dot" id="msg-dot"></span>
   </button>
-  <button data-role="employee" class="nav-btn" id="nav-coaching" onclick="navTo('coaching')">
+  <button class="nav-btn" id="nav-coaching" onclick="navTo('coaching')">
     <span class="nav-icon">&#x1F4CB;</span>Coaching
     <span class="nav-dot" id="coaching-dot" style="display:none;"></span>
   </button>

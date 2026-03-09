@@ -255,14 +255,9 @@ async function bootApp() {
 
   await loadStorePin();
 
-  if (mgrLoggedIn) {
-    applyRoleUI(true);
-    activateMgrPanel();
-    goScreen("mgr");   // managers land on manager panel
-  } else {
-    applyRoleUI(false);
-    goScreen("log");   // employees land on logbook
-  }
+  applyRoleUI(mgrLoggedIn);
+  if (mgrLoggedIn) activateMgrPanel();
+  goScreen("log");   // all users land on logbook
 }
 
 async function loadStorePin() {
@@ -424,7 +419,7 @@ window.goBack   = () => { window.location.href = "/coach"; };
 
 window.navTo = (dest) => {
   // Role guards — prevent cross-role navigation
-  if (mgrLoggedIn && ["settings", "msg", "coaching"].includes(dest)) {
+  if (mgrLoggedIn && ["settings", "msg"].includes(dest)) {
     goScreen("mgr"); return;
   }
   if (dest === "mgr" && !mgrLoggedIn) {
@@ -447,7 +442,16 @@ window.navTo = (dest) => {
     if (feedbackBtn) feedbackBtn.click();
   } else {
     goScreen(dest);
-    if (dest === "coaching") loadMyCoaching();
+    if (dest === "coaching") {
+      if (mgrLoggedIn) {
+        el("coaching-section-head").textContent = "\uD83C\uDFEA Store Coaching Records";
+        el("coaching-subtitle").textContent = "All coaching records for your store";
+      } else {
+        el("coaching-section-head").textContent = "\uD83D\uDCCB My Coaching Records";
+        el("coaching-subtitle").textContent = "Private \u2014 visible only to you";
+      }
+      loadMyCoaching();
+    }
     if (dest === "settings") loadEmpSettings();
   }
 };
@@ -482,7 +486,7 @@ window.bannerLogin = async () => {
   el("tb-user").textContent = name + " 🔑";
   applyRoleUI(true);
   activateMgrPanel();
-  goScreen("mgr");
+  goScreen("log");   // stay on logbook after PIN entry
 };
 
 el("b-pin").addEventListener("keydown", e => { if (e.key === "Enter") bannerLogin(); });
@@ -822,19 +826,22 @@ async function loadMyCoaching() {
   const listEl = el("coaching-list");
   listEl.innerHTML = '<div style="text-align:center;padding:36px 0;color:var(--ink-faint);font-size:14px;">Loading\u2026</div>';
   try {
-    const q    = query(collection(db,"stores",store,"coaching"),
-                       where("name","==",name));
+    const q = mgrLoggedIn
+      ? query(collection(db,"stores",store,"coaching"), orderBy("savedAt","desc"))
+      : query(collection(db,"stores",store,"coaching"), where("name","==",name));
     const snap = await getDocs(q);
     if (snap.empty) {
-      listEl.innerHTML = '<div style="text-align:center;padding:36px 0;color:var(--ink-faint);font-size:14px;">No coaching records on file for you.</div>';
+      listEl.innerHTML = `<div style="text-align:center;padding:36px 0;color:var(--ink-faint);font-size:14px;">${mgrLoggedIn ? "No coaching records on file for this store." : "No coaching records on file for you."}</div>`;
       return;
     }
     const records = snap.docs
       .map(d => ({ id: d.id, ...d.data() }))
       .sort((a,b) => (b.savedAt?.toMillis?.() || 0) - (a.savedAt?.toMillis?.() || 0));
 
-    const hasPending = records.some(r => r.status === "pending_employee");
-    el("coaching-dot").style.display = hasPending ? "block" : "none";
+    if (!mgrLoggedIn) {
+      const hasPending = records.some(r => r.status === "pending_employee");
+      el("coaching-dot").style.display = hasPending ? "block" : "none";
+    }
 
     // Local esc here intentionally matches the original (no HTML attributes, just text nodes)
     const escLocal = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
@@ -846,8 +853,11 @@ async function loadMyCoaching() {
       const statusHtml  = isPending
         ? `<span style="font-size:11px;font-weight:700;color:var(--amber);">&#x26A0;&#xFE0F; Signature needed</span>`
         : `<span style="font-size:11px;font-weight:700;color:var(--forest);">&#x2714;&#xFE0F; Signed</span>`;
-      const signBtn = isPending
+      const signBtn = (!mgrLoggedIn && isPending)
         ? `<a href="coaching.html?sign=${r.id}" style="display:inline-block;margin-top:10px;padding:9px 20px;background:var(--forest);color:white;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">&#x270D;&#xFE0F; Review &amp; Sign</a>`
+        : "";
+      const empNameRow = mgrLoggedIn && r.name
+        ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:2px;font-weight:600;">&#x1F464; ${escLocal(r.name)}</div>`
         : "";
       return `
         <div class="entry-card" style="border-left-color:${borderColor};">
@@ -855,6 +865,7 @@ async function loadMyCoaching() {
             <div style="flex:1;">
               <div style="font-weight:700;font-size:14px;">${escLocal(r.issue || "Coaching")}</div>
               <div style="font-size:11px;color:var(--ink-soft);margin-top:2px;">${escLocal(r.type || "")}</div>
+              ${empNameRow}
             </div>
             <div style="text-align:right;flex-shrink:0;">
               <div style="font-size:11px;color:var(--ink-faint);margin-bottom:3px;">${escLocal(r.date || "")}</div>
@@ -1063,12 +1074,12 @@ function renderMgrRoster() {
           <select class="roster-select" id="rs-title-${esc(e.id)}"
             onchange="saveMgrTitle('${esc(e.id)}',this)">${opts}</select>
           <span class="roster-saved" id="rs-saved-${esc(e.id)}">✓</span>
-          <button class="btn-icon btn-icon-coach" title="Open Coaching"
-            onclick="coachEmployee('${esc(e.id)}')">📋</button>
-          <button class="btn-icon" title="Edit name / counter #"
-            onclick="toggleRosterEdit('${esc(e.id)}')">✏️</button>
-          <button class="btn-icon btn-icon-red" title="Remove from roster"
-            onclick="deleteMgrEmployee('${esc(e.id)}','${esc(e.name||'')}')">🗑️</button>
+          <button class="btn-action btn-action-coach"
+            onclick="coachEmployee('${esc(e.id)}')">&#x1F4CB; Coach</button>
+          <button class="btn-action"
+            onclick="toggleRosterEdit('${esc(e.id)}')">&#x270F;&#xFE0F; Edit</button>
+          <button class="btn-action btn-action-red"
+            onclick="deleteMgrEmployee('${esc(e.id)}','${esc(e.name||'')}')">&#x1F5D1;&#xFE0F; Delete</button>
         </div>
         <div class="roster-edit-row" id="re-row-${esc(e.id)}">
           <div>
