@@ -97,6 +97,7 @@ function init() {
   loadSession();
   const params    = new URLSearchParams(location.search);
   const kioskId   = params.get("kiosk");
+  const signId    = params.get("sign");
   prefillEmpName  = params.get("emp") || "";
   prefillEmpNum   = params.get("num") || "";
 
@@ -119,10 +120,12 @@ function init() {
   empPad = new SigPad(el("emp-sig"));
   mgrPad = new SigPad(el("mgr-sig"));
 
-  updateKioskQR();
   listenRoster();
   loadDashData();
   loadLevelPreview();
+
+  // If opened via "Review & Sign" link from logbook, jump straight to that record
+  if (signId) openReview(signId);
 }
 
 // ── TABS ──────────────────────────────────────────────────────
@@ -797,32 +800,6 @@ function renderRoster() {
           onclick="startCoach('${esc(e.id)}','${esc(e.name)}','${esc(e.memberNum||'')}')">
           &#x1F4CB; Coach
         </button>
-        <button class="btn-action"
-          onclick="toggleRosterEditCoach('${esc(e.id)}')">
-          &#x270F;&#xFE0F; Edit
-        </button>
-        <button class="btn-action btn-action-red"
-          onclick="removeEmployee('${esc(e.id)}','${esc(e.name)}')">
-          &#x1F5D1;&#xFE0F; Delete
-        </button>
-      </div>
-      <div class="roster-edit-row" id="ce-row-${esc(e.id)}">
-        <div>
-          <div class="add-label">Name</div>
-          <input type="text" class="roster-field-input" id="ce-name-${esc(e.id)}"
-            value="${esc(e.name||'')}" style="width:140px;">
-        </div>
-        <div>
-          <div class="add-label">Counter #</div>
-          <input type="text" class="roster-field-input" id="ce-num-${esc(e.id)}"
-            value="${esc(e.memberNum||'')}" style="width:110px;">
-        </div>
-        <div style="display:flex;align-items:flex-end;gap:6px;">
-          <button class="btn-action btn-action-coach"
-            onclick="saveCoachEmp('${esc(e.id)}')">Save</button>
-          <button class="btn-action"
-            onclick="toggleRosterEditCoach('${esc(e.id)}')">Cancel</button>
-        </div>
       </div>
     </div>
   `).join("");
