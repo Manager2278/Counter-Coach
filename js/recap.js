@@ -822,6 +822,89 @@ window.sendMsg = async () => {
   } catch(e) { alert("Send error: " + e.message); }
 };
 
+// ── COACHING RECORD ACTIONS (PDF / Email) ────────────────────
+let _coachCache = {};   // id → full coaching record, populated by loadMyCoaching()
+
+function generateCoachingPDF(d) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const lm = 20, rw = 170;
+  let y = 20;
+  function checkPage(n) { if (y + n > 270) { doc.addPage(); y = 20; } }
+  function heading(text) {
+    checkPage(14); doc.setFont("helvetica","bold"); doc.setFontSize(10);
+    doc.setTextColor(28,58,42); doc.text(text.toUpperCase(), lm, y); y += 4;
+    doc.setDrawColor(200,230,210); doc.line(lm, y, lm+rw, y); y += 5;
+    doc.setTextColor(26,26,22); doc.setFont("helvetica","normal"); doc.setFontSize(11);
+  }
+  function field(label, value) {
+    if (!value) return; checkPage(14);
+    doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.text(label+":", lm, y); y += 5;
+    doc.setFont("helvetica","normal"); doc.setFontSize(10);
+    const lines = doc.splitTextToSize(String(value), rw);
+    checkPage(lines.length*5+4); doc.text(lines, lm, y); y += lines.length*5+4;
+  }
+  doc.setFont("helvetica","bold"); doc.setFontSize(16); doc.setTextColor(28,58,42);
+  doc.text("Employee Coaching Record", lm, y); y += 8; doc.setTextColor(26,26,22);
+  heading("Store Information"); field("Store Number",d.store); field("Manager",d.manager); field("Date",d.date);
+  heading("Employee"); field("Employee Name",d.name); field("Issue Type",d.issue);
+  heading("Coaching Details"); field("Incident",d.incident); field("Expected Behavior",d.expected);
+  field("Counter / Employee #",d.empCounter); field("Corrective Action",d.action);
+  if (d.systemWriteupDone) {
+    heading("Company System Writeup");
+    field("Status","Completed in company HR / discipline system prior to this record");
+    if (d.systemRef) field("Reference #",d.systemRef);
+  }
+  checkPage(60); heading("Signatures");
+  const sigY = y;
+  if (d.mgrSig) { try { doc.addImage(d.mgrSig,"PNG",lm,sigY,72,32); } catch(_){} }
+  else doc.rect(lm,sigY,72,32);
+  doc.setFont("helvetica","normal"); doc.setFontSize(9);
+  doc.text("Manager Signature",lm,sigY+36); doc.text(d.manager||"",lm,sigY+41);
+  const ex = lm+90;
+  if (d.empSig) { try { doc.addImage(d.empSig,"PNG",ex,sigY,72,32); } catch(_){} }
+  else {
+    doc.rect(ex,sigY,72,32); doc.setFont("helvetica","italic"); doc.setFontSize(8);
+    doc.setTextColor(140,140,140); doc.text("Signature pending",ex+2,sigY+17); doc.setTextColor(26,26,22);
+  }
+  doc.setFont("helvetica","normal"); doc.setFontSize(9);
+  doc.text("Employee Signature",ex,sigY+36); doc.text(d.name||"",ex,sigY+41);
+  y = sigY+50; checkPage(16);
+  doc.setFont("helvetica","italic"); doc.setFontSize(8); doc.setTextColor(130,130,120);
+  const disc = "Signing this document acknowledges receipt of this coaching record, not necessarily agreement with its contents. This record is confidential and for internal use only.";
+  doc.text(doc.splitTextToSize(disc,rw),lm,y);
+  return doc;
+}
+
+window.coachPDF = function(id) {
+  const r = _coachCache[id];
+  if (!r || !window.jspdf) return;
+  const doc   = generateCoachingPDF(r);
+  const fname = `Coaching_${(r.name||"Employee").replace(/\s+/g,"_")}_${(r.date||"").replace(/[/:,\s]/g,"")}.pdf`;
+  doc.save(fname);
+};
+
+window.coachEmail = async function(id, btn) {
+  const r = _coachCache[id];
+  if (!r || !window.jspdf) return;
+  if (btn) { btn.disabled = true; btn.textContent = "Sending\u2026"; }
+  try {
+    const pdfBase64 = generateCoachingPDF(r).output("datauristring").split(",")[1];
+    await httpsCallable(functions, "sendCoachingEmail")({
+      storeId: r.store || store, coachingId: id,
+      employeeName: r.name || "", date: r.date || "",
+      type: r.type || "Coaching", pdfBase64
+    });
+    if (btn) {
+      btn.textContent = "\u2713 Sent!";
+      setTimeout(() => { btn.disabled = false; btn.textContent = "\uD83D\uDCE7 Email DM"; }, 3000);
+    }
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = "\uD83D\uDCE7 Email DM"; }
+    alert("Email failed: " + (e.message || String(e)));
+  }
+};
+
 async function loadMyCoaching() {
   const listEl = el("coaching-list");
   listEl.innerHTML = '<div style="text-align:center;padding:36px 0;color:var(--ink-faint);font-size:14px;">Loading\u2026</div>';
@@ -838,6 +921,9 @@ async function loadMyCoaching() {
       .map(d => ({ id: d.id, ...d.data() }))
       .sort((a,b) => (b.savedAt?.toMillis?.() || 0) - (a.savedAt?.toMillis?.() || 0));
 
+    // Cache full records so coachPDF / coachEmail window functions can access them
+    records.forEach(r => { _coachCache[r.id] = r; });
+
     if (!mgrLoggedIn) {
       const hasPending = records.some(r => r.status === "pending_employee");
       el("coaching-dot").style.display = hasPending ? "block" : "none";
@@ -853,12 +939,19 @@ async function loadMyCoaching() {
       const statusHtml  = isPending
         ? `<span style="font-size:11px;font-weight:700;color:var(--amber);">&#x26A0;&#xFE0F; Signature needed</span>`
         : `<span style="font-size:11px;font-weight:700;color:var(--forest);">&#x2714;&#xFE0F; Signed</span>`;
-      const signBtn = (mgrLoggedIn && isPending)
-        ? `<a href="coaching.html?sign=${r.id}" style="display:inline-block;margin-top:10px;padding:9px 20px;background:var(--forest);color:white;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">&#x270D;&#xFE0F; Review &amp; Sign</a>`
-        : "";
       const empNameRow = mgrLoggedIn && r.name
         ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:2px;font-weight:600;">&#x1F464; ${escLocal(r.name)}</div>`
         : "";
+      const actionsRow = mgrLoggedIn ? `
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button class="btn-action" onclick="coachPDF('${r.id}')">&#x1F4C4; PDF</button>
+          ${isPending
+            ? `<a href="coaching.html?sign=${r.id}" class="btn-action btn-action-coach" style="text-decoration:none;">&#x270D;&#xFE0F; Review &amp; Sign</a>`
+            : ""}
+          ${r.empSig
+            ? `<button class="btn-action" onclick="coachEmail('${r.id}', this)">&#x1F4E7; Email DM</button>`
+            : ""}
+        </div>` : "";
       return `
         <div class="entry-card" style="border-left-color:${borderColor};">
           <div class="entry-top">
@@ -873,7 +966,7 @@ async function loadMyCoaching() {
             </div>
           </div>
           ${r.incident ? `<div style="font-size:13px;color:var(--ink-soft);margin-top:8px;line-height:1.6;font-family:'Courier Prime',monospace;">${escLocal(r.incident)}</div>` : ""}
-          ${signBtn}
+          ${actionsRow}
         </div>`;
     }).join("");
   } catch(e) {
