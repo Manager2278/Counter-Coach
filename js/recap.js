@@ -853,7 +853,7 @@ async function loadMyCoaching() {
       const statusHtml  = isPending
         ? `<span style="font-size:11px;font-weight:700;color:var(--amber);">&#x26A0;&#xFE0F; Signature needed</span>`
         : `<span style="font-size:11px;font-weight:700;color:var(--forest);">&#x2714;&#xFE0F; Signed</span>`;
-      const signBtn = (!mgrLoggedIn && isPending)
+      const signBtn = (mgrLoggedIn && isPending)
         ? `<a href="coaching.html?sign=${r.id}" style="display:inline-block;margin-top:10px;padding:9px 20px;background:var(--forest);color:white;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;">&#x270D;&#xFE0F; Review &amp; Sign</a>`
         : "";
       const empNameRow = mgrLoggedIn && r.name
