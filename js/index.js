@@ -1,9 +1,11 @@
 // ── COACH.HTML — Counter Coach Decision Tree ──────────────────
-import { db, auth }                  from "./firebase.js";
-import { el, fetchBrandingData, loadBroadcast } from "./utils.js";
-import { loadSession }               from "./session.js";
-import { doc, getDoc }               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { signInAnonymously }         from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { db, auth, functions }             from "./firebase.js";
+import { el, fetchBrandingData, loadBroadcast, compressImage } from "./utils.js";
+import { loadSession }                     from "./session.js";
+import { doc, getDoc, getDocs,
+         collection, query, where }        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { signInAnonymously }               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { httpsCallable }                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
 // ── HELPERS ───────────────────────────────────────────────────
 function showBanner(msg) { const b = el("error-banner"); b.style.display = "block"; b.textContent = msg; }
@@ -11,6 +13,9 @@ function showBanner(msg) { const b = el("error-banner"); b.style.display = "bloc
 // ── STATE ─────────────────────────────────────────────────────
 let store = "", name = "", role = "employee", managerPhone = "", helpdeskPhone = "";
 let historyStack = [];
+let myEmpId          = null;
+let myAvatarUrl      = null;
+let avatarPendingFile = null;
 
 // ── INIT ──────────────────────────────────────────────────────
 signInAnonymously(auth)
@@ -25,6 +30,24 @@ if (saved && saved.store && saved.name) {
   managerPhone  = saved.managerPhone  || "";
   helpdeskPhone = saved.helpdeskPhone || "";
   updateHeader();
+  // Fetch employee doc for avatarUrl
+  getDocs(query(collection(db, "stores", store, "employees"), where("name", "==", name)))
+    .then(snap => {
+      if (!snap.empty) {
+        const empDoc = snap.docs[0];
+        myEmpId = empDoc.id;
+        if (empDoc.data().avatarUrl) {
+          myAvatarUrl = empDoc.data().avatarUrl;
+          applyAvatarToHeader(myAvatarUrl);
+        }
+      }
+      const btn = document.getElementById("tb-avatar-btn");
+      if (btn) btn.style.display = "flex";
+    })
+    .catch(() => {
+      const btn = document.getElementById("tb-avatar-btn");
+      if (btn) btn.style.display = "flex";
+    });
 }
 
 // Fetch fresh store data (manager/helpdesk phone) for Call buttons
@@ -147,6 +170,80 @@ window.emergency = () => {
   const btn = el("actionBtn");
   btn.innerHTML = `<a href="tel:911" class="btn btn-emergency">&#x1F6A8; Call 911</a>`;
   if (managerPhone) btn.innerHTML += `<a href="tel:${managerPhone}" class="btn btn-green">&#x1F4DE; Then Call Manager</a>`;
+};
+
+// ── AVATAR ────────────────────────────────────────────────────
+function applyAvatarToHeader(url) {
+  const img = document.getElementById("tb-avatar-img");
+  const ph  = document.getElementById("tb-avatar-placeholder");
+  if (!img || !url) return;
+  img.src = url; img.style.display = "block";
+  if (ph) ph.style.display = "none";
+}
+
+window.openAvatarModal = function() {
+  const modal = document.getElementById("avatar-modal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  const cur = document.getElementById("avatar-current-img");
+  const ph  = document.getElementById("avatar-placeholder-circle");
+  if (myAvatarUrl) { cur.src = myAvatarUrl; cur.style.display = "block"; ph.style.display = "none"; }
+  else             { cur.style.display = "none"; ph.style.display = "flex"; }
+  document.getElementById("avatar-status").textContent = "";
+  document.getElementById("avatar-generate-btn").style.display = "none";
+  avatarPendingFile = null;
+};
+
+window.closeAvatarModal = function() {
+  const modal = document.getElementById("avatar-modal");
+  if (modal) modal.style.display = "none";
+  avatarPendingFile = null;
+};
+
+window.handleAvatarFileChosen = function(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  avatarPendingFile = file;
+  const cur = document.getElementById("avatar-current-img");
+  cur.src = URL.createObjectURL(file); cur.style.display = "block";
+  document.getElementById("avatar-placeholder-circle").style.display = "none";
+  document.getElementById("avatar-status").textContent = "Photo selected — ready to generate!";
+  document.getElementById("avatar-generate-btn").style.display = "block";
+};
+
+window.generateMyAvatar = async function() {
+  if (!avatarPendingFile) { alert("Please choose a photo first."); return; }
+  if (!myEmpId) { alert("Employee record not found. Try logging in from the Daily Recap first."); return; }
+  const btn = document.getElementById("avatar-generate-btn");
+  btn.disabled = true; btn.textContent = "Generating…";
+  document.getElementById("avatar-status").textContent = "Compressing photo…";
+  try {
+    const compressed = await compressImage(avatarPendingFile, 512, 0.85);
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(compressed);
+    });
+    document.getElementById("avatar-status").textContent = "Generating your caricature… (15–30s)";
+    const fn = httpsCallable(functions, "generateAvatarCaricature");
+    const result = await fn({ photoBase64: base64, mimeType: "image/jpeg", storeId: store, empId: myEmpId, role });
+    myAvatarUrl = result.data.avatarUrl;
+    applyAvatarToHeader(myAvatarUrl);
+    const cur = document.getElementById("avatar-current-img");
+    cur.src = myAvatarUrl; cur.style.display = "block";
+    document.getElementById("avatar-placeholder-circle").style.display = "none";
+    document.getElementById("avatar-status").textContent = "Caricature generated!";
+    btn.textContent = "✨ Regenerate";
+  } catch(e) {
+    document.getElementById("avatar-status").textContent = "Error: " + (e.message || "Unknown error");
+    btn.textContent = "✨ Try Again";
+  } finally {
+    btn.disabled = false;
+    avatarPendingFile = null;
+    const inp = document.getElementById("avatar-file-input");
+    if (inp) inp.value = "";
+  }
 };
 
 // ── BRANDING ──────────────────────────────────────────────────
