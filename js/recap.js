@@ -272,7 +272,8 @@ async function bootApp() {
 
   applyRoleUI(mgrLoggedIn);
   if (mgrLoggedIn) activateMgrPanel();
-  goScreen("log");   // all users land on logbook
+  const tab = new URLSearchParams(location.search).get("tab");
+  if (tab) navTo(tab); else goScreen("log");   // all users land on logbook
 }
 
 async function loadStorePin() {
@@ -1164,6 +1165,7 @@ async function loadMgrRoster() {
 // ── AVATAR HELPERS & MODALS ───────────────────────────────────────────────
 
 function applyAvatarToTopbar(url) {
+  localStorage.setItem("cc_avatar_url", url);
   const img = el("tb-avatar-img");
   const ph  = el("tb-avatar-placeholder");
   if (!img || !url) return;
@@ -1188,6 +1190,8 @@ window.openAvatarModal = function() {
   el("avatar-status").textContent = "";
   el("avatar-generate-btn").style.display = "none";
   avatarPendingFile = null;
+  const lbl = document.querySelector('label[for="avatar-file-input"]');
+  if (lbl) lbl.textContent = myAvatarUrl ? "📷 Change Photo" : "📷 Choose / Take Photo";
 };
 
 window.closeAvatarModal = function() {
