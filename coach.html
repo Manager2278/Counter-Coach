@@ -134,7 +134,7 @@
   </footer>
 
 <!-- ══════════════ BOTTOM NAV ══════════════════════════════════ -->
-<nav class="bottom-nav">
+<nav class="bottom-nav" id="bottom-nav">
   <a class="nav-btn-link active" href="/coach">
     <img src="icon-192.png" alt="" style="width:22px;height:22px;border-radius:4px;object-fit:cover;display:block;margin:0 auto 2px;">
     Coach
@@ -142,8 +142,17 @@
   <a class="nav-btn-link" href="/">
     <span class="nav-icon">📋</span>Logbook
   </a>
+  <a class="nav-btn-link" href="/?tab=msg" data-role="employee">
+    <span class="nav-icon">🔒</span>Private
+  </a>
   <a class="nav-btn-link" href="/coaching">
     <span class="nav-icon">📝</span>Coaching
+  </a>
+  <a class="nav-btn-link" href="/?tab=settings" data-role="employee">
+    <span class="nav-icon">⚙️</span>Settings
+  </a>
+  <a class="nav-btn-link" href="/?tab=mgr" data-role="manager" style="display:none;">
+    <span class="nav-icon">🔑</span>Manager
   </a>
 </nav>
 
@@ -166,6 +175,6 @@
   </div>
 </div>
 
-<script type="module" src="js/index.js?v=2"></script>
+<script type="module" src="js/index.js?v=3"></script>
 </body>
 </html>

@@ -30,6 +30,9 @@ if (saved && saved.store && saved.name) {
   managerPhone  = saved.managerPhone  || "";
   helpdeskPhone = saved.helpdeskPhone || "";
   updateHeader();
+  // Show cached avatar immediately, then confirm from Firestore
+  const cached = localStorage.getItem("cc_avatar_url");
+  if (cached) { myAvatarUrl = cached; applyAvatarToHeader(cached); }
   // Fetch employee doc for avatarUrl
   getDocs(query(collection(db, "stores", store, "employees"), where("name", "==", name)))
     .then(snap => {
@@ -174,6 +177,7 @@ window.emergency = () => {
 
 // ── AVATAR ────────────────────────────────────────────────────
 function applyAvatarToHeader(url) {
+  localStorage.setItem("cc_avatar_url", url);
   const img = document.getElementById("tb-avatar-img");
   const ph  = document.getElementById("tb-avatar-placeholder");
   if (!img || !url) return;
@@ -192,6 +196,8 @@ window.openAvatarModal = function() {
   document.getElementById("avatar-status").textContent = "";
   document.getElementById("avatar-generate-btn").style.display = "none";
   avatarPendingFile = null;
+  const lbl = document.querySelector('label[for="avatar-file-input"]');
+  if (lbl) lbl.textContent = myAvatarUrl ? "📷 Change Photo" : "📷 Choose / Take Photo";
 };
 
 window.closeAvatarModal = function() {
@@ -245,6 +251,19 @@ window.generateMyAvatar = async function() {
     if (inp) inp.value = "";
   }
 };
+
+// ── ROLE-BASED NAV ────────────────────────────────────────────
+function applyNavRoles() {
+  const ms = (() => { try { return JSON.parse(localStorage.getItem("cc_recap_mgr")); } catch { return null; } })();
+  const isMgr = (ms && ms.on) || role === "manager";
+  document.querySelectorAll("[data-role='employee']").forEach(el => {
+    el.style.display = isMgr ? "none" : "";
+  });
+  document.querySelectorAll("[data-role='manager']").forEach(el => {
+    el.style.display = isMgr ? "" : "none";
+  });
+}
+applyNavRoles();
 
 // ── BRANDING ──────────────────────────────────────────────────
 async function loadBranding() {
