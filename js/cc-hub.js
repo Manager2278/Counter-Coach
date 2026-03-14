@@ -1,6 +1,7 @@
 // ── CC-HUB ADMIN MODULE ───────────────────────────────────────
-import { db, auth, storage }           from "./firebase.js";
-import { el, v, esc }                  from "./utils.js";
+import { db, auth, storage, functions } from "./firebase.js";
+import { el, v, esc, compressImage }   from "./utils.js";
+import { httpsCallable }               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 import { signInAnonymously }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import {
   doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc,
@@ -1129,15 +1130,20 @@ function renderEmployees() {
   container.innerHTML = filtEmployees.map(e => {
     // Include the employee's current role even if it's not in the standard list
     const titleList = (e.role && !TITLES.includes(e.role)) ? [e.role, ...TITLES] : TITLES;
+    const avatarHtml = e.avatarUrl
+      ? `<img src="${esc(e.avatarUrl)}" alt="" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--forest);flex-shrink:0;">`
+      : `<div style="width:40px;height:40px;border-radius:50%;background:var(--mint);border:2px dashed var(--sage);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">👤</div>`;
     return `
     <div class="emp-wrap">
       <div class="emp-item">
+        ${avatarHtml}
         <div style="flex:1;min-width:0;">
           <div class="emp-name">${esc(e.name || "—")}</div>
           <div class="emp-detail">Store ${esc(e.store || "?")}${e.memberNum ? ` · #${esc(e.memberNum)}` : ""}${e.addedAt ? ` · Added ${fmtDate(e.addedAt)}` : ""}</div>
         </div>
         ${e.loggedIn ? `<span class="badge badge-green" style="flex-shrink:0;">🟢 Active</span>` : ""}
         <span class="badge badge-role-emp" style="flex-shrink:0;">${esc(e.role || "—")}</span>
+        <button class="btn btn-sm btn-outline" onclick="openHubAvatarModal('${esc(e.id)}','${esc(e.name||'')}','${esc(e.role||'')}','${esc(e.store||'')}')">🖼️</button>
         ${e.loggedIn ? `<button class="btn btn-sm btn-outline" onclick="releaseEmployee('${esc(e.id)}','${esc(e.name||'')}')">Release</button>` : ""}
         <button class="btn btn-sm btn-outline" onclick="editEmployee('${esc(e.id)}')">✏️</button>
         <button class="btn btn-sm btn-red" onclick="deleteEmployee('${esc(e.id)}','${esc(e.name || '')}')">🗑️</button>
@@ -1241,6 +1247,90 @@ window.releaseEmployee = async function(id, name) {
   const ref = emp._docPath ? doc(db, emp._docPath) : doc(db, "stores", emp.store, "employees", id);
   await updateDoc(ref, { loggedIn: false }).catch(e => alert("Error: " + e.message));
   auditLog("Released employee session", `Name: ${name}`);
+};
+
+// ── HUB AVATAR MODAL ──────────────────────────────────────────
+let hubAvatarTargetId    = null;
+let hubAvatarTargetRole  = null;
+let hubAvatarTargetStore = null;
+let hubAvatarPendingFile = null;
+
+window.openHubAvatarModal = function(empId, empName, empRole, empStore) {
+  hubAvatarTargetId    = empId;
+  hubAvatarTargetRole  = empRole;
+  hubAvatarTargetStore = empStore;
+  hubAvatarPendingFile = null;
+  const modal = document.getElementById("hub-avatar-modal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  document.getElementById("hub-avatar-emp-name").textContent = empName || "Employee";
+  document.getElementById("hub-avatar-store").textContent    = empStore || "";
+  document.getElementById("hub-avatar-status").textContent   = "";
+  document.getElementById("hub-avatar-gen-btn").style.display = "none";
+  const emp = allEmployees.find(e => e.id === empId);
+  const cur = document.getElementById("hub-avatar-current");
+  const ph  = document.getElementById("hub-avatar-placeholder");
+  if (emp?.avatarUrl) {
+    cur.src = emp.avatarUrl; cur.style.display = "block";
+    ph.style.display = "none";
+  } else {
+    cur.style.display = "none";
+    ph.style.display = "flex";
+  }
+};
+
+window.closeHubAvatarModal = function() {
+  const modal = document.getElementById("hub-avatar-modal");
+  if (modal) modal.style.display = "none";
+  hubAvatarPendingFile = null;
+};
+
+window.handleHubAvatarFile = function(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  hubAvatarPendingFile = file;
+  const cur = document.getElementById("hub-avatar-current");
+  cur.src = URL.createObjectURL(file);
+  cur.style.display = "block";
+  document.getElementById("hub-avatar-placeholder").style.display = "none";
+  document.getElementById("hub-avatar-status").textContent = "Photo selected — ready to generate.";
+  document.getElementById("hub-avatar-gen-btn").style.display = "block";
+};
+
+window.generateHubAvatar = async function() {
+  if (!hubAvatarPendingFile || !hubAvatarTargetId) return;
+  const btn = document.getElementById("hub-avatar-gen-btn");
+  btn.disabled = true; btn.textContent = "Generating…";
+  document.getElementById("hub-avatar-status").textContent = "Compressing photo…";
+  try {
+    const compressed = await compressImage(hubAvatarPendingFile, 512, 0.85);
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(compressed);
+    });
+    document.getElementById("hub-avatar-status").textContent = "Generating caricature… (15–30s)";
+    const fn = httpsCallable(functions, "generateAvatarCaricature");
+    const result = await fn({ photoBase64: base64, mimeType: "image/jpeg", storeId: hubAvatarTargetStore, empId: hubAvatarTargetId, role: hubAvatarTargetRole || "" });
+    const emp = allEmployees.find(e => e.id === hubAvatarTargetId);
+    if (emp) emp.avatarUrl = result.data.avatarUrl;
+    renderEmployees();
+    const cur = document.getElementById("hub-avatar-current");
+    cur.src = result.data.avatarUrl; cur.style.display = "block";
+    document.getElementById("hub-avatar-placeholder").style.display = "none";
+    document.getElementById("hub-avatar-status").textContent = "Caricature generated!";
+    btn.textContent = "✨ Regenerate";
+    auditLog("Generated avatar caricature", `Employee ID: ${hubAvatarTargetId} · Store: ${hubAvatarTargetStore}`);
+  } catch(e) {
+    document.getElementById("hub-avatar-status").textContent = "Error: " + (e.message || "Unknown error");
+    btn.textContent = "✨ Try Again";
+  } finally {
+    btn.disabled = false;
+    hubAvatarPendingFile = null;
+    const inp = document.getElementById("hub-avatar-file-input");
+    if (inp) inp.value = "";
+  }
 };
 
 // ── COACHING RECORDS ──────────────────────────────────────────

@@ -1,4 +1,6 @@
 const { onCall, HttpsError }            = require("firebase-functions/v2/https");
+const { defineSecret }                  = require("firebase-functions/params");
+const falKey                            = defineSecret("FAL_KEY");
 const { onDocumentCreated,
         onDocumentUpdated,
         onDocumentDeleted }             = require("firebase-functions/v2/firestore");
@@ -442,6 +444,96 @@ function storagePathFromUrl(url) {
  *
  * Listens on: stores/{storeId}/entries/{entryId}
  */
+/**
+ * generateAvatarCaricature
+ * Accepts a base64 employee photo and generates an O'Reilly-themed Pixar-style
+ * caricature via fal.ai image-to-image. Stores the result in Firebase Storage
+ * and writes the URL back to the employee's Firestore document.
+ *
+ * Request data: { photoBase64, mimeType, storeId, empId, role }
+ * Returns:      { avatarUrl }
+ */
+exports.generateAvatarCaricature = onCall(
+  { secrets: [falKey] },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Must be signed in.");
+    }
+    const { photoBase64, mimeType, storeId, empId, role } = request.data;
+    if (!photoBase64 || !storeId || !empId) {
+      throw new HttpsError("invalid-argument", "photoBase64, storeId, and empId are required.");
+    }
+
+    const bucket = getStorage().bucket();
+
+    // 1. Upload source photo to a temp Storage location for fal.ai to read
+    const tempPath = `avatars/${storeId}/_tmp_${empId}.jpg`;
+    const tempFile = bucket.file(tempPath);
+    const srcBuffer = Buffer.from(photoBase64, "base64");
+    await tempFile.save(srcBuffer, {
+      metadata: { contentType: mimeType || "image/jpeg" }
+    });
+    const [tempUrl] = await tempFile.getSignedUrl({
+      action: "read",
+      expires: Date.now() + 5 * 60 * 1000
+    });
+
+    // 2. Build role-specific O'Reilly prompt
+    const ROLE_MAP = {
+      "Store Manager":     "store manager in red O'Reilly Auto Parts polo",
+      "Manager":           "store manager in red O'Reilly Auto Parts polo",
+      "Parts Specialist":  "auto parts counter specialist",
+      "Sales Specialist":  "professional sales specialist",
+      "RSS":               "retail sales specialist",
+      "ISS":               "installer sales specialist",
+      "Assistant":         "assistant store manager",
+      "Driver":            "delivery driver",
+    };
+    const roleDesc = ROLE_MAP[role] || "team member";
+    const prompt = `cartoon caricature, O'Reilly Auto Parts employee, ${roleDesc}, red uniform, friendly smile, automotive shop background, Pixar style illustration, vibrant colors`;
+
+    // 3. Call fal.ai image-to-image
+    const falResponse = await fetch("https://fal.run/fal-ai/flux/dev/image-to-image", {
+      method: "POST",
+      headers: {
+        "Authorization": `Key ${falKey.value()}`,
+        "Content-Type":  "application/json"
+      },
+      body: JSON.stringify({ image_url: tempUrl, prompt, strength: 0.75 })
+    });
+
+    if (!falResponse.ok) {
+      const errText = await falResponse.text();
+      throw new HttpsError("internal", `fal.ai error: ${falResponse.status} — ${errText.slice(0, 200)}`);
+    }
+    const falData  = await falResponse.json();
+    const imageUrl = falData?.images?.[0]?.url;
+    if (!imageUrl) {
+      throw new HttpsError("internal", "fal.ai returned no image.");
+    }
+
+    // 4. Download generated image and save to permanent Storage path
+    const imgResponse = await fetch(imageUrl);
+    if (!imgResponse.ok) {
+      throw new HttpsError("internal", "Failed to download generated image from fal.ai.");
+    }
+    const imgBuffer   = Buffer.from(await imgResponse.arrayBuffer());
+    const finalPath   = `avatars/${storeId}/${empId}.jpg`;
+    const finalFile   = bucket.file(finalPath);
+    await finalFile.save(imgBuffer, { metadata: { contentType: "image/jpeg" } });
+    await finalFile.makePublic();
+    const avatarUrl = `https://storage.googleapis.com/${bucket.name}/${finalPath}`;
+
+    // 5. Clean up temp file
+    await tempFile.delete().catch(() => {});
+
+    // 6. Write avatarUrl to employee Firestore doc
+    await db.doc(`stores/${storeId}/employees/${empId}`).update({ avatarUrl });
+
+    return { avatarUrl };
+  }
+);
+
 exports.onEntryDeleted = onDocumentDeleted(
   "stores/{storeId}/entries/{entryId}", async event => {
     const data = event.data?.data() || {};

@@ -28,6 +28,12 @@ let notifyMessages     = true;
 let notifyDone         = false;
 let empDocMap          = {};
 let mgrRosterData      = [];
+let myEmpId            = null;
+let myAvatarUrl        = null;
+let avatarPendingFile  = null;
+let mgrAvatarTargetId   = null;
+let mgrAvatarTargetRole = null;
+let mgrAvatarPendingFile = null;
 
 // ── INIT ──────────────────────────────────────────────────────
 (function preShowQR() {
@@ -66,7 +72,13 @@ function init() {
     getDocs(query(collection(db,"stores",store,"employees"), where("name","==",name)))
       .then(snap => {
         if (!snap.empty) {
-          updateDoc(snap.docs[0].ref, { loggedIn: true }).catch(()=>{});
+          const empDoc = snap.docs[0];
+          myEmpId = empDoc.id;
+          updateDoc(empDoc.ref, { loggedIn: true }).catch(()=>{});
+          if (empDoc.data().avatarUrl) {
+            myAvatarUrl = empDoc.data().avatarUrl;
+            applyAvatarToTopbar(myAvatarUrl);
+          }
         }
       })
       .catch(() => {});
@@ -173,6 +185,8 @@ window.noSessionLogin = () => {
     errEl.style.display = "block"; return;
   }
   const docId = empData.id;
+  myEmpId = docId;
+  if (empData.avatarUrl) { myAvatarUrl = empData.avatarUrl; applyAvatarToTopbar(empData.avatarUrl); }
   const updates = { loggedIn: true };
   if (email) updates.empEmail = email;
   updateDoc(doc(db,"stores",s,"employees",docId), updates).catch(e => console.warn(e));
@@ -245,6 +259,7 @@ async function bootApp() {
   el("tb-store").classList.remove("hidden");
   el("tb-user").textContent  = name + (mgrLoggedIn ? " 🔑" : "");
   el("tb-user").classList.remove("hidden");
+  el("tb-avatar-btn").classList.remove("hidden");
   el("btn-switch-user").classList.remove("hidden");
   el("bottom-nav").classList.add("show");
   el("log-date").textContent = new Date().toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
@@ -1146,6 +1161,164 @@ async function loadMgrRoster() {
   }
 }
 
+// ── AVATAR HELPERS & MODALS ───────────────────────────────────────────────
+
+function applyAvatarToTopbar(url) {
+  const img = el("tb-avatar-img");
+  const ph  = el("tb-avatar-placeholder");
+  if (!img || !url) return;
+  img.src = url;
+  img.style.display = "block";
+  if (ph) ph.style.display = "none";
+}
+
+window.openAvatarModal = function() {
+  const modal = el("avatar-modal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  const cur    = el("avatar-current-img");
+  const circle = el("avatar-placeholder-circle");
+  if (myAvatarUrl) {
+    cur.src = myAvatarUrl; cur.style.display = "block";
+    circle.style.display = "none";
+  } else {
+    cur.style.display = "none";
+    circle.style.display = "flex";
+  }
+  el("avatar-status").textContent = "";
+  el("avatar-generate-btn").style.display = "none";
+  avatarPendingFile = null;
+};
+
+window.closeAvatarModal = function() {
+  const modal = el("avatar-modal");
+  if (modal) modal.style.display = "none";
+  avatarPendingFile = null;
+};
+
+window.handleAvatarFileChosen = function(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  avatarPendingFile = file;
+  const cur = el("avatar-current-img");
+  cur.src = URL.createObjectURL(file);
+  cur.style.display = "block";
+  el("avatar-placeholder-circle").style.display = "none";
+  el("avatar-status").textContent = "Photo selected — ready to generate!";
+  el("avatar-generate-btn").style.display = "block";
+};
+
+window.generateMyAvatar = async function() {
+  if (!avatarPendingFile) { alert("Please choose a photo first."); return; }
+  if (!myEmpId) { alert("Employee record not found. Try logging out and back in."); return; }
+  const btn = el("avatar-generate-btn");
+  btn.disabled = true; btn.textContent = "Generating…";
+  el("avatar-status").textContent = "Compressing photo…";
+  try {
+    const compressed = await compressImage(avatarPendingFile, 512, 0.85);
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(compressed);
+    });
+    el("avatar-status").textContent = "Generating your caricature… (15–30s)";
+    const session = loadSession();
+    const fn = httpsCallable(functions, "generateAvatarCaricature");
+    const result = await fn({ photoBase64: base64, mimeType: "image/jpeg", storeId: store, empId: myEmpId, role: session?.role || "" });
+    myAvatarUrl = result.data.avatarUrl;
+    applyAvatarToTopbar(myAvatarUrl);
+    const cur = el("avatar-current-img");
+    cur.src = myAvatarUrl; cur.style.display = "block";
+    el("avatar-placeholder-circle").style.display = "none";
+    el("avatar-status").textContent = "Caricature generated!";
+    btn.textContent = "✨ Regenerate";
+  } catch(e) {
+    el("avatar-status").textContent = "Error: " + (e.message || "Unknown error");
+    btn.textContent = "✨ Try Again";
+  } finally {
+    btn.disabled = false;
+    avatarPendingFile = null;
+    const inp = el("avatar-file-input");
+    if (inp) inp.value = "";
+  }
+};
+
+window.openMgrAvatarModal = function(empId, empName, empRole) {
+  mgrAvatarTargetId   = empId;
+  mgrAvatarTargetRole = empRole;
+  mgrAvatarPendingFile = null;
+  const modal = el("mgr-avatar-modal");
+  if (!modal) return;
+  modal.style.display = "flex";
+  el("mgr-avatar-emp-name").textContent = empName || "Employee";
+  el("mgr-avatar-status").textContent = "";
+  el("mgr-avatar-gen-btn").style.display = "none";
+  const emp = mgrRosterData.find(e => e.id === empId);
+  const cur = el("mgr-avatar-current");
+  const ph  = el("mgr-avatar-placeholder");
+  if (emp?.avatarUrl) {
+    cur.src = emp.avatarUrl; cur.style.display = "block";
+    ph.style.display = "none";
+  } else {
+    cur.style.display = "none";
+    ph.style.display = "flex";
+  }
+};
+
+window.closeMgrAvatarModal = function() {
+  const modal = el("mgr-avatar-modal");
+  if (modal) modal.style.display = "none";
+  mgrAvatarPendingFile = null;
+};
+
+window.handleMgrAvatarFile = function(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  mgrAvatarPendingFile = file;
+  const cur = el("mgr-avatar-current");
+  cur.src = URL.createObjectURL(file);
+  cur.style.display = "block";
+  el("mgr-avatar-placeholder").style.display = "none";
+  el("mgr-avatar-status").textContent = "Photo selected — ready to generate.";
+  el("mgr-avatar-gen-btn").style.display = "block";
+};
+
+window.generateMgrAvatar = async function() {
+  if (!mgrAvatarPendingFile || !mgrAvatarTargetId) return;
+  const btn = el("mgr-avatar-gen-btn");
+  btn.disabled = true; btn.textContent = "Generating…";
+  el("mgr-avatar-status").textContent = "Compressing photo…";
+  try {
+    const compressed = await compressImage(mgrAvatarPendingFile, 512, 0.85);
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload  = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(compressed);
+    });
+    el("mgr-avatar-status").textContent = "Generating caricature… (15–30s)";
+    const fn = httpsCallable(functions, "generateAvatarCaricature");
+    const result = await fn({ photoBase64: base64, mimeType: "image/jpeg", storeId: store, empId: mgrAvatarTargetId, role: mgrAvatarTargetRole || "" });
+    const emp = mgrRosterData.find(e => e.id === mgrAvatarTargetId);
+    if (emp) emp.avatarUrl = result.data.avatarUrl;
+    renderMgrRoster();
+    const cur = el("mgr-avatar-current");
+    cur.src = result.data.avatarUrl; cur.style.display = "block";
+    el("mgr-avatar-placeholder").style.display = "none";
+    el("mgr-avatar-status").textContent = "Caricature generated!";
+    btn.textContent = "✨ Regenerate";
+  } catch(e) {
+    el("mgr-avatar-status").textContent = "Error: " + (e.message || "Unknown error");
+    btn.textContent = "✨ Try Again";
+  } finally {
+    btn.disabled = false;
+    mgrAvatarPendingFile = null;
+    const inp = el("mgr-avatar-file-input");
+    if (inp) inp.value = "";
+  }
+};
+
 function renderMgrRoster() {
   const listEl = el("mgr-roster-list");
   if (!listEl) return;
@@ -1157,9 +1330,13 @@ function renderMgrRoster() {
     const opts = titleList.map(t =>
       `<option value="${t}"${e.role===t?' selected':''}>${t}</option>`
     ).join("");
+    const avatarHtml = e.avatarUrl
+      ? `<img src="${esc(e.avatarUrl)}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--forest);flex-shrink:0;">`
+      : `<div style="width:36px;height:36px;border-radius:50%;background:var(--mint);border:2px dashed var(--sage);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>`;
     return `
       <div class="roster-item">
         <div class="roster-row">
+          ${avatarHtml}
           <div style="flex:1;min-width:100px;">
             <div class="roster-name">${esc(e.name || "—")}</div>
             ${e.memberNum ? `<div class="roster-meta">#${esc(e.memberNum)}</div>` : ""}
@@ -1167,6 +1344,8 @@ function renderMgrRoster() {
           <select class="roster-select" id="rs-title-${esc(e.id)}"
             onchange="saveMgrTitle('${esc(e.id)}',this)">${opts}</select>
           <span class="roster-saved" id="rs-saved-${esc(e.id)}">✓</span>
+          <button class="btn-action"
+            onclick="openMgrAvatarModal('${esc(e.id)}','${esc(e.name||'')}','${esc(e.role||'')}')">🖼️</button>
           <button class="btn-action btn-action-coach"
             onclick="coachEmployee('${esc(e.id)}')">&#x1F4CB; Coach</button>
           <button class="btn-action"

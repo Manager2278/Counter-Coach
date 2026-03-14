@@ -44,6 +44,9 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .topbar-user  { font-size: 12px; color: var(--sage); font-weight: 700; }
 .topbar-back  { font-size: 12px; color: rgba(255,255,255,0.75); text-decoration: none; padding: 4px 0; cursor: pointer; border: none; background: none; font-family: 'Karla', sans-serif; }
 .topbar-back:hover { color: white; }
+.topbar-avatar { width:30px; height:30px; border-radius:50%; border:2px solid rgba(255,255,255,0.4); background:rgba(255,255,255,0.15); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; padding:0; overflow:hidden; flex-shrink:0; transition:border-color .15s; }
+.topbar-avatar:hover { border-color:rgba(255,255,255,0.8); }
+.topbar-avatar img  { width:100%; height:100%; object-fit:cover; }
 
 /* ── SCREENS ─────────────────────────────── */
 .screen { display: none; max-width: 700px; margin: 0 auto; padding: 20px 14px 100px; }
@@ -329,6 +332,10 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
   <div class="topbar-right">
     <span class="topbar-store hidden" id="tb-store"></span>
     <span class="topbar-user  hidden" id="tb-user"></span>
+    <button class="topbar-avatar hidden" id="tb-avatar-btn" onclick="openAvatarModal()" title="My profile picture">
+      <img id="tb-avatar-img" src="" alt="" style="display:none;">
+      <span id="tb-avatar-placeholder">👤</span>
+    </button>
     <button class="topbar-back hidden" id="btn-switch-user" onclick="switchUser()">⇄ Switch</button>
   </div>
 </header>
@@ -738,6 +745,44 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <span class="nav-dot" id="mgr-dot"></span>
   </button>
 </nav>
+
+<!-- ══════════════ EMPLOYEE AVATAR MODAL ══════════════════════ -->
+<div id="avatar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:400;align-items:center;justify-content:center;" onclick="closeAvatarModal()">
+  <div style="background:white;border-radius:16px;padding:24px 20px;max-width:320px;width:90%;text-align:center;" onclick="event.stopPropagation()">
+    <h3 style="font-family:'Courier Prime',monospace;font-size:17px;margin:0 0 6px;">My Caricature Avatar</h3>
+    <p style="font-size:13px;color:var(--ink-faint);margin:0 0 16px;">Take or upload a photo — we'll generate an O'Reilly-themed caricature.</p>
+    <div style="margin-bottom:14px;">
+      <img id="avatar-current-img" src="" alt="" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--forest);display:none;margin:0 auto 8px;">
+      <div id="avatar-placeholder-circle" style="width:100px;height:100px;border-radius:50%;background:var(--mint);border:3px dashed var(--sage);display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 8px;">👤</div>
+    </div>
+    <div id="avatar-status" style="font-size:13px;color:var(--ink-faint);min-height:18px;margin-bottom:12px;"></div>
+    <input type="file" id="avatar-file-input" accept="image/*" capture="user" style="display:none;" onchange="handleAvatarFileChosen(this)">
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <label for="avatar-file-input" class="btn-add" style="display:block;text-align:center;cursor:pointer;padding:10px;">📷 Choose / Take Photo</label>
+      <button id="avatar-generate-btn" class="btn-add" onclick="generateMyAvatar()" style="display:none;background:var(--forest);">✨ Generate Caricature</button>
+      <button class="btn-done" onclick="closeAvatarModal()" style="padding:9px;">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MANAGER ROSTER AVATAR MODAL ════════════════ -->
+<div id="mgr-avatar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:400;align-items:center;justify-content:center;" onclick="closeMgrAvatarModal()">
+  <div style="background:white;border-radius:16px;padding:24px 20px;max-width:320px;width:90%;text-align:center;" onclick="event.stopPropagation()">
+    <h3 style="font-family:'Courier Prime',monospace;font-size:17px;margin:0 0 4px;">Avatar for <span id="mgr-avatar-emp-name">Employee</span></h3>
+    <p style="font-size:12px;color:var(--ink-faint);margin:0 0 14px;">Upload a photo to generate their O'Reilly caricature.</p>
+    <div style="margin-bottom:14px;">
+      <img id="mgr-avatar-current" src="" alt="" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid var(--forest);display:none;margin:0 auto 8px;">
+      <div id="mgr-avatar-placeholder" style="width:90px;height:90px;border-radius:50%;background:var(--mint);border:3px dashed var(--sage);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 8px;">👤</div>
+    </div>
+    <div id="mgr-avatar-status" style="font-size:12px;color:var(--ink-faint);min-height:16px;margin-bottom:10px;"></div>
+    <input type="file" id="mgr-avatar-file-input" accept="image/*" capture="user" style="display:none;" onchange="handleMgrAvatarFile(this)">
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <label for="mgr-avatar-file-input" class="btn-add" style="display:block;text-align:center;cursor:pointer;padding:9px;">📷 Choose / Take Photo</label>
+      <button id="mgr-avatar-gen-btn" class="btn-add" onclick="generateMgrAvatar()" style="display:none;background:var(--forest);">✨ Generate Caricature</button>
+      <button class="btn-done" onclick="closeMgrAvatarModal()" style="padding:8px;">Close</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module" src="js/recap.js"></script>
