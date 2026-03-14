@@ -798,6 +798,25 @@
   </div>
 </div>
 
+<!-- ══════════════ HUB AVATAR MODAL ══════════════════════════ -->
+<div id="hub-avatar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:400;align-items:center;justify-content:center;" onclick="closeHubAvatarModal()">
+  <div style="background:white;border-radius:16px;padding:24px 20px;max-width:320px;width:90%;text-align:center;" onclick="event.stopPropagation()">
+    <h3 style="font-size:17px;margin:0 0 4px;">Avatar: <span id="hub-avatar-emp-name"></span></h3>
+    <p style="font-size:12px;color:#888;margin:0 0 14px;">Store <span id="hub-avatar-store"></span></p>
+    <div style="margin-bottom:14px;">
+      <img id="hub-avatar-current" src="" alt="" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid #1e6b36;display:none;margin:0 auto 8px;">
+      <div id="hub-avatar-placeholder" style="width:90px;height:90px;border-radius:50%;background:#e6f4ea;border:3px dashed #8ab89a;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 8px;">👤</div>
+    </div>
+    <div id="hub-avatar-status" style="font-size:12px;color:#888;min-height:16px;margin-bottom:10px;"></div>
+    <input type="file" id="hub-avatar-file-input" accept="image/*" style="display:none;" onchange="handleHubAvatarFile(this)">
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <label for="hub-avatar-file-input" style="display:block;text-align:center;cursor:pointer;padding:9px 14px;background:#e6f4ea;border:1.5px solid #1e6b36;border-radius:10px;font-size:14px;font-weight:600;color:#1e6b36;">📷 Upload Photo</label>
+      <button id="hub-avatar-gen-btn" onclick="generateHubAvatar()" style="display:none;padding:9px 14px;background:#1e6b36;border:none;border-radius:10px;font-size:14px;font-weight:600;color:white;cursor:pointer;">✨ Generate Caricature</button>
+      <button onclick="closeHubAvatarModal()" style="padding:8px 14px;background:#f5f0e8;border:1.5px solid #ccc;border-radius:10px;font-size:14px;cursor:pointer;">Close</button>
+    </div>
+  </div>
+</div>
+
 <script type="module" src="js/cc-hub.js"></script>
 </body>
 </html>
