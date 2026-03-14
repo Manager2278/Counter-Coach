@@ -210,6 +210,16 @@ const AI = {
     expected: "Team members must report to work in full uniform meeting company appearance standards.",
     ask:      "Were you aware of the dress code requirement for today's shift?",
     action:   "Review and comply with the dress code policy effective immediately."
+  },
+  "Professional Sales Call": {
+    expected: "Team members conducting professional sales calls should introduce themselves professionally, identify the shop's specific business needs, present O'Reilly's value proposition, and build lasting relationships to earn and grow their ongoing business.",
+    ask:      "Walk me through your last pro sales visit — how did you open the conversation, what needs did you uncover, and how did you position O'Reilly's value?",
+    action:   "Review the professional sales call process. Focus on building rapport, identifying shop-specific needs, and clearly communicating how O'Reilly can support their business long-term."
+  },
+  "ROCK the Call": {
+    expected: "Every incoming call must follow the ROCK the Call procedure: greet the customer professionally, identify their needs, offer accurate solutions, reinforce O'Reilly's low price guarantee, and close the call ensuring the customer is satisfied.",
+    ask:      "Walk me through how you handled that call — did you follow each step of the ROCK the Call process, including the low price guarantee?",
+    action:   "Practice the ROCK the Call steps: greet professionally, confirm part availability and pricing, reinforce the low price guarantee, and make sure the customer hangs up confident in O'Reilly."
   }
 };
 
