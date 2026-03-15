@@ -64,12 +64,7 @@ body {
   display: none;
 }
 
-/* ── BOTTOM NAV */
-body { padding-bottom: 70px; }
-.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:white; border-top:1.5px solid #ddd; display:flex; z-index:200; box-shadow:0 -2px 14px rgba(0,0,0,0.08); }
-.nav-btn-link { flex:1; padding:10px 8px 8px; text-align:center; text-decoration:none; color:#999; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; display:flex; flex-direction:column; align-items:center; }
-.nav-btn-link:hover { color:#006400; }
-.nav-icon { font-size:20px; display:block; margin-bottom:2px; }
+/* nav injected by js/nav.js */
 </style>
 </head>
 
@@ -130,27 +125,8 @@ No Core. No Credit. Match It. Check It. Verify It.
 
 </div>
 
-<nav class="bottom-nav" id="bottom-nav">
-  <a class="nav-btn-link" href="/coach">
-    <img src="icon-192.png" alt="" style="width:22px;height:22px;border-radius:4px;object-fit:cover;display:block;margin:0 auto 2px;">
-    Coach
-  </a>
-  <a class="nav-btn-link" href="/">
-    <span class="nav-icon">📋</span>Logbook
-  </a>
-  <a class="nav-btn-link" href="/?tab=msg" data-role="employee">
-    <span class="nav-icon">🔒</span>Private
-  </a>
-  <a class="nav-btn-link" href="/coaching">
-    <span class="nav-icon">📝</span>Coaching
-  </a>
-  <a class="nav-btn-link" href="/?tab=settings" data-role="employee">
-    <span class="nav-icon">⚙️</span>Settings
-  </a>
-  <a class="nav-btn-link" href="/?tab=mgr" data-role="manager" style="display:none;">
-    <span class="nav-icon">🔑</span>Manager
-  </a>
-</nav>
+<!-- nav injected by js/nav.js -->
+<script type="module">import { initNav } from "./js/nav.js"; initNav("rules");</script>
 
 <script>
 // ── AVATAR FROM CACHE ───────────────────────────────────────
@@ -162,21 +138,6 @@ No Core. No Credit. Match It. Check It. Verify It.
     const ph  = document.getElementById("rules-avatar-ph");
     if (img) { img.src = url; img.style.display = "block"; }
     if (ph)  { ph.style.display = "none"; }
-  } catch(e) {}
-})();
-
-// ── ROLE-BASED NAV ──────────────────────────────────────────
-(function applyNavRoles() {
-  try {
-    const s = JSON.parse(localStorage.getItem("cc_v2_session") || "null");
-    const ms = JSON.parse(localStorage.getItem("cc_recap_mgr") || "null");
-    const isMgr = (ms && ms.on) || (s && s.role === "manager");
-    document.querySelectorAll("[data-role='employee']").forEach(function(el) {
-      el.style.display = isMgr ? "none" : "";
-    });
-    document.querySelectorAll("[data-role='manager']").forEach(function(el) {
-      el.style.display = isMgr ? "" : "none";
-    });
   } catch(e) {}
 })();
 

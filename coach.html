@@ -67,12 +67,7 @@
     .topbar-avatar { width:30px; height:30px; border-radius:50%; border:2px solid rgba(255,255,255,0.4); background:rgba(255,255,255,0.15); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; padding:0; overflow:hidden; flex-shrink:0; transition:border-color .15s; }
     .topbar-avatar:hover { border-color:rgba(255,255,255,0.8); }
     .topbar-avatar img { width:100%; height:100%; object-fit:cover; }
-    /* ── BOTTOM NAV */
-    .wrap { padding-bottom: 80px !important; }
-    .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:white; border-top:1.5px solid #ddd; display:flex; z-index:200; box-shadow:0 -2px 14px rgba(0,0,0,0.08); }
-    .nav-btn-link { flex:1; padding:10px 8px 8px; text-align:center; text-decoration:none; color:#999; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; display:flex; flex-direction:column; align-items:center; }
-    .nav-btn-link:hover, .nav-btn-link.active { color:#006400; }
-    .nav-icon { font-size:20px; display:block; margin-bottom:2px; }
+    /* nav injected by js/nav.js */
   </style>
 </head>
 <body>
@@ -133,28 +128,7 @@
    Counter Coach © 2026 Justin Thomas • Internal Use Only • Unauthorized commercial use prohibited
   </footer>
 
-<!-- ══════════════ BOTTOM NAV ══════════════════════════════════ -->
-<nav class="bottom-nav" id="bottom-nav">
-  <a class="nav-btn-link active" href="/coach">
-    <img src="icon-192.png" alt="" style="width:22px;height:22px;border-radius:4px;object-fit:cover;display:block;margin:0 auto 2px;">
-    Coach
-  </a>
-  <a class="nav-btn-link" href="/">
-    <span class="nav-icon">📋</span>Logbook
-  </a>
-  <a class="nav-btn-link" href="/?tab=msg" data-role="employee">
-    <span class="nav-icon">🔒</span>Private
-  </a>
-  <a class="nav-btn-link" href="/coaching">
-    <span class="nav-icon">📝</span>Coaching
-  </a>
-  <a class="nav-btn-link" href="/?tab=settings" data-role="employee">
-    <span class="nav-icon">⚙️</span>Settings
-  </a>
-  <a class="nav-btn-link" href="/?tab=mgr" data-role="manager" style="display:none;">
-    <span class="nav-icon">🔑</span>Manager
-  </a>
-</nav>
+<!-- nav injected by js/nav.js via js/index.js -->
 
 <!-- ══════════════ AVATAR MODAL ════════════════════════════════ -->
 <div id="avatar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:400;align-items:center;justify-content:center;" onclick="closeAvatarModal()">
