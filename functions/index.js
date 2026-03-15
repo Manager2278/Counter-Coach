@@ -1,7 +1,4 @@
 const { onCall, HttpsError }            = require("firebase-functions/v2/https");
-const { defineSecret }                  = require("firebase-functions/params");
-const hfKey                             = defineSecret("HF_KEY");
-const { InferenceClient }               = require("@huggingface/inference");
 const { onDocumentCreated,
         onDocumentUpdated,
         onDocumentDeleted }             = require("firebase-functions/v2/firestore");
@@ -445,94 +442,6 @@ function storagePathFromUrl(url) {
  *
  * Listens on: stores/{storeId}/entries/{entryId}
  */
-/**
- * generateAvatarCaricature
- * Accepts a base64 employee photo and generates an O'Reilly-themed Pixar-style
- * caricature via fal.ai image-to-image. Stores the result in Firebase Storage
- * and writes the URL back to the employee's Firestore document.
- *
- * Request data: { photoBase64, mimeType, storeId, empId, role }
- * Returns:      { avatarUrl }
- */
-exports.generateAvatarCaricature = onCall(
-  { secrets: [hfKey] },
-  async (request) => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Must be signed in.");
-    }
-    const { photoBase64, mimeType, storeId, empId, role } = request.data;
-    if (!photoBase64 || !storeId || !empId) {
-      throw new HttpsError("invalid-argument", "photoBase64, storeId, and empId are required.");
-    }
-
-    // 1. Build role-specific instruction prompt for instruct-pix2pix
-    const ROLE_MAP = {
-      "Store Manager":    "store manager",
-      "Manager":          "store manager",
-      "Parts Specialist": "parts counter specialist",
-      "Sales Specialist": "sales specialist",
-      "RSS":              "retail sales specialist",
-      "ISS":              "installer sales specialist",
-      "Assistant":        "assistant store manager",
-      "Driver":           "delivery driver",
-    };
-    const roleDesc = ROLE_MAP[role] || "team member";
-    const prompt = `Transform into a Pixar 3D animated cartoon caricature of a ${roleDesc}. Exaggerated friendly features, big expressive eyes, wide smile, bright green O'Reilly Auto Parts uniform, vibrant cel-shaded colors, animated movie style.`;
-
-    // 2. Call HuggingFace Inference API (sends binary directly — no temp URL needed)
-    const hf = new InferenceClient(hfKey.value());
-    const srcBlob = new Blob(
-      [Buffer.from(photoBase64, "base64")],
-      { type: mimeType || "image/jpeg" }
-    );
-
-    let resultBlob;
-    let lastErr;
-    // Retry once on model-loading (503) cold-start
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        resultBlob = await hf.imageToImage({
-          model: "timbrooks/instruct-pix2pix",
-          data: srcBlob,
-          parameters: {
-            prompt,
-            num_inference_steps: 20,
-            image_guidance_scale: 1.5,
-            guidance_scale:       7.5,
-          },
-        });
-        lastErr = null;
-        break;
-      } catch (err) {
-        lastErr = err;
-        if (attempt === 0 && err.message?.includes("503")) {
-          // Model is loading — wait 12s and retry once
-          await new Promise(r => setTimeout(r, 12000));
-        } else {
-          break;
-        }
-      }
-    }
-    if (lastErr) {
-      throw new HttpsError("internal", `HuggingFace error: ${lastErr.message?.slice(0, 200)}`);
-    }
-
-    // 3. Save generated image to permanent Storage path
-    const imgBuffer = Buffer.from(await resultBlob.arrayBuffer());
-    const bucket    = getStorage().bucket();
-    const finalPath = `avatars/${storeId}/${empId}.jpg`;
-    const finalFile = bucket.file(finalPath);
-    await finalFile.save(imgBuffer, { metadata: { contentType: "image/jpeg" } });
-    await finalFile.makePublic();
-    const avatarUrl = `https://storage.googleapis.com/${bucket.name}/${finalPath}`;
-
-    // 4. Write avatarUrl to employee Firestore doc
-    await db.doc(`stores/${storeId}/employees/${empId}`).update({ avatarUrl });
-
-    return { avatarUrl };
-  }
-);
-
 exports.onEntryDeleted = onDocumentDeleted(
   "stores/{storeId}/entries/{entryId}", async event => {
     const data = event.data?.data() || {};

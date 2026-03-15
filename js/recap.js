@@ -1193,7 +1193,6 @@ window.openAvatarModal = function() {
     circle.style.display = "flex";
   }
   el("avatar-status").textContent = "";
-  el("avatar-generate-btn").style.display = "none";
   el("avatar-use-btn").style.display = "none";
   el("avatar-remove-btn").style.display = myAvatarUrl ? "block" : "none";
   avatarPendingFile = null;
@@ -1215,48 +1214,9 @@ window.handleAvatarFileChosen = function(input) {
   cur.src = URL.createObjectURL(file);
   cur.style.display = "block";
   el("avatar-placeholder-circle").style.display = "none";
-  el("avatar-status").textContent = "Photo selected — use as-is or generate a caricature!";
+  el("avatar-status").textContent = "Photo selected — tap 'Use Photo As-Is' to save.";
   el("avatar-use-btn").style.display = "block";
-  el("avatar-generate-btn").style.display = "block";
   el("avatar-remove-btn").style.display = "none";
-};
-
-window.generateMyAvatar = async function() {
-  if (!avatarPendingFile) { alert("Please choose a photo first."); return; }
-  if (!myEmpId) { alert("Employee record not found. Try logging out and back in."); return; }
-  const btn = el("avatar-generate-btn");
-  btn.disabled = true; btn.textContent = "Generating…";
-  el("avatar-status").textContent = "Compressing photo…";
-  try {
-    const compressed = await compressImage(avatarPendingFile, 512, 0.85);
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload  = () => resolve(reader.result.split(",")[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(compressed);
-    });
-    el("avatar-status").textContent = "Generating your caricature… (15–30s)";
-    const session = loadSession();
-    const fn = httpsCallable(functions, "generateAvatarCaricature");
-    const result = await fn({ photoBase64: base64, mimeType: "image/jpeg", storeId: store, empId: myEmpId, role: session?.role || "" });
-    myAvatarUrl = result.data.avatarUrl;
-    applyAvatarToTopbar(myAvatarUrl);
-    const cur = el("avatar-current-img");
-    cur.src = myAvatarUrl; cur.style.display = "block";
-    el("avatar-placeholder-circle").style.display = "none";
-    el("avatar-status").textContent = "Caricature generated!";
-    el("avatar-use-btn").style.display = "none";
-    el("avatar-remove-btn").style.display = "block";
-    btn.textContent = "✨ Regenerate";
-  } catch(e) {
-    el("avatar-status").textContent = "Error: " + (e.message || "Unknown error");
-    btn.textContent = "✨ Try Again";
-  } finally {
-    btn.disabled = false;
-    avatarPendingFile = null;
-    const inp = el("avatar-file-input");
-    if (inp) inp.value = "";
-  }
 };
 
 window.usePhotoAsIs = async function() {
@@ -1278,7 +1238,6 @@ window.usePhotoAsIs = async function() {
     cur.src = myAvatarUrl; cur.style.display = "block";
     el("avatar-placeholder-circle").style.display = "none";
     el("avatar-status").textContent = "Photo saved!";
-    el("avatar-generate-btn").style.display = "none";
     el("avatar-remove-btn").style.display = "block";
     btn.textContent = "✅ Saved";
   } catch(e) {
@@ -1307,7 +1266,6 @@ window.removeMyAvatar = async function() {
     const cur = el("avatar-current-img");
     cur.src = ""; cur.style.display = "none";
     el("avatar-placeholder-circle").style.display = "flex";
-    el("avatar-generate-btn").style.display = "none";
     el("avatar-use-btn").style.display = "none";
     el("avatar-status").textContent = "Avatar removed.";
     const lbl = document.querySelector('label[for="avatar-file-input"]');
@@ -1330,7 +1288,7 @@ window.openMgrAvatarModal = function(empId, empName, empRole) {
   modal.style.display = "flex";
   el("mgr-avatar-emp-name").textContent = empName || "Employee";
   el("mgr-avatar-status").textContent = "";
-  el("mgr-avatar-gen-btn").style.display = "none";
+  el("mgr-avatar-use-btn").style.display = "none";
   const emp = mgrRosterData.find(e => e.id === empId);
   const cur = el("mgr-avatar-current");
   const ph  = el("mgr-avatar-placeholder");
@@ -1357,37 +1315,33 @@ window.handleMgrAvatarFile = function(input) {
   cur.src = URL.createObjectURL(file);
   cur.style.display = "block";
   el("mgr-avatar-placeholder").style.display = "none";
-  el("mgr-avatar-status").textContent = "Photo selected — ready to generate.";
-  el("mgr-avatar-gen-btn").style.display = "block";
+  el("mgr-avatar-status").textContent = "Photo selected — tap 'Use Photo As-Is' to save.";
+  el("mgr-avatar-use-btn").style.display = "block";
 };
 
-window.generateMgrAvatar = async function() {
+window.useMgrPhotoAsIs = async function() {
   if (!mgrAvatarPendingFile || !mgrAvatarTargetId) return;
-  const btn = el("mgr-avatar-gen-btn");
-  btn.disabled = true; btn.textContent = "Generating…";
+  const btn = el("mgr-avatar-use-btn");
+  btn.disabled = true; btn.textContent = "Saving…";
   el("mgr-avatar-status").textContent = "Compressing photo…";
   try {
     const compressed = await compressImage(mgrAvatarPendingFile, 512, 0.85);
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload  = () => resolve(reader.result.split(",")[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(compressed);
-    });
-    el("mgr-avatar-status").textContent = "Generating caricature… (15–30s)";
-    const fn = httpsCallable(functions, "generateAvatarCaricature");
-    const result = await fn({ photoBase64: base64, mimeType: "image/jpeg", storeId: store, empId: mgrAvatarTargetId, role: mgrAvatarTargetRole || "" });
+    el("mgr-avatar-status").textContent = "Uploading photo…";
+    const sRef = ref(storage, `avatars/${store}/${mgrAvatarTargetId}.jpg`);
+    await uploadBytes(sRef, compressed, { contentType: "image/jpeg" });
+    const url = await getDownloadURL(sRef);
+    await updateDoc(doc(db, "stores", store, "employees", mgrAvatarTargetId), { avatarUrl: url });
     const emp = mgrRosterData.find(e => e.id === mgrAvatarTargetId);
-    if (emp) emp.avatarUrl = result.data.avatarUrl;
+    if (emp) emp.avatarUrl = url;
     renderMgrRoster();
     const cur = el("mgr-avatar-current");
-    cur.src = result.data.avatarUrl; cur.style.display = "block";
+    cur.src = url; cur.style.display = "block";
     el("mgr-avatar-placeholder").style.display = "none";
-    el("mgr-avatar-status").textContent = "Caricature generated!";
-    btn.textContent = "✨ Regenerate";
+    el("mgr-avatar-status").textContent = "Photo saved!";
+    btn.textContent = "✅ Saved";
   } catch(e) {
     el("mgr-avatar-status").textContent = "Error: " + (e.message || "Unknown error");
-    btn.textContent = "✨ Try Again";
+    btn.textContent = "📷 Use Photo As-Is";
   } finally {
     btn.disabled = false;
     mgrAvatarPendingFile = null;

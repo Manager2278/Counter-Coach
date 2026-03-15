@@ -134,7 +134,7 @@
 <div id="avatar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:400;align-items:center;justify-content:center;" onclick="closeAvatarModal()">
   <div style="background:white;border-radius:16px;padding:24px 20px;max-width:320px;width:90%;text-align:center;" onclick="event.stopPropagation()">
     <h3 style="font-size:17px;font-weight:700;margin:0 0 6px;">My Avatar</h3>
-    <p style="font-size:13px;color:#888;margin:0 0 16px;">Choose a photo — use it as-is or generate an O'Reilly-themed caricature.</p>
+    <p style="font-size:13px;color:#888;margin:0 0 16px;">Choose a photo to use as your avatar.</p>
     <div style="margin-bottom:14px;">
       <img id="avatar-current-img" src="" alt="" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #1e6b36;display:none;margin:0 auto 8px;">
       <div id="avatar-placeholder-circle" style="width:100px;height:100px;border-radius:50%;background:#e6f4ea;border:3px dashed #8ab89a;display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 8px;">👤</div>
@@ -143,9 +143,8 @@
     <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="handleAvatarFileChosen(this)">
     <div style="display:flex;flex-direction:column;gap:8px;">
       <label for="avatar-file-input" style="display:block;text-align:center;cursor:pointer;padding:10px;background:#e6f4ea;border:1.5px solid #1e6b36;border-radius:10px;font-size:14px;font-weight:700;color:#1e6b36;">📷 Choose / Take Photo</label>
-      <button id="avatar-use-btn"      onclick="usePhotoAsIs()"   style="display:none;padding:10px;background:#4a90d9;border:none;border-radius:10px;font-size:14px;font-weight:700;color:white;cursor:pointer;">📷 Use Photo As-Is</button>
-      <button id="avatar-generate-btn" onclick="generateMyAvatar()" style="display:none;padding:10px;background:#1e6b36;border:none;border-radius:10px;font-size:14px;font-weight:700;color:white;cursor:pointer;">✨ Generate Caricature</button>
-      <button id="avatar-remove-btn"   onclick="removeMyAvatar()"  style="display:none;padding:9px;background:#fff0f0;border:1.5px solid #e55;border-radius:10px;font-size:14px;font-weight:700;color:#c00;cursor:pointer;">🗑️ Remove Avatar</button>
+      <button id="avatar-use-btn"    onclick="usePhotoAsIs()"  style="display:none;padding:10px;background:#4a90d9;border:none;border-radius:10px;font-size:14px;font-weight:700;color:white;cursor:pointer;">📷 Use Photo As-Is</button>
+      <button id="avatar-remove-btn" onclick="removeMyAvatar()" style="display:none;padding:9px;background:#fff0f0;border:1.5px solid #e55;border-radius:10px;font-size:14px;font-weight:700;color:#c00;cursor:pointer;">🗑️ Remove Avatar</button>
       <button onclick="closeAvatarModal()" style="padding:9px;background:#f5f0e8;border:1.5px solid #ccc;border-radius:10px;font-size:14px;cursor:pointer;">Close</button>
     </div>
   </div>
