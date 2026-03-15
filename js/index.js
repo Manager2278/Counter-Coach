@@ -1,5 +1,5 @@
 // ── COACH.HTML — Counter Coach Decision Tree ──────────────────
-import { db, auth, functions, storage }    from "./firebase.js";
+import { db, auth, storage }               from "./firebase.js";
 import { initNav }                         from "./nav.js";
 import { el, fetchBrandingData, loadBroadcast, compressImage } from "./utils.js";
 import { loadSession }                     from "./session.js";
@@ -8,8 +8,6 @@ import { doc, getDoc, getDocs, updateDoc, deleteField,
 import { ref as storageRef, uploadBytes,
          getDownloadURL, deleteObject }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { signInAnonymously }               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { httpsCallable }                   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
-
 // ── HELPERS ───────────────────────────────────────────────────
 function showBanner(msg) { const b = el("error-banner"); b.style.display = "block"; b.textContent = msg; }
 
@@ -202,7 +200,6 @@ window.openAvatarModal = function() {
   if (myAvatarUrl) { cur.src = myAvatarUrl; cur.style.display = "block"; ph.style.display = "none"; }
   else             { cur.style.display = "none"; ph.style.display = "flex"; }
   document.getElementById("avatar-status").textContent = "";
-  document.getElementById("avatar-generate-btn").style.display = "none";
   document.getElementById("avatar-use-btn").style.display = "none";
   document.getElementById("avatar-remove-btn").style.display = myAvatarUrl ? "block" : "none";
   avatarPendingFile = null;
@@ -223,47 +220,9 @@ window.handleAvatarFileChosen = function(input) {
   const cur = document.getElementById("avatar-current-img");
   cur.src = URL.createObjectURL(file); cur.style.display = "block";
   document.getElementById("avatar-placeholder-circle").style.display = "none";
-  document.getElementById("avatar-status").textContent = "Photo selected — use as-is or generate a caricature!";
+  document.getElementById("avatar-status").textContent = "Photo selected — tap 'Use Photo As-Is' to save.";
   document.getElementById("avatar-use-btn").style.display = "block";
-  document.getElementById("avatar-generate-btn").style.display = "block";
   document.getElementById("avatar-remove-btn").style.display = "none";
-};
-
-window.generateMyAvatar = async function() {
-  if (!avatarPendingFile) { alert("Please choose a photo first."); return; }
-  if (!myEmpId) { alert("Employee record not found. Try logging in from the Daily Recap first."); return; }
-  const btn = document.getElementById("avatar-generate-btn");
-  btn.disabled = true; btn.textContent = "Generating…";
-  document.getElementById("avatar-status").textContent = "Compressing photo…";
-  try {
-    const compressed = await compressImage(avatarPendingFile, 512, 0.85);
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload  = () => resolve(reader.result.split(",")[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(compressed);
-    });
-    document.getElementById("avatar-status").textContent = "Generating your caricature… (15–30s)";
-    const fn = httpsCallable(functions, "generateAvatarCaricature");
-    const result = await fn({ photoBase64: base64, mimeType: "image/jpeg", storeId: store, empId: myEmpId, role });
-    myAvatarUrl = result.data.avatarUrl;
-    applyAvatarToHeader(myAvatarUrl);
-    const cur = document.getElementById("avatar-current-img");
-    cur.src = myAvatarUrl; cur.style.display = "block";
-    document.getElementById("avatar-placeholder-circle").style.display = "none";
-    document.getElementById("avatar-status").textContent = "Caricature generated!";
-    document.getElementById("avatar-use-btn").style.display = "none";
-    document.getElementById("avatar-remove-btn").style.display = "block";
-    btn.textContent = "✨ Regenerate";
-  } catch(e) {
-    document.getElementById("avatar-status").textContent = "Error: " + (e.message || "Unknown error");
-    btn.textContent = "✨ Try Again";
-  } finally {
-    btn.disabled = false;
-    avatarPendingFile = null;
-    const inp = document.getElementById("avatar-file-input");
-    if (inp) inp.value = "";
-  }
 };
 
 window.usePhotoAsIs = async function() {
@@ -285,7 +244,6 @@ window.usePhotoAsIs = async function() {
     cur.src = myAvatarUrl; cur.style.display = "block";
     document.getElementById("avatar-placeholder-circle").style.display = "none";
     document.getElementById("avatar-status").textContent = "Photo saved!";
-    document.getElementById("avatar-generate-btn").style.display = "none";
     document.getElementById("avatar-remove-btn").style.display = "block";
     btn.textContent = "✅ Saved";
   } catch(e) {
@@ -314,7 +272,6 @@ window.removeMyAvatar = async function() {
     const cur = document.getElementById("avatar-current-img");
     cur.src = ""; cur.style.display = "none";
     document.getElementById("avatar-placeholder-circle").style.display = "flex";
-    document.getElementById("avatar-generate-btn").style.display = "none";
     document.getElementById("avatar-use-btn").style.display = "none";
     document.getElementById("avatar-status").textContent = "Avatar removed.";
     const lbl = document.querySelector('label[for="avatar-file-input"]');

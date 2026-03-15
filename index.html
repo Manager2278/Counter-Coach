@@ -750,7 +750,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 <div id="avatar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:400;align-items:center;justify-content:center;" onclick="closeAvatarModal()">
   <div style="background:white;border-radius:16px;padding:24px 20px;max-width:320px;width:90%;text-align:center;" onclick="event.stopPropagation()">
     <h3 style="font-family:'Courier Prime',monospace;font-size:17px;margin:0 0 6px;">My Avatar</h3>
-    <p style="font-size:13px;color:var(--ink-faint);margin:0 0 16px;">Choose a photo — use it as-is or generate an O'Reilly-themed caricature.</p>
+    <p style="font-size:13px;color:var(--ink-faint);margin:0 0 16px;">Choose a photo to use as your avatar.</p>
     <div style="margin-bottom:14px;">
       <img id="avatar-current-img" src="" alt="" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--forest);display:none;margin:0 auto 8px;">
       <div id="avatar-placeholder-circle" style="width:100px;height:100px;border-radius:50%;background:var(--mint);border:3px dashed var(--sage);display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 8px;">👤</div>
@@ -760,7 +760,6 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <div style="display:flex;flex-direction:column;gap:8px;">
       <label for="avatar-file-input" class="btn-add" style="display:block;text-align:center;cursor:pointer;padding:10px;">📷 Choose / Take Photo</label>
       <button id="avatar-use-btn"    onclick="usePhotoAsIs()"   style="display:none;padding:10px;background:#4a90d9;border:none;border-radius:10px;font-size:14px;font-weight:700;color:white;cursor:pointer;">📷 Use Photo As-Is</button>
-      <button id="avatar-generate-btn" class="btn-add" onclick="generateMyAvatar()" style="display:none;background:var(--forest);">✨ Generate Caricature</button>
       <button id="avatar-remove-btn" onclick="removeMyAvatar()" style="display:none;padding:9px;background:#fff0f0;border:1.5px solid #e55;border-radius:10px;font-size:14px;font-weight:700;color:#c00;cursor:pointer;">🗑️ Remove Avatar</button>
       <button class="btn-done" onclick="closeAvatarModal()" style="padding:9px;">Close</button>
     </div>
@@ -771,7 +770,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 <div id="mgr-avatar-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:400;align-items:center;justify-content:center;" onclick="closeMgrAvatarModal()">
   <div style="background:white;border-radius:16px;padding:24px 20px;max-width:320px;width:90%;text-align:center;" onclick="event.stopPropagation()">
     <h3 style="font-family:'Courier Prime',monospace;font-size:17px;margin:0 0 4px;">Avatar for <span id="mgr-avatar-emp-name">Employee</span></h3>
-    <p style="font-size:12px;color:var(--ink-faint);margin:0 0 14px;">Upload a photo to generate their O'Reilly caricature.</p>
+    <p style="font-size:12px;color:var(--ink-faint);margin:0 0 14px;">Upload a photo to set their avatar.</p>
     <div style="margin-bottom:14px;">
       <img id="mgr-avatar-current" src="" alt="" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid var(--forest);display:none;margin:0 auto 8px;">
       <div id="mgr-avatar-placeholder" style="width:90px;height:90px;border-radius:50%;background:var(--mint);border:3px dashed var(--sage);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 8px;">👤</div>
@@ -780,7 +779,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     <input type="file" id="mgr-avatar-file-input" accept="image/*" style="display:none;" onchange="handleMgrAvatarFile(this)">
     <div style="display:flex;flex-direction:column;gap:8px;">
       <label for="mgr-avatar-file-input" class="btn-add" style="display:block;text-align:center;cursor:pointer;padding:9px;">📷 Choose / Take Photo</label>
-      <button id="mgr-avatar-gen-btn" class="btn-add" onclick="generateMgrAvatar()" style="display:none;background:var(--forest);">✨ Generate Caricature</button>
+      <button id="mgr-avatar-use-btn" onclick="useMgrPhotoAsIs()" style="display:none;width:100%;padding:9px;background:#4a90d9;border:none;border-radius:10px;font-size:14px;font-weight:700;color:white;cursor:pointer;">📷 Use Photo As-Is</button>
       <button class="btn-done" onclick="closeMgrAvatarModal()" style="padding:8px;">Close</button>
     </div>
   </div>

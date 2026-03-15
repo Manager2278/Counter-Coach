@@ -7,12 +7,11 @@
 //   initAvatarModal("#coaching-avatar");   // pass selector of the topbar avatar div
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { db, auth, storage, functions }           from "./firebase.js";
+import { db, auth, storage }                       from "./firebase.js";
 import { ref as storageRef, uploadBytes,
          getDownloadURL, deleteObject }            from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { doc, updateDoc, deleteField,
          collection, query, where, getDocs }       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { httpsCallable }                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 import { compressImage }                           from "./utils.js";
 
 // ── MODULE STATE ─────────────────────────────────────────────────────────────
@@ -60,7 +59,6 @@ function openAvatarModal() {
   if (currentUrl) { cur.src = currentUrl; cur.style.display = "block"; ph.style.display = "none"; }
   else            { cur.style.display = "none"; ph.style.display = "flex"; }
   document.getElementById("_av-status").textContent = "";
-  document.getElementById("_av-generate-btn").style.display = "none";
   document.getElementById("_av-use-btn").style.display = "none";
   document.getElementById("_av-remove-btn").style.display = currentUrl ? "block" : "none";
   avatarPendingFile = null;
@@ -81,49 +79,9 @@ function handleAvatarFileChosen(input) {
   const cur = document.getElementById("_av-current-img");
   cur.src = URL.createObjectURL(file); cur.style.display = "block";
   document.getElementById("_av-placeholder").style.display = "none";
-  document.getElementById("_av-status").textContent = "Photo selected — use as-is or generate a caricature!";
+  document.getElementById("_av-status").textContent = "Photo selected — tap 'Use Photo As-Is' to save.";
   document.getElementById("_av-use-btn").style.display = "block";
-  document.getElementById("_av-generate-btn").style.display = "block";
   document.getElementById("_av-remove-btn").style.display = "none";
-}
-
-async function generateMyAvatar() {
-  if (!avatarPendingFile) { alert("Please choose a photo first."); return; }
-  const sess = getSession();
-  if (!sess?.store || !sess?.name) { alert("Not logged in — please log in from the Daily Recap first."); return; }
-  const empId = await getEmpId(sess.store, sess.name);
-  if (!empId) { alert("Employee record not found. Try logging in from the Daily Recap first."); return; }
-  const btn = document.getElementById("_av-generate-btn");
-  btn.disabled = true; btn.textContent = "Generating…";
-  document.getElementById("_av-status").textContent = "Compressing photo…";
-  try {
-    const compressed = await compressImage(avatarPendingFile, 512, 0.85);
-    const base64 = await new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload  = () => res(r.result.split(",")[1]);
-      r.onerror = rej;
-      r.readAsDataURL(compressed);
-    });
-    document.getElementById("_av-status").textContent = "Generating your caricature… (15–30s)";
-    const fn     = httpsCallable(functions, "generateAvatarCaricature");
-    const result = await fn({ photoBase64: base64, mimeType: "image/jpeg", storeId: sess.store, empId, role: sess.role || "employee" });
-    applyAvatarToBtn(result.data.avatarUrl);
-    const cur = document.getElementById("_av-current-img");
-    cur.src = result.data.avatarUrl; cur.style.display = "block";
-    document.getElementById("_av-placeholder").style.display = "none";
-    document.getElementById("_av-status").textContent = "Caricature generated!";
-    document.getElementById("_av-use-btn").style.display = "none";
-    document.getElementById("_av-remove-btn").style.display = "block";
-    btn.textContent = "✨ Regenerate";
-  } catch(e) {
-    document.getElementById("_av-status").textContent = "Error: " + (e.message || "Unknown error");
-    btn.textContent = "✨ Try Again";
-  } finally {
-    btn.disabled = false;
-    avatarPendingFile = null;
-    const inp = document.getElementById("_av-file-input");
-    if (inp) inp.value = "";
-  }
 }
 
 async function usePhotoAsIs() {
@@ -147,7 +105,6 @@ async function usePhotoAsIs() {
     cur.src = url; cur.style.display = "block";
     document.getElementById("_av-placeholder").style.display = "none";
     document.getElementById("_av-status").textContent = "Photo saved!";
-    document.getElementById("_av-generate-btn").style.display = "none";
     document.getElementById("_av-remove-btn").style.display = "block";
     btn.textContent = "✅ Saved";
   } catch(e) {
@@ -177,7 +134,6 @@ async function removeMyAvatar() {
     const cur = document.getElementById("_av-current-img");
     cur.src = ""; cur.style.display = "none";
     document.getElementById("_av-placeholder").style.display = "flex";
-    document.getElementById("_av-generate-btn").style.display = "none";
     document.getElementById("_av-use-btn").style.display = "none";
     document.getElementById("_av-status").textContent = "Avatar removed.";
     const lbl = document.querySelector('label[for="_av-file-input"]');
@@ -195,7 +151,6 @@ async function removeMyAvatar() {
 window._avOpenModal    = openAvatarModal;
 window._avCloseModal   = closeAvatarModal;
 window._avFileChosen   = (input) => handleAvatarFileChosen(input);
-window._avGenerate     = generateMyAvatar;
 window._avUseAsIs      = usePhotoAsIs;
 window._avRemove       = removeMyAvatar;
 
@@ -209,7 +164,7 @@ function injectModal() {
   modal.innerHTML = `
     <div style="background:white;border-radius:16px;padding:24px 20px;max-width:320px;width:90%;text-align:center;box-sizing:border-box;" onclick="event.stopPropagation()">
       <h3 style="font-family:'Courier Prime',monospace;font-size:17px;margin:0 0 6px;">My Avatar</h3>
-      <p style="font-size:13px;color:#8a8a7e;margin:0 0 16px;">Choose a photo — use it as-is or generate an O'Reilly-themed caricature.</p>
+      <p style="font-size:13px;color:#8a8a7e;margin:0 0 16px;">Choose a photo to use as your avatar.</p>
       <div style="margin-bottom:14px;">
         <img id="_av-current-img" src="" alt="" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #1c3a2a;display:none;margin:0 auto 8px;">
         <div id="_av-placeholder" style="width:100px;height:100px;border-radius:50%;background:#c8e6d0;border:3px dashed #7fb891;display:flex;align-items:center;justify-content:center;font-size:42px;margin:0 auto 8px;">👤</div>
@@ -217,7 +172,6 @@ function injectModal() {
       <div id="_av-status" style="font-size:13px;color:#8a8a7e;min-height:18px;margin-bottom:12px;"></div>
       <input type="file" id="_av-file-input" accept="image/*" style="display:none;" onchange="_avFileChosen(this)">
       <label for="_av-file-input" style="display:block;width:100%;padding:10px;background:#1c3a2a;border:none;border-radius:10px;font-size:14px;font-weight:700;color:white;cursor:pointer;margin-bottom:8px;box-sizing:border-box;">📷 Choose / Take Photo</label>
-      <button id="_av-generate-btn" onclick="_avGenerate()" style="display:none;width:100%;padding:10px;background:#2d5a40;border:none;border-radius:10px;font-size:14px;font-weight:700;color:white;cursor:pointer;margin-bottom:8px;">✨ Generate Caricature</button>
       <button id="_av-use-btn" onclick="_avUseAsIs()" style="display:none;width:100%;padding:10px;background:#4a90d9;border:none;border-radius:10px;font-size:14px;font-weight:700;color:white;cursor:pointer;margin-bottom:8px;">📷 Use Photo As-Is</button>
       <button id="_av-remove-btn" onclick="_avRemove()" style="display:none;width:100%;padding:9px;background:#fff0f0;border:1.5px solid #e55;border-radius:10px;font-size:14px;font-weight:700;color:#c00;cursor:pointer;margin-bottom:8px;">🗑️ Remove Avatar</button>
       <button onclick="_avCloseModal()" style="width:100%;padding:9px;background:#f5f2eb;border:1.5px solid #e2ddd3;border-radius:10px;font-size:13px;font-weight:700;color:#4a4a42;cursor:pointer;">Cancel</button>
