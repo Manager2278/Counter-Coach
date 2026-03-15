@@ -4,6 +4,7 @@
 //   <script type="module" src="js/coaching.js"></script>
 import { db, auth, functions }               from "./firebase.js";
 import { initNav }                           from "./nav.js";
+import { initAvatarModal }                   from "./avatar.js";
 import { el, esc }                           from "./utils.js";
 import { loadSession as getSession,
          loadMgrSession, saveSession }        from "./session.js";
@@ -113,6 +114,7 @@ function init() {
         }
       }).catch(() => {});
   }
+  initAvatarModal("#coaching-avatar");
   const params    = new URLSearchParams(location.search);
   const kioskId   = params.get("kiosk");
   const signId    = params.get("sign");

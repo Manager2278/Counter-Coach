@@ -126,20 +126,18 @@ No Core. No Credit. Match It. Check It. Verify It.
 </div>
 
 <!-- nav injected by js/nav.js -->
-<script type="module">import { initNav } from "./js/nav.js"; initNav("rules");</script>
+<script type="module">
+import { initNav }         from "./js/nav.js";
+import { initAvatarModal } from "./js/avatar.js";
+import { auth }            from "./js/firebase.js";
+import { signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+initNav("rules");
+signInAnonymously(auth)
+  .then(() => initAvatarModal("#rules-avatar"))
+  .catch(() => initAvatarModal("#rules-avatar"));
+</script>
 
 <script>
-// ── AVATAR FROM CACHE ───────────────────────────────────────
-(function loadCachedAvatar() {
-  try {
-    const url = localStorage.getItem("cc_avatar_url");
-    if (!url) return;
-    const img = document.getElementById("rules-avatar-img");
-    const ph  = document.getElementById("rules-avatar-ph");
-    if (img) { img.src = url; img.style.display = "block"; }
-    if (ph)  { ph.style.display = "none"; }
-  } catch(e) {}
-})();
 
 const steps = [
 "Everything we do protects the store while helping the customer correctly.",
