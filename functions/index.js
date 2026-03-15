@@ -473,10 +473,8 @@ exports.generateAvatarCaricature = onCall(
     await tempFile.save(srcBuffer, {
       metadata: { contentType: mimeType || "image/jpeg" }
     });
-    const [tempUrl] = await tempFile.getSignedUrl({
-      action: "read",
-      expires: Date.now() + 5 * 60 * 1000
-    });
+    await tempFile.makePublic();
+    const tempUrl = `https://storage.googleapis.com/${bucket.name}/${tempPath}`;
 
     // 2. Build role-specific O'Reilly prompt
     const ROLE_MAP = {
