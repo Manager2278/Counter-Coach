@@ -1,6 +1,7 @@
 const { onCall, HttpsError }            = require("firebase-functions/v2/https");
 const { defineSecret }                  = require("firebase-functions/params");
-const falKey                            = defineSecret("FAL_KEY");
+const hfKey                             = defineSecret("HF_KEY");
+const { HfInference }                   = require("@huggingface/inference");
 const { onDocumentCreated,
         onDocumentUpdated,
         onDocumentDeleted }             = require("firebase-functions/v2/firestore");
@@ -454,7 +455,7 @@ function storagePathFromUrl(url) {
  * Returns:      { avatarUrl }
  */
 exports.generateAvatarCaricature = onCall(
-  { secrets: [falKey] },
+  { secrets: [hfKey] },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "Must be signed in.");
@@ -464,74 +465,68 @@ exports.generateAvatarCaricature = onCall(
       throw new HttpsError("invalid-argument", "photoBase64, storeId, and empId are required.");
     }
 
-    const bucket = getStorage().bucket();
-
-    // 1. Upload source photo to a temp Storage location for fal.ai to read
-    const tempPath = `avatars/${storeId}/_tmp_${empId}.jpg`;
-    const tempFile = bucket.file(tempPath);
-    const srcBuffer = Buffer.from(photoBase64, "base64");
-    await tempFile.save(srcBuffer, {
-      metadata: { contentType: mimeType || "image/jpeg" }
-    });
-    await tempFile.makePublic();
-    const tempUrl = `https://storage.googleapis.com/${bucket.name}/${tempPath}`;
-
-    // 2. Build role-specific O'Reilly prompt
+    // 1. Build role-specific instruction prompt for instruct-pix2pix
     const ROLE_MAP = {
-      "Store Manager":     "store manager in red O'Reilly Auto Parts polo",
-      "Manager":           "store manager in red O'Reilly Auto Parts polo",
-      "Parts Specialist":  "auto parts counter specialist",
-      "Sales Specialist":  "professional sales specialist",
-      "RSS":               "retail sales specialist",
-      "ISS":               "installer sales specialist",
-      "Assistant":         "assistant store manager",
-      "Driver":            "delivery driver",
+      "Store Manager":    "store manager",
+      "Manager":          "store manager",
+      "Parts Specialist": "parts counter specialist",
+      "Sales Specialist": "sales specialist",
+      "RSS":              "retail sales specialist",
+      "ISS":              "installer sales specialist",
+      "Assistant":        "assistant store manager",
+      "Driver":           "delivery driver",
     };
     const roleDesc = ROLE_MAP[role] || "team member";
-    const prompt = `Pixar 3D animated movie character portrait, cartoon caricature, exaggerated friendly facial features, ${roleDesc}, bright red O'Reilly Auto Parts uniform, big expressive eyes, wide friendly smile, automotive shop background, bold thick outlines, vibrant saturated cel-shaded colors, Disney Pixar animation style, digital illustration, NOT a photograph, NOT photorealistic`;
+    const prompt = `Transform into a Pixar 3D animated cartoon caricature of a ${roleDesc}. Exaggerated friendly features, big expressive eyes, wide smile, bright green O'Reilly Auto Parts uniform, vibrant cel-shaded colors, animated movie style.`;
 
-    // 3. Call fal.ai image-to-image
-    const falResponse = await fetch("https://fal.run/fal-ai/flux/dev/image-to-image", {
-      method: "POST",
-      headers: {
-        "Authorization": `Key ${falKey.value()}`,
-        "Content-Type":  "application/json"
-      },
-      body: JSON.stringify({
-        image_url:           tempUrl,
-        prompt,
-        strength:            0.95,
-        num_inference_steps: 50,
-        guidance_scale:      12
-      })
-    });
+    // 2. Call HuggingFace Inference API (sends binary directly — no temp URL needed)
+    const hf = new HfInference(hfKey.value());
+    const srcBlob = new Blob(
+      [Buffer.from(photoBase64, "base64")],
+      { type: mimeType || "image/jpeg" }
+    );
 
-    if (!falResponse.ok) {
-      const errText = await falResponse.text();
-      throw new HttpsError("internal", `fal.ai error: ${falResponse.status} — ${errText.slice(0, 200)}`);
+    let resultBlob;
+    let lastErr;
+    // Retry once on model-loading (503) cold-start
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        resultBlob = await hf.imageToImage({
+          model: "timbrooks/instruct-pix2pix",
+          inputs: srcBlob,
+          parameters: {
+            prompt,
+            num_inference_steps: 20,
+            image_guidance_scale: 1.5,
+            guidance_scale:       7.5,
+          },
+        });
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        if (attempt === 0 && err.message?.includes("503")) {
+          // Model is loading — wait 12s and retry once
+          await new Promise(r => setTimeout(r, 12000));
+        } else {
+          break;
+        }
+      }
     }
-    const falData  = await falResponse.json();
-    const imageUrl = falData?.images?.[0]?.url;
-    if (!imageUrl) {
-      throw new HttpsError("internal", "fal.ai returned no image.");
+    if (lastErr) {
+      throw new HttpsError("internal", `HuggingFace error: ${lastErr.message?.slice(0, 200)}`);
     }
 
-    // 4. Download generated image and save to permanent Storage path
-    const imgResponse = await fetch(imageUrl);
-    if (!imgResponse.ok) {
-      throw new HttpsError("internal", "Failed to download generated image from fal.ai.");
-    }
-    const imgBuffer   = Buffer.from(await imgResponse.arrayBuffer());
-    const finalPath   = `avatars/${storeId}/${empId}.jpg`;
-    const finalFile   = bucket.file(finalPath);
+    // 3. Save generated image to permanent Storage path
+    const imgBuffer = Buffer.from(await resultBlob.arrayBuffer());
+    const bucket    = getStorage().bucket();
+    const finalPath = `avatars/${storeId}/${empId}.jpg`;
+    const finalFile = bucket.file(finalPath);
     await finalFile.save(imgBuffer, { metadata: { contentType: "image/jpeg" } });
     await finalFile.makePublic();
     const avatarUrl = `https://storage.googleapis.com/${bucket.name}/${finalPath}`;
 
-    // 5. Clean up temp file
-    await tempFile.delete().catch(() => {});
-
-    // 6. Write avatarUrl to employee Firestore doc
+    // 4. Write avatarUrl to employee Firestore doc
     await db.doc(`stores/${storeId}/employees/${empId}`).update({ avatarUrl });
 
     return { avatarUrl };
