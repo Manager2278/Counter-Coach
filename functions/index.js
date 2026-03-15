@@ -488,7 +488,7 @@ exports.generateAvatarCaricature = onCall(
       "Driver":            "delivery driver",
     };
     const roleDesc = ROLE_MAP[role] || "team member";
-    const prompt = `cartoon caricature, O'Reilly Auto Parts employee, ${roleDesc}, red uniform, friendly smile, automotive shop background, Pixar style illustration, vibrant colors`;
+    const prompt = `Pixar 3D animated movie character portrait, cartoon caricature, exaggerated friendly facial features, ${roleDesc}, bright red O'Reilly Auto Parts uniform, big expressive eyes, wide friendly smile, automotive shop background, bold thick outlines, vibrant saturated cel-shaded colors, Disney Pixar animation style, digital illustration, NOT a photograph, NOT photorealistic`;
 
     // 3. Call fal.ai image-to-image
     const falResponse = await fetch("https://fal.run/fal-ai/flux/dev/image-to-image", {
@@ -497,7 +497,13 @@ exports.generateAvatarCaricature = onCall(
         "Authorization": `Key ${falKey.value()}`,
         "Content-Type":  "application/json"
       },
-      body: JSON.stringify({ image_url: tempUrl, prompt, strength: 0.75 })
+      body: JSON.stringify({
+        image_url:           tempUrl,
+        prompt,
+        strength:            0.95,
+        num_inference_steps: 50,
+        guidance_scale:      12
+      })
     });
 
     if (!falResponse.ok) {
