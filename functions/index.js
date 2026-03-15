@@ -1,7 +1,7 @@
 const { onCall, HttpsError }            = require("firebase-functions/v2/https");
 const { defineSecret }                  = require("firebase-functions/params");
 const hfKey                             = defineSecret("HF_KEY");
-const { HfInference }                   = require("@huggingface/inference");
+const { InferenceClient }               = require("@huggingface/inference");
 const { onDocumentCreated,
         onDocumentUpdated,
         onDocumentDeleted }             = require("firebase-functions/v2/firestore");
@@ -480,7 +480,7 @@ exports.generateAvatarCaricature = onCall(
     const prompt = `Transform into a Pixar 3D animated cartoon caricature of a ${roleDesc}. Exaggerated friendly features, big expressive eyes, wide smile, bright green O'Reilly Auto Parts uniform, vibrant cel-shaded colors, animated movie style.`;
 
     // 2. Call HuggingFace Inference API (sends binary directly — no temp URL needed)
-    const hf = new HfInference(hfKey.value());
+    const hf = new InferenceClient(hfKey.value());
     const srcBlob = new Blob(
       [Buffer.from(photoBase64, "base64")],
       { type: mimeType || "image/jpeg" }
@@ -493,7 +493,7 @@ exports.generateAvatarCaricature = onCall(
       try {
         resultBlob = await hf.imageToImage({
           model: "timbrooks/instruct-pix2pix",
-          inputs: srcBlob,
+          data: srcBlob,
           parameters: {
             prompt,
             num_inference_steps: 20,
