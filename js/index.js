@@ -1,5 +1,6 @@
 // ── COACH.HTML — Counter Coach Decision Tree ──────────────────
 import { db, auth, functions, storage }    from "./firebase.js";
+import { initNav }                         from "./nav.js";
 import { el, fetchBrandingData, loadBroadcast, compressImage } from "./utils.js";
 import { loadSession }                     from "./session.js";
 import { doc, getDoc, getDocs, updateDoc, deleteField,
@@ -327,18 +328,8 @@ window.removeMyAvatar = async function() {
   }
 };
 
-// ── ROLE-BASED NAV ────────────────────────────────────────────
-function applyNavRoles() {
-  const ms = (() => { try { return JSON.parse(localStorage.getItem("cc_recap_mgr")); } catch { return null; } })();
-  const isMgr = (ms && ms.on) || role === "manager";
-  document.querySelectorAll("[data-role='employee']").forEach(el => {
-    el.style.display = isMgr ? "none" : "";
-  });
-  document.querySelectorAll("[data-role='manager']").forEach(el => {
-    el.style.display = isMgr ? "" : "none";
-  });
-}
-applyNavRoles();
+// ── NAV ───────────────────────────────────────────────────────
+initNav("coach");   // injects nav HTML + CSS + role-based visibility
 
 // ── BRANDING ──────────────────────────────────────────────────
 async function loadBranding() {

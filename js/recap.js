@@ -6,10 +6,11 @@ import { saveSession, loadSession,
          saveMgrSession, loadMgrSession,
          clearMgrSession }                             from "./session.js";
 import { collection, addDoc, onSnapshot, deleteDoc,
-         query, where, orderBy, limit, updateDoc, doc, getDoc,
+         query, where, orderBy, limit, updateDoc, deleteField, doc, getDoc,
          getDocs, serverTimestamp, writeBatch }          from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { signInAnonymously }                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { uploadBytesResumable, getDownloadURL, ref }   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { uploadBytesResumable, uploadBytes, getDownloadURL,
+         ref, deleteObject }                           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 import { httpsCallable }                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js";
 
 // ── STATE ─────────────────────────────────────────────────────
@@ -1165,13 +1166,17 @@ async function loadMgrRoster() {
 // ── AVATAR HELPERS & MODALS ───────────────────────────────────────────────
 
 function applyAvatarToTopbar(url) {
-  localStorage.setItem("cc_avatar_url", url);
+  if (url) localStorage.setItem("cc_avatar_url", url);
+  else     localStorage.removeItem("cc_avatar_url");
   const img = el("tb-avatar-img");
   const ph  = el("tb-avatar-placeholder");
-  if (!img || !url) return;
-  img.src = url;
-  img.style.display = "block";
-  if (ph) ph.style.display = "none";
+  if (url) {
+    if (img) { img.src = url; img.style.display = "block"; }
+    if (ph)  { ph.style.display = "none"; }
+  } else {
+    if (img) { img.src = ""; img.style.display = "none"; }
+    if (ph)  { ph.style.display = "block"; }
+  }
 }
 
 window.openAvatarModal = function() {
@@ -1189,6 +1194,8 @@ window.openAvatarModal = function() {
   }
   el("avatar-status").textContent = "";
   el("avatar-generate-btn").style.display = "none";
+  el("avatar-use-btn").style.display = "none";
+  el("avatar-remove-btn").style.display = myAvatarUrl ? "block" : "none";
   avatarPendingFile = null;
   const lbl = document.querySelector('label[for="avatar-file-input"]');
   if (lbl) lbl.textContent = myAvatarUrl ? "📷 Change Photo" : "📷 Choose / Take Photo";
@@ -1208,8 +1215,10 @@ window.handleAvatarFileChosen = function(input) {
   cur.src = URL.createObjectURL(file);
   cur.style.display = "block";
   el("avatar-placeholder-circle").style.display = "none";
-  el("avatar-status").textContent = "Photo selected — ready to generate!";
+  el("avatar-status").textContent = "Photo selected — use as-is or generate a caricature!";
+  el("avatar-use-btn").style.display = "block";
   el("avatar-generate-btn").style.display = "block";
+  el("avatar-remove-btn").style.display = "none";
 };
 
 window.generateMyAvatar = async function() {
@@ -1236,6 +1245,8 @@ window.generateMyAvatar = async function() {
     cur.src = myAvatarUrl; cur.style.display = "block";
     el("avatar-placeholder-circle").style.display = "none";
     el("avatar-status").textContent = "Caricature generated!";
+    el("avatar-use-btn").style.display = "none";
+    el("avatar-remove-btn").style.display = "block";
     btn.textContent = "✨ Regenerate";
   } catch(e) {
     el("avatar-status").textContent = "Error: " + (e.message || "Unknown error");
@@ -1245,6 +1256,68 @@ window.generateMyAvatar = async function() {
     avatarPendingFile = null;
     const inp = el("avatar-file-input");
     if (inp) inp.value = "";
+  }
+};
+
+window.usePhotoAsIs = async function() {
+  if (!avatarPendingFile) { alert("Please choose a photo first."); return; }
+  if (!myEmpId) { alert("Employee record not found. Try logging out and back in."); return; }
+  const btn = el("avatar-use-btn");
+  btn.disabled = true; btn.textContent = "Saving…";
+  el("avatar-status").textContent = "Compressing photo…";
+  try {
+    const compressed = await compressImage(avatarPendingFile, 512, 0.85);
+    el("avatar-status").textContent = "Uploading photo…";
+    const sRef = ref(storage, `avatars/${store}/${myEmpId}.jpg`);
+    await uploadBytes(sRef, compressed, { contentType: "image/jpeg" });
+    const url = await getDownloadURL(sRef);
+    await updateDoc(doc(db, "stores", store, "employees", myEmpId), { avatarUrl: url });
+    myAvatarUrl = url;
+    applyAvatarToTopbar(myAvatarUrl);
+    const cur = el("avatar-current-img");
+    cur.src = myAvatarUrl; cur.style.display = "block";
+    el("avatar-placeholder-circle").style.display = "none";
+    el("avatar-status").textContent = "Photo saved!";
+    el("avatar-generate-btn").style.display = "none";
+    el("avatar-remove-btn").style.display = "block";
+    btn.textContent = "✅ Saved";
+  } catch(e) {
+    el("avatar-status").textContent = "Error: " + (e.message || "Unknown error");
+    btn.textContent = "📷 Use Photo As-Is";
+  } finally {
+    btn.disabled = false;
+    avatarPendingFile = null;
+    const inp = el("avatar-file-input");
+    if (inp) inp.value = "";
+  }
+};
+
+window.removeMyAvatar = async function() {
+  if (!confirm("Remove your avatar? This can't be undone.")) return;
+  const btn = el("avatar-remove-btn");
+  btn.disabled = true; btn.textContent = "Removing…";
+  el("avatar-status").textContent = "Removing avatar…";
+  try {
+    if (myEmpId) {
+      await updateDoc(doc(db, "stores", store, "employees", myEmpId), { avatarUrl: deleteField() });
+      try { await deleteObject(ref(storage, `avatars/${store}/${myEmpId}.jpg`)); } catch(_) {}
+    }
+    myAvatarUrl = null;
+    applyAvatarToTopbar(null);
+    const cur = el("avatar-current-img");
+    cur.src = ""; cur.style.display = "none";
+    el("avatar-placeholder-circle").style.display = "flex";
+    el("avatar-generate-btn").style.display = "none";
+    el("avatar-use-btn").style.display = "none";
+    el("avatar-status").textContent = "Avatar removed.";
+    const lbl = document.querySelector('label[for="avatar-file-input"]');
+    if (lbl) lbl.textContent = "📷 Choose / Take Photo";
+    btn.style.display = "none";
+  } catch(e) {
+    el("avatar-status").textContent = "Error: " + (e.message || "Unknown error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🗑️ Remove Avatar";
   }
 };
 

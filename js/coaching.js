@@ -3,6 +3,7 @@
 //   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 //   <script type="module" src="js/coaching.js"></script>
 import { db, auth, functions }               from "./firebase.js";
+import { initNav }                           from "./nav.js";
 import { el, esc }                           from "./utils.js";
 import { loadSession as getSession,
          loadMgrSession, saveSession }        from "./session.js";
@@ -95,6 +96,7 @@ signInAnonymously(auth)
 
 function init() {
   loadSession();
+  initNav("coaching");
   // Fetch avatar from Firestore and update topbar + localStorage cache
   if (store && managerName) {
     getDocs(query(collection(db, "stores", store, "employees"), where("name", "==", managerName)))
