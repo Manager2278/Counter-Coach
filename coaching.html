@@ -37,6 +37,16 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .topbar-store { font-size: 12px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); padding: 3px 10px; border-radius: 20px; font-weight: 700; white-space: nowrap; }
 .btn-back { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.75); background: none; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; padding: 5px 11px; cursor: pointer; text-decoration: none; white-space: nowrap; }
 .btn-back:hover { color: white; border-color: rgba(255,255,255,0.7); }
+.topbar-avatar { width:30px; height:30px; border-radius:50%; border:2px solid rgba(255,255,255,0.4); background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:15px; overflow:hidden; flex-shrink:0; }
+.topbar-avatar img { width:100%; height:100%; object-fit:cover; display:none; }
+
+/* ── BOTTOM NAV */
+body { padding-bottom: 70px; }
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:white; border-top:1.5px solid #ddd; display:flex; z-index:200; box-shadow:0 -2px 14px rgba(0,0,0,0.08); }
+.nav-btn-link { flex:1; padding:10px 8px 8px; text-align:center; text-decoration:none; color:#999; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; display:flex; flex-direction:column; align-items:center; }
+.nav-btn-link.active { color:var(--forest); }
+.nav-btn-link:hover { color:var(--forest); }
+.nav-icon { font-size:20px; display:block; margin-bottom:2px; }
 
 /* ── TABS */
 .tab-bar { background: white; border-bottom: 2px solid var(--ruled); display: flex; position: sticky; top: 54px; z-index: 99; }
@@ -174,6 +184,10 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
   <div class="topbar-title">&#x1F4CB; Coaching</div>
   <div class="topbar-right">
     <span class="topbar-store" id="topbar-store" style="display:none;"></span>
+    <div class="topbar-avatar" id="coaching-avatar">
+      <img id="coaching-avatar-img" src="" alt="">
+      <span id="coaching-avatar-ph">👤</span>
+    </div>
     <a class="btn-back" href="/">&#x2190; Daily Recap</a>
   </div>
 </div>
@@ -393,5 +407,52 @@ canvas.sig-canvas { width: 100%; height: 150px; border: 1.5px solid var(--ruled)
 </div><!-- /main-ui -->
 
 <script type="module" src="js/coaching.js"></script>
+
+<nav class="bottom-nav" id="bottom-nav">
+  <a class="nav-btn-link" href="/coach">
+    <img src="icon-192.png" alt="" style="width:22px;height:22px;border-radius:4px;object-fit:cover;display:block;margin:0 auto 2px;">
+    Coach
+  </a>
+  <a class="nav-btn-link" href="/">
+    <span class="nav-icon">📋</span>Logbook
+  </a>
+  <a class="nav-btn-link" href="/?tab=msg" data-role="employee">
+    <span class="nav-icon">🔒</span>Private
+  </a>
+  <a class="nav-btn-link active" href="/coaching">
+    <span class="nav-icon">📝</span>Coaching
+  </a>
+  <a class="nav-btn-link" href="/?tab=settings" data-role="employee">
+    <span class="nav-icon">⚙️</span>Settings
+  </a>
+  <a class="nav-btn-link" href="/?tab=mgr" data-role="manager" style="display:none;">
+    <span class="nav-icon">🔑</span>Manager
+  </a>
+</nav>
+
+<script>
+(function initCoachingNav() {
+  try {
+    // Show cached avatar immediately (Firestore confirm happens in coaching.js)
+    const url = localStorage.getItem("cc_avatar_url");
+    if (url) {
+      var img = document.getElementById("coaching-avatar-img");
+      var ph  = document.getElementById("coaching-avatar-ph");
+      if (img) { img.src = url; img.style.display = "block"; }
+      if (ph)  { ph.style.display = "none"; }
+    }
+    // Role-based nav
+    var s   = JSON.parse(localStorage.getItem("cc_v2_session") || "null");
+    var ms  = JSON.parse(localStorage.getItem("cc_recap_mgr")  || "null");
+    var isMgr = (ms && ms.on) || (s && s.role === "manager");
+    document.querySelectorAll("[data-role='employee']").forEach(function(el) {
+      el.style.display = isMgr ? "none" : "";
+    });
+    document.querySelectorAll("[data-role='manager']").forEach(function(el) {
+      el.style.display = isMgr ? "" : "none";
+    });
+  } catch(e) {}
+})();
+</script>
 </body>
 </html>

@@ -95,6 +95,22 @@ signInAnonymously(auth)
 
 function init() {
   loadSession();
+  // Fetch avatar from Firestore and update topbar + localStorage cache
+  if (store && managerName) {
+    getDocs(query(collection(db, "stores", store, "employees"), where("name", "==", managerName)))
+      .then(snap => {
+        if (!snap.empty) {
+          const avatarUrl = snap.docs[0].data().avatarUrl;
+          if (avatarUrl) {
+            localStorage.setItem("cc_avatar_url", avatarUrl);
+            const img = document.getElementById("coaching-avatar-img");
+            const ph  = document.getElementById("coaching-avatar-ph");
+            if (img) { img.src = avatarUrl; img.style.display = "block"; }
+            if (ph)  { ph.style.display = "none"; }
+          }
+        }
+      }).catch(() => {});
+  }
   const params    = new URLSearchParams(location.search);
   const kioskId   = params.get("kiosk");
   const signId    = params.get("sign");
