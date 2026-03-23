@@ -774,7 +774,7 @@ function entryPhotosHtml(e, inputId) {
     `<img src="${esc(u)}" loading="lazy" onclick="openLightbox('${esc(u)}')" alt="photo">`
   ).join("");
   const addBtn = urls.length < 4
-    ? `<div class="mgr-photo-attach"><label class="btn-photo-sm" for="${inputId}">📷 Add Photo</label><input type="file" id="${inputId}" accept="image/*" multiple style="display:none" onchange="attachPhotoToEntry('${e.id}',this)"></div>`
+    ? `<div class="mgr-photo-attach"><label class="btn-photo-sm" for="${inputId}">📷 Add Photo</label><input type="file" id="${inputId}" accept="image/*" style="display:none" onchange="attachPhotoToEntry('${e.id}',this)"></div>`
     : "";
   return `${urls.length ? `<div class="entry-photo">${grid}</div>` : ""}${addBtn}`;
 }
