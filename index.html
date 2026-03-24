@@ -127,7 +127,6 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
 .photo-attach { margin-top: 10px; display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
 .btn-photo { display: inline-block; padding: 7px 13px; border: 1.5px dashed var(--forest-light); border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--forest); cursor: pointer; background: var(--paper); transition: all .15s; font-family: 'Karla', sans-serif; white-space: nowrap; }
 .btn-photo:hover { background: var(--mint); border-style: solid; }
-#photo-input { display: none; }
 #photo-preview-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
 .preview-thumb-wrap { position: relative; }
 .preview-thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1.5px solid var(--ruled); display: block; }
@@ -435,8 +434,7 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
       <button class="btn-add" onclick="addEntry()">Add</button>
     </div>
     <div class="photo-attach">
-      <label class="btn-photo" id="photo-label" for="photo-input">📷 Add Photos</label>
-      <input type="file" id="photo-input" accept="image/*" onchange="previewPhoto(this)">
+      <button class="btn-photo" id="photo-label" onclick="showPhotoSheet()">📷 Add Photos</button>
       <div id="photo-preview-wrap"></div>
     </div>
     <div class="upload-bar-wrap"><div class="upload-bar"></div></div>
@@ -784,6 +782,17 @@ body { font-family: 'Karla', sans-serif; background: var(--cream); color: var(--
     </div>
   </div>
 </div>
+
+<!-- ══════════════ PHOTO ACTION SHEET ══════════════════════════ -->
+<div id="photo-sheet" onclick="closePhotoSheet()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:flex-end;">
+  <div onclick="event.stopPropagation()" style="background:white;border-radius:16px 16px 0 0;padding:16px 16px 28px;width:100%;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;">
+    <button onclick="pickPhoto('cam')" style="padding:13px;background:#1e6b36;color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;width:100%;">📷 Take Photo</button>
+    <button onclick="pickPhoto('lib')" style="padding:13px;background:#4a90d9;color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;width:100%;">🖼️ Choose from Gallery</button>
+    <button onclick="closePhotoSheet()" style="padding:11px;background:#f5f0e8;border:1.5px solid #ccc;border-radius:12px;font-size:14px;cursor:pointer;width:100%;">Cancel</button>
+  </div>
+</div>
+<input type="file" id="global-photo-cam" accept="image/*" capture="environment" style="display:none" onchange="handleGlobalPhoto(this)">
+<input type="file" id="global-photo-lib" accept="image/*" style="display:none" onchange="handleGlobalPhoto(this)">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module" src="js/recap.js?v=2"></script>
