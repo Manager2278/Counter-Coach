@@ -35,6 +35,7 @@ let avatarPendingFile  = null;
 let mgrAvatarTargetId   = null;
 let mgrAvatarTargetRole = null;
 let mgrAvatarPendingFile = null;
+let photoSheetTarget    = null;   // 'new' or an existing entry id
 
 // ── INIT ──────────────────────────────────────────────────────
 (function preShowQR() {
@@ -535,22 +536,22 @@ window.logoutMgr = () => {
 window.attachPhotoToEntry = async (entryId, input) => {
   const files = Array.from(input.files); if (!files.length) return;
   input.disabled = true;
-  const label = input.previousElementSibling;
-  label.textContent = "Uploading…";
+  const label = input.previousElementSibling?.tagName === 'LABEL' ? input.previousElementSibling : null;
+  if (label) label.textContent = "Uploading…";
   try {
     const snap    = await getDoc(doc(db, "stores", store, "entries", entryId));
     const cur     = snap.data() || {};
     const existing = cur.photos && cur.photos.length ? cur.photos
                    : cur.photoURL ? [cur.photoURL] : [];
     const slots   = 4 - existing.length;
-    if (slots <= 0) { alert("This entry already has 4 photos."); input.disabled = false; label.textContent = "📷 Add Photo"; return; }
+    if (slots <= 0) { alert("This entry already has 4 photos."); input.disabled = false; if (label) label.textContent = "📷 Add Photo"; return; }
     const toUpload = files.slice(0, slots);
     const newUrls = await Promise.all(toUpload.map((f, i) => uploadPhoto(f, entryId, existing.length + i)));
     const urls = [...existing, ...newUrls];
     await updateDoc(doc(db,"stores",store,"entries",entryId), { photos: urls, photoURL: urls[0] });
   } catch(e) {
     alert("Upload error: " + e.message);
-    label.textContent = "📷 Add Photo";
+    if (label) label.textContent = "📷 Add Photo";
     input.disabled = false;
   }
 };
@@ -611,6 +612,27 @@ function renderPhotoPreview() {
   const count = pendingPhotoFiles.length;
   label.textContent = count >= 4 ? "📷 4 / 4" : `📷 Add Photos (${count}/4)`;
 }
+
+// ── PHOTO ACTION SHEET ────────────────────────────────────────
+window.showPhotoSheet = function(entryId) {
+  photoSheetTarget = entryId || 'new';
+  el('photo-sheet').style.display = 'flex';
+};
+window.closePhotoSheet = function() {
+  el('photo-sheet').style.display = 'none';
+};
+window.pickPhoto = function(source) {
+  // .click() MUST be first — iOS requires it synchronously inside a user gesture
+  el(source === 'cam' ? 'global-photo-cam' : 'global-photo-lib').click();
+  closePhotoSheet();
+};
+window.handleGlobalPhoto = function(input) {
+  if (photoSheetTarget === 'new') {
+    previewPhoto(input);
+  } else if (photoSheetTarget) {
+    attachPhotoToEntry(photoSheetTarget, input);
+  }
+};
 
 async function uploadPhoto(file, entryId, index = 0) {
   const compressed = await compressImage(file);
@@ -774,7 +796,7 @@ function entryPhotosHtml(e, inputId) {
     `<img src="${esc(u)}" loading="lazy" onclick="openLightbox('${esc(u)}')" alt="photo">`
   ).join("");
   const addBtn = urls.length < 4
-    ? `<div class="mgr-photo-attach"><label class="btn-photo-sm" for="${inputId}">📷 Add Photo</label><input type="file" id="${inputId}" accept="image/*" style="display:none" onchange="attachPhotoToEntry('${e.id}',this)"></div>`
+    ? `<div class="mgr-photo-attach"><button class="btn-photo-sm" onclick="showPhotoSheet('${e.id}')">📷 Add Photo</button></div>`
     : "";
   return `${urls.length ? `<div class="entry-photo">${grid}</div>` : ""}${addBtn}`;
 }
